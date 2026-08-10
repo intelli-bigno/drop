@@ -5,7 +5,7 @@ MCP server for DROP notes. Access your notes from AI assistants like Claude.
 ## Installation
 
 ```bash
-npm install -g drop-mcp
+npm install -g @brxce/drop-mcp
 ```
 
 ## Configuration
@@ -14,6 +14,14 @@ npm install -g drop-mcp
 
 1. Open the DROP app
 2. Go to Profile → Copy MCP Token
+
+### Environment Variables
+
+The server requires:
+
+- `DROP_TOKEN` - Your MCP token from the DROP app
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_ANON_KEY` - Your Supabase anon (public) key
 
 ### Claude Code / Desktop
 
@@ -25,7 +33,9 @@ Add to `.mcp.json`:
     "drop": {
       "command": "drop-mcp",
       "env": {
-        "DROP_TOKEN": "your-token"
+        "DROP_TOKEN": "your-token",
+        "SUPABASE_URL": "https://your-project.supabase.co",
+        "SUPABASE_ANON_KEY": "your-anon-key"
       }
     }
   }
@@ -61,6 +71,11 @@ Add to `.mcp.json`:
 - `upload_from_path` - Upload a local file by path
 - `list_attachments` - List all attachments for a note
 - `delete_attachment` - Delete an attachment
+
+Attachment storage operations (upload, signed URLs, delete) go through the
+`mcp-storage` Edge Function, authenticated with your MCP token. The private
+`attachments` bucket is not accessible with the anon key. No change to your
+user configuration is needed.
 
 ## Examples
 
@@ -102,6 +117,8 @@ pnpm install
 pnpm build
 
 # Run locally (get token from DROP app → Profile → Copy MCP Token)
+SUPABASE_URL=https://your-project.supabase.co \
+SUPABASE_ANON_KEY=your-anon-key \
 DROP_TOKEN=your-api-key pnpm start
 ```
 
