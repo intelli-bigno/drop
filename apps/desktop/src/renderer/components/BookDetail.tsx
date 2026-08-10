@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { supabase } from '../lib/supabase'
 import { ConfirmDialog } from './ConfirmDialog'
+import { Icon } from './Icon'
 import type { ReadingStatus, Note } from '@drop/shared'
 
 const STATUS_LABELS: Record<ReadingStatus, string> = {
@@ -66,8 +67,13 @@ export function BookDetail() {
   return (
     <div className="book-detail-overlay" onClick={() => selectBook(null)}>
       <div className="book-detail" onClick={(e) => e.stopPropagation()}>
-        <button className="book-detail-close" onClick={() => selectBook(null)}>
-          ×
+        <button
+          className="book-detail-close"
+          onClick={() => selectBook(null)}
+          title="닫기"
+          aria-label="닫기"
+        >
+          <Icon name="x" />
         </button>
 
         <div className="book-detail-header">
@@ -75,7 +81,9 @@ export function BookDetail() {
             {coverUrl ? (
               <img src={coverUrl} alt={book.title} />
             ) : (
-              <div className="book-detail-cover-placeholder">📚</div>
+              <div className="book-detail-cover-placeholder">
+                <Icon name="book" size={32} />
+              </div>
             )}
           </div>
           <div className="book-detail-info">

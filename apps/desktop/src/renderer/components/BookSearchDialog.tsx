@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { supabase } from '../lib/supabase'
+import { Icon } from './Icon'
 import type { AladinSearchResult, Book } from '@drop/shared'
 
 type SearchItem =
@@ -206,13 +207,20 @@ export function BookSearchDialog() {
       <div className="book-search-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="book-search-header">
           <span className="book-search-title">{dialogTitle}</span>
-          <button className="book-search-close" onClick={closeBookSearch}>
-            ×
+          <button
+            className="book-search-close"
+            onClick={closeBookSearch}
+            title="닫기"
+            aria-label="닫기"
+          >
+            <Icon name="x" />
           </button>
         </div>
 
         <div className="book-search-input-wrapper">
-          <span className="book-search-input-icon">🔍</span>
+          <span className="book-search-input-icon">
+            <Icon name="search" size={14} />
+          </span>
           <input
             ref={inputRef}
             type="text"
@@ -257,7 +265,9 @@ export function BookSearchDialog() {
                           {coverUrl ? (
                             <img src={coverUrl} alt={book.title} />
                           ) : (
-                            <div className="book-search-item-cover-placeholder">📚</div>
+                            <div className="book-search-item-cover-placeholder">
+                              <Icon name="book" size={20} />
+                            </div>
                           )}
                         </div>
                         <div className="book-search-item-info">
@@ -267,9 +277,21 @@ export function BookSearchDialog() {
                             {book.publisher && ` · ${book.publisher}`}
                           </span>
                           <span className="book-search-item-status">
-                            {book.readingStatus === 'to_read' && '📖 읽을 예정'}
-                            {book.readingStatus === 'reading' && '📚 읽는 중'}
-                            {book.readingStatus === 'completed' && '✅ 완독'}
+                            {book.readingStatus === 'to_read' && (
+                              <>
+                                <Icon name="book-open" size={12} /> 읽을 예정
+                              </>
+                            )}
+                            {book.readingStatus === 'reading' && (
+                              <>
+                                <Icon name="book" size={12} /> 읽는 중
+                              </>
+                            )}
+                            {book.readingStatus === 'completed' && (
+                              <>
+                                <Icon name="check" size={12} /> 완독
+                              </>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -304,7 +326,9 @@ export function BookSearchDialog() {
                           {book.cover ? (
                             <img src={book.cover} alt={book.title} />
                           ) : (
-                            <div className="book-search-item-cover-placeholder">📚</div>
+                            <div className="book-search-item-cover-placeholder">
+                              <Icon name="book" size={20} />
+                            </div>
                           )}
                         </div>
                         <div className="book-search-item-info">

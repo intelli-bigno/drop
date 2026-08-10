@@ -12,23 +12,43 @@
 }
 
 :root {
-  /* Color Palette - Neutral Dark */
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #111113;
-  --bg-card: #18181b;
-  --bg-elevated: #1f1f23;
-  --bg-hover: #27272a;
+  /* Color Palette - OLED Dark */
+  --bg-primary: #09090b;
+  --bg-secondary: #101013;
+  --bg-card: #17171b;
+  --bg-elevated: #1e1e23;
+  --bg-hover: #26262c;
 
-  /* Accent - Subtle Blue */
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
-  --accent-subtle: rgba(59, 130, 246, 0.1);
+  /* Accent - Teal primary, Orange for destructive-adjacent CTAs */
+  --accent: #14b8a6;
+  --accent-hover: #2dd4bf;
+  --accent-subtle: rgba(20, 184, 166, 0.12);
+  --cta: #ea580c;
+  --cta-hover: #f97316;
 
   /* Text Colors */
   --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
-  --text-muted: #52525b;
+  --text-secondary: #a6a6b0;
+  --text-tertiary: #79797f;
+  --text-muted: #55555c;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Type scale */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
 
   /* Priority Colors */
   --priority-low: #6b7280;
@@ -4005,4 +4025,88 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============================================
+   SVG Icon System (components/Icon.tsx)
+   ============================================ */
+.icon {
+  display: inline-block;
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
+
+/* Icon wrappers previously sized via font-size: center the svg */
+.view-mode-icon,
+.category-filter-icon,
+.search-dialog-icon,
+.book-search-input-icon,
+.attachment-text-icon,
+.attachment-book-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.view-mode-icon .icon,
+.category-filter-icon .icon,
+.search-dialog-icon .icon,
+.book-search-input-icon .icon,
+.attachment-text-icon .icon,
+.attachment-book-icon .icon {
+  vertical-align: middle;
+}
+
+/* Book cover placeholders: muted stroke icon, centered */
+.book-card-cover-placeholder,
+.book-detail-cover-placeholder,
+.book-search-item-cover-placeholder,
+.attachment-book-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Reading status label: icon + text alignment */
+.book-search-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Pinned state uses accent (replaces amber emoji-era color) */
+.pin-btn:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.pin-btn.pinned {
+  color: var(--accent);
+}
+
+/* Hover/cursor gaps on icon-only buttons */
+.book-detail-close,
+.book-search-close,
+.gallery-close-btn {
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.quick-capture-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  transition: color 150ms ease;
+}
+
+.quick-capture-chip-remove:hover {
+  color: var(--text-primary);
+}
+
+.attachment-text-dialog-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 150ms ease;
 }

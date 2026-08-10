@@ -1,5 +1,6 @@
 import { useNotesStore } from '../stores/notes'
 import type { NoteViewMode } from '../stores/notes/types'
+import { Icon, type IconName } from './Icon'
 
 export function ViewModeSelector() {
   const viewMode = useNotesStore((s) => s.viewMode)
@@ -7,10 +8,10 @@ export function ViewModeSelector() {
   const trashedNotes = useNotesStore((s) => s.trashedNotes)
   const archivedNotes = useNotesStore((s) => s.archivedNotes)
 
-  const modes: Array<{ key: NoteViewMode; label: string; icon: string; count?: number }> = [
-    { key: 'active', label: '노트', icon: '📝' },
-    { key: 'archived', label: '보관함', icon: '📦', count: archivedNotes.length },
-    { key: 'trash', label: '휴지통', icon: '🗑️', count: trashedNotes.length },
+  const modes: Array<{ key: NoteViewMode; label: string; icon: IconName; count?: number }> = [
+    { key: 'active', label: '노트', icon: 'pencil' },
+    { key: 'archived', label: '보관함', icon: 'archive', count: archivedNotes.length },
+    { key: 'trash', label: '휴지통', icon: 'trash', count: trashedNotes.length },
   ]
 
   return (
@@ -22,7 +23,9 @@ export function ViewModeSelector() {
           onClick={() => setViewMode(m.key)}
           title={m.label}
         >
-          <span className="view-mode-icon">{m.icon}</span>
+          <span className="view-mode-icon">
+            <Icon name={m.icon} size={13} />
+          </span>
           <span className="view-mode-label">{m.label}</span>
           {m.count !== undefined && m.count > 0 && (
             <span className="view-mode-count">{m.count}</span>

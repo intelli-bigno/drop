@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { Tag } from '@drop/shared'
 import { useNotesStore } from '../stores/notes'
+import { Icon } from './Icon'
 
 interface Props {
   noteId: string
@@ -34,8 +35,13 @@ export function TagList({ noteId, tags }: Props) {
           <span className="tag-name" onClick={() => handleClick(tag.name)}>
             #{tag.name}
           </span>
-          <button className="tag-remove" onClick={(e) => handleRemove(e, tag.id)}>
-            &times;
+          <button
+            className="tag-remove"
+            onClick={(e) => handleRemove(e, tag.id)}
+            title="태그 제거"
+            aria-label="태그 제거"
+          >
+            <Icon name="x" size={10} />
           </button>
         </span>
       ))}
