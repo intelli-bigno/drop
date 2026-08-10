@@ -3,6 +3,8 @@ import { useAuthStore } from '../stores/auth'
 import { useNotesStore } from '../stores/notes'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { extractYouTubeUrls } from '../lib/youtube-url-utils'
+import { Icon, type IconName } from './Icon'
+import '../styles/quick-capture.css'
 
 // 큰 텍스트 임계값 (둘 다 충족해야 텍스트 첨부파일로 처리)
 const LARGE_TEXT_THRESHOLD_LINES = 20
@@ -287,59 +289,67 @@ export function QuickCapture() {
   // Not authenticated
   if (!user) {
     return (
-      <div style={styles.container}>
-        <div style={styles.inputWrapper}>
-          <div style={styles.authMessage}>DROP app not logged in. Press ESC to close.</div>
+      <div className="quick-capture">
+        <div className="quick-capture-panel">
+          <div className="quick-capture-auth-message">
+            DROP app not logged in. Press ESC to close.
+          </div>
         </div>
       </div>
     )
   }
 
-  const getAttachmentIcon = (type: PendingAttachment['type']) => {
+  const getAttachmentIconName = (type: PendingAttachment['type']): IconName => {
     switch (type) {
       case 'image':
-        return '🖼'
+        return 'image'
       case 'file':
-        return '📎'
+        return 'paperclip'
       case 'text':
-        return '📄'
+        return 'file-text'
       case 'instagram':
-        return '📷'
+        return 'camera'
       case 'youtube':
-        return '▶️'
+        return 'play'
       default:
-        return '📎'
+        return 'paperclip'
     }
   }
 
   return (
-    <div style={styles.container}>
+    <div className="quick-capture">
       <div
-        style={{
-          ...styles.inputWrapper,
-          ...(showSuccess ? styles.inputWrapperSuccess : {}),
-          ...(pendingAttachments.length > 0 ? styles.inputWrapperWithAttachments : {}),
-        }}
+        className={[
+          'quick-capture-panel',
+          showSuccess ? 'success' : '',
+          pendingAttachments.length > 0 ? 'has-attachments' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         {/* Pending Attachments */}
         {pendingAttachments.length > 0 && (
-          <div style={styles.attachmentsRow}>
+          <div className="quick-capture-attachments">
             {pendingAttachments.map((attachment, index) => (
-              <div key={index} style={styles.attachmentChip}>
-                <span>{getAttachmentIcon(attachment.type)}</span>
-                <span style={styles.attachmentName}>{attachment.name}</span>
+              <div key={index} className="quick-capture-chip">
+                <span>
+                  <Icon name={getAttachmentIconName(attachment.type)} size={12} />
+                </span>
+                <span className="quick-capture-chip-name">{attachment.name}</span>
                 <button
-                  style={styles.removeButton}
+                  className="quick-capture-chip-remove"
                   onClick={() => removeAttachment(index)}
                   disabled={isSubmitting}
+                  title="첨부 삭제"
+                  aria-label="첨부 삭제"
                 >
-                  ×
+                  <Icon name="x" size={10} />
                 </button>
               </div>
             ))}
           </div>
         )}
-        <div style={styles.inputRow}>
+        <div className="quick-capture-input-row">
           <textarea
             ref={inputRef}
             value={content}
@@ -351,116 +361,13 @@ export function QuickCapture() {
                 ? '추가 메모... (Enter to save)'
                 : 'Quick note... (Enter to save, Esc to close)'
             }
-            style={styles.input}
+            className="quick-capture-input"
             disabled={isSubmitting}
             rows={1}
           />
-          {isSubmitting && <div style={styles.spinner} />}
+          {isSubmitting && <div className="quick-capture-spinner" />}
         </div>
       </div>
     </div>
   )
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    padding: 16,
-    background: 'transparent',
-    WebkitAppRegion: 'drag',
-  } as React.CSSProperties,
-  inputWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    width: '100%',
-    padding: '12px 16px',
-    borderRadius: 12,
-    background: 'rgba(30, 30, 30, 0.95)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-    transition: 'all 0.2s ease',
-    WebkitAppRegion: 'no-drag',
-  } as React.CSSProperties,
-  inputWrapperSuccess: {
-    background: 'rgba(16, 185, 129, 0.95)',
-  },
-  inputWrapperWithAttachments: {
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  inputRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    width: '100%',
-  },
-  attachmentsRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 6,
-  } as React.CSSProperties,
-  attachmentChip: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    padding: '4px 8px',
-    borderRadius: 6,
-    background: 'rgba(255, 255, 255, 0.1)',
-    fontSize: 12,
-    color: '#ccc',
-  },
-  attachmentName: {
-    maxWidth: 120,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  } as React.CSSProperties,
-  removeButton: {
-    background: 'none',
-    border: 'none',
-    color: '#888',
-    cursor: 'pointer',
-    padding: '0 2px',
-    fontSize: 14,
-    lineHeight: 1,
-  },
-  input: {
-    flex: 1,
-    border: 'none',
-    outline: 'none',
-    background: 'transparent',
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    resize: 'none',
-    lineHeight: 1.4,
-  },
-  authMessage: {
-    color: '#888',
-    fontSize: 14,
-    textAlign: 'center',
-    width: '100%',
-  },
-  spinner: {
-    width: 16,
-    height: 16,
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    borderTopColor: '#fff',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-  },
-}
-
-// Add keyframes for spinner
-const styleSheet = document.createElement('style')
-styleSheet.textContent = `
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`
-document.head.appendChild(styleSheet)

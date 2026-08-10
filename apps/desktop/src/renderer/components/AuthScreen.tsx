@@ -7,7 +7,7 @@ export function AuthScreen() {
     <div className="auth-screen">
       <div className="auth-container">
         <h1 className="auth-title">DROP</h1>
-        <p className="auth-subtitle">Quick note-taking app</p>
+        <p className="auth-subtitle">생각을 떨어뜨리는 가장 빠른 곳</p>
 
         <button
           className="google-signin-button"
@@ -32,7 +32,7 @@ export function AuthScreen() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {isAuthLoading ? 'Signing in...' : 'Sign in with Google'}
+          {isAuthLoading ? '로그인 중...' : 'Google로 로그인'}
         </button>
       </div>
 
@@ -42,7 +42,7 @@ export function AuthScreen() {
           align-items: center;
           justify-content: center;
           min-height: 100vh;
-          background: #1a1a1a;
+          background: var(--bg-primary);
           -webkit-app-region: drag;
         }
 
@@ -58,14 +58,14 @@ export function AuthScreen() {
         .auth-title {
           font-size: 48px;
           font-weight: 700;
-          color: #ffffff;
+          color: var(--text-primary);
           margin: 0;
           letter-spacing: -1px;
         }
 
         .auth-subtitle {
           font-size: 16px;
-          color: #888;
+          color: var(--text-secondary);
           margin: 0 0 32px 0;
         }
 

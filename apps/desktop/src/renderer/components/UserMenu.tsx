@@ -227,7 +227,7 @@ export function UserMenu() {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
           color: #fff;
           font-size: 14px;
           font-weight: 600;
@@ -239,7 +239,7 @@ export function UserMenu() {
         .user-menu-dropdown {
           position: fixed;
           min-width: 240px;
-          background: #2a2a2a;
+          background: var(--bg-elevated);
           border: 1px solid #3a3a3a;
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -267,7 +267,7 @@ export function UserMenu() {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
           color: #fff;
           font-size: 18px;
           font-weight: 600;

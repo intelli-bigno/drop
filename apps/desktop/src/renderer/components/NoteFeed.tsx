@@ -10,6 +10,7 @@ import { ViewModeSelector } from './ViewModeSelector'
 import { SearchDialog } from './SearchDialog'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
+import { Icon } from './Icon'
 import { isCreateNoteShortcut, isSearchShortcut } from '../shortcuts/noteGlobal'
 import { resolveNoteFeedShortcut } from '../shortcuts/noteFeed'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../shortcuts/tagList'
@@ -803,7 +804,13 @@ export function NoteFeed() {
               {filterTag && (
                 <div className="filter-indicator">
                   <span>#{filterTag}</span>
-                  <button onClick={() => setFilterTag(null)}>&times;</button>
+                  <button
+                    onClick={() => setFilterTag(null)}
+                    title="태그 필터 해제"
+                    aria-label="태그 필터 해제"
+                  >
+                    <Icon name="x" size={12} />
+                  </button>
                 </div>
               )}
             </>
@@ -816,16 +823,18 @@ export function NoteFeed() {
                   className="icon-btn"
                   onClick={() => setShowUnlockAllDialog(true)}
                   title="전체 잠금 해제"
+                  aria-label="전체 잠금 해제"
                 >
-                  🔓
+                  <Icon name="lock-open" />
                 </button>
               )}
               <button
                 className="icon-btn"
                 onClick={() => setShowSearchDialog(true)}
                 title="검색 (⌘K)"
+                aria-label="검색"
               >
-                🔍
+                <Icon name="search" />
               </button>
             </>
           )}

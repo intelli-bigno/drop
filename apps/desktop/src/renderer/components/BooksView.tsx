@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { supabase } from '../lib/supabase'
+import { Icon } from './Icon'
 import type { Book, ReadingStatus } from '@drop/shared'
 
 const STATUS_LABELS: Record<ReadingStatus, string> = {
@@ -10,9 +11,9 @@ const STATUS_LABELS: Record<ReadingStatus, string> = {
 }
 
 const STATUS_COLORS: Record<ReadingStatus, string> = {
-  to_read: '#6b7280', // gray
-  reading: '#3b82f6', // blue
-  completed: '#10b981', // green
+  to_read: 'var(--text-tertiary)',
+  reading: 'var(--accent)',
+  completed: 'var(--success)',
 }
 
 interface BookCardProps {
@@ -31,7 +32,9 @@ function BookCard({ book, onClick }: BookCardProps) {
         {coverUrl ? (
           <img src={coverUrl} alt={book.title} />
         ) : (
-          <div className="book-card-cover-placeholder">📚</div>
+          <div className="book-card-cover-placeholder">
+            <Icon name="book" size={28} />
+          </div>
         )}
       </div>
       <div className="book-card-info">

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, KeyboardEvent, useMemo } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { formatRelativeTime } from '../lib/time-utils'
+import { Icon } from './Icon'
 
 interface Props {
   onClose: () => void
@@ -116,7 +117,9 @@ export function SearchDialog({ onClose, onSelectNote }: Props) {
     <div className="search-dialog-backdrop" onClick={handleBackdropClick}>
       <div className="search-dialog">
         <div className="search-dialog-header">
-          <span className="search-dialog-icon">🔍</span>
+          <span className="search-dialog-icon">
+            <Icon name="search" />
+          </span>
           <input
             ref={inputRef}
             type="text"

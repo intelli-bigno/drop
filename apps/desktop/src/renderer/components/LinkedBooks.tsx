@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { Icon } from './Icon'
 import { supabase } from '../lib/supabase'
 import { useNotesStore } from '../stores/notes'
 import type { Book } from '@drop/shared'
@@ -38,8 +39,9 @@ export const LinkedBooks = memo(function LinkedBooks({ noteId, books }: Props) {
               className="linked-book-unlink"
               onClick={(e) => handleUnlink(book.id, e)}
               title="연결 해제"
+              aria-label="연결 해제"
             >
-              ×
+              <Icon name="x" size={12} />
             </button>
           </div>
         )

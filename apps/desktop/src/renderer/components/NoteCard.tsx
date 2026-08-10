@@ -8,6 +8,7 @@ import { TagInput, TagInputHandle } from './TagInput'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
+import { Icon } from './Icon'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
@@ -211,19 +212,26 @@ export const NoteCard = memo(
                       className={`pin-btn ${note.isPinned ? 'pinned' : ''}`}
                       onClick={() => togglePinNote(note.id)}
                       title={note.isPinned ? '고정 해제 (p)' : '상단 고정 (p)'}
+                      aria-label={note.isPinned ? '고정 해제' : '상단 고정'}
                     >
-                      {note.isPinned ? '📌' : '📍'}
+                      <Icon name="pin" />
                     </button>
                     <button
                       className={`lock-btn ${note.isLocked ? 'locked' : ''}`}
                       onClick={handleLockToggle}
                       title={note.isLocked ? '잠금 해제' : '잠금'}
+                      aria-label={note.isLocked ? '잠금 해제' : '잠금'}
                     >
-                      {note.isLocked ? '🔒' : '🔓'}
+                      <Icon name={note.isLocked ? 'lock' : 'lock-open'} />
                     </button>
                     {onReply && !isLocked && (
-                      <button className="reply-btn" onClick={() => onReply(note.id)} title="답글">
-                        ↩
+                      <button
+                        className="reply-btn"
+                        onClick={() => onReply(note.id)}
+                        title="답글"
+                        aria-label="답글"
+                      >
+                        <Icon name="corner-up-left" />
                       </button>
                     )}
                     {!isLocked && (
@@ -231,17 +239,19 @@ export const NoteCard = memo(
                         className="archive-btn"
                         onClick={() => archiveNote(note.id)}
                         title="보관"
+                        aria-label="보관"
                       >
-                        📦
+                        <Icon name="archive" />
                       </button>
                     )}
                     {!isLocked && (
                       <button
                         className="delete-btn"
                         title="삭제"
+                        aria-label="삭제"
                         onClick={() => deleteNote(note.id)}
                       >
-                        ×
+                        <Icon name="x" />
                       </button>
                     )}
                   </>
@@ -252,15 +262,17 @@ export const NoteCard = memo(
                       className="unarchive-btn"
                       onClick={() => unarchiveNote(note.id)}
                       title="보관 해제"
+                      aria-label="보관 해제"
                     >
-                      ↩
+                      <Icon name="corner-up-left" />
                     </button>
                     <button
                       className="delete-btn"
                       title="삭제"
+                      aria-label="삭제"
                       onClick={() => deleteNote(note.id)}
                     >
-                      ×
+                      <Icon name="x" />
                     </button>
                   </>
                 )}
@@ -270,15 +282,17 @@ export const NoteCard = memo(
                       className="restore-btn"
                       onClick={() => restoreNote(note.id)}
                       title="복원"
+                      aria-label="복원"
                     >
-                      ↩
+                      <Icon name="corner-up-left" />
                     </button>
                     <button
                       className="permanent-delete-btn"
                       onClick={() => setShowPermanentDeleteConfirm(true)}
                       title="영구 삭제"
+                      aria-label="영구 삭제"
                     >
-                      🗑️
+                      <Icon name="trash" />
                     </button>
                   </>
                 )}

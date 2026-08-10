@@ -4,6 +4,7 @@ import { FileIcon, defaultStyles } from 'react-file-icon'
 import type { Attachment, BookMetadata } from '@drop/shared'
 import { isBookMetadata } from '@drop/shared'
 import { getAttachmentUrl, getSignedAttachmentUrl } from '../lib/supabase'
+import { Icon } from './Icon'
 
 interface Props {
   attachments: Attachment[]
@@ -107,7 +108,9 @@ function ImageGalleryModal({ images, currentIndex, onClose, onNavigate }: ImageG
 
   return (
     <div className="image-gallery-modal" onClick={onClose}>
-      <button className="gallery-close-btn" onClick={onClose}>×</button>
+      <button className="gallery-close-btn" onClick={onClose} title="닫기" aria-label="닫기">
+        <Icon name="x" size={20} />
+      </button>
 
       <div className="gallery-main" onClick={(e) => e.stopPropagation()}>
         {currentIndex > 0 && (
@@ -209,7 +212,7 @@ function ImageAttachment({
 
   return (
     <div className="attachment-card attachment-image">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div className="attachment-thumbnail" onClick={handleClick}>
         {hasError ? (
           <div className="attachment-error" onClick={handleRetry}>
@@ -243,7 +246,7 @@ function VideoAttachment({
 
   return (
     <div className="attachment-card attachment-video">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       {hasError ? (
         <div className="attachment-error" onClick={handleRetry}>
           <span>로드 실패</span>
@@ -280,7 +283,7 @@ function AudioAttachment({
 
   return (
     <div className="attachment-card attachment-audio">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       {hasError ? (
         <div className="attachment-error" onClick={handleRetry}>
           <span>로드 실패</span>
@@ -322,7 +325,7 @@ function FileAttachment({
 
   return (
     <div className="attachment-card attachment-file">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div className="attachment-file-content" onClick={handleDownload}>
         <div className="attachment-file-icon">
           <FileIcon extension={ext} {...styles} />
@@ -360,10 +363,12 @@ function TextAttachment({
 
   return (
     <div className="attachment-card attachment-text">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div className="attachment-text-content" onClick={() => setExpanded(true)}>
         <div className="attachment-text-header">
-          <span className="attachment-text-icon">📄</span>
+          <span className="attachment-text-icon">
+            <Icon name="file-text" size={14} />
+          </span>
           <span className="attachment-text-name">{attachment.filename || '텍스트'}</span>
           <span className="attachment-text-meta">{lineCount}줄 · {formatFileSize(attachment.size)}</span>
         </div>
@@ -374,7 +379,9 @@ function TextAttachment({
           <div className="attachment-text-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="attachment-text-dialog-header">
               {attachment.filename || '텍스트'}
-              <button onClick={() => setExpanded(false)}>×</button>
+              <button onClick={() => setExpanded(false)} title="닫기" aria-label="닫기">
+                <Icon name="x" size={14} />
+              </button>
             </div>
             <pre className="attachment-text-full">{content}</pre>
           </div>
@@ -440,7 +447,7 @@ function YouTubeAttachment({
 
   return (
     <div className="attachment-card attachment-youtube">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div
         className="attachment-youtube-content"
         onClick={() => openUrl(originalUrl)}
@@ -542,7 +549,7 @@ function BookAttachment({
           </div>
           <div className="attachment-book-info">
             <div className="attachment-book-header">
-              <span className="attachment-book-icon" aria-hidden="true">📚</span>
+              <span className="attachment-book-icon" aria-hidden="true"><Icon name="book" size={14} /></span>
               <span className="attachment-book-label">책</span>
             </div>
             <span className="attachment-skeleton-text" />
@@ -558,12 +565,12 @@ function BookAttachment({
 
   return (
     <div className="attachment-card attachment-book">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div className="attachment-book-content">
         <div className="attachment-book-cover">
           {hasError || !coverUrl ? (
             <div className="attachment-book-placeholder">
-              <span>📚</span>
+              <Icon name="book" size={20} />
             </div>
           ) : (
             <img
@@ -575,7 +582,7 @@ function BookAttachment({
         </div>
         <div className="attachment-book-info">
           <div className="attachment-book-header">
-            <span className="attachment-book-icon" aria-hidden="true">📚</span>
+            <span className="attachment-book-icon" aria-hidden="true"><Icon name="book" size={14} /></span>
             <span className="attachment-book-label">책</span>
           </div>
           <p className="attachment-book-title">{metadata.title}</p>
@@ -653,7 +660,7 @@ function InstagramAttachment({
 
   return (
     <div className="attachment-card attachment-instagram">
-      <button className="attachment-remove" onClick={onRemove}>×</button>
+      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
       <div className="attachment-instagram-content" onClick={() => !hasError && setExpanded(true)}>
         <div className="attachment-instagram-thumbnail">
           {hasError ? (
