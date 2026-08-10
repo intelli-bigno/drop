@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../auth'
-import { hashPin } from '../../lib/pin-utils'
 
 interface ProfileState {
   hasPin: boolean
@@ -13,6 +12,7 @@ interface ProfileState {
   removePin: () => Promise<void>
 }
 
+// PIN 해시는 서버(bcrypt)에서만 생성·검증 — 클라이언트는 평문 PIN을 RPC로만 전달
 export const useProfileStore = create<ProfileState>()((set) => ({
   hasPin: false,
   isLoading: true,
@@ -24,14 +24,14 @@ export const useProfileStore = create<ProfileState>()((set) => ({
       return
     }
 
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('pin_hash')
-      .eq('user_id', user.id)
-      .single()
+    const { data, error } = await supabase.rpc('has_note_pin')
+
+    if (error) {
+      console.error('[profile] loadProfile failed', error)
+    }
 
     set({
-      hasPin: Boolean(data?.pin_hash),
+      hasPin: Boolean(data),
       isLoading: false,
     })
   },
@@ -40,15 +40,7 @@ export const useProfileStore = create<ProfileState>()((set) => ({
     const user = useAuthStore.getState().user
     if (!user) throw new Error('Not authenticated')
 
-    const pinHash = await hashPin(pin)
-
-    const { error } = await supabase.from('user_profiles').upsert(
-      {
-        user_id: user.id,
-        pin_hash: pinHash,
-      },
-      { onConflict: 'user_id' }
-    )
+    const { error } = await supabase.rpc('set_note_pin', { p_pin: pin })
 
     if (error) {
       console.error('[profile] setPin failed', error)
@@ -62,16 +54,14 @@ export const useProfileStore = create<ProfileState>()((set) => ({
     const user = useAuthStore.getState().user
     if (!user) return false
 
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('pin_hash')
-      .eq('user_id', user.id)
-      .single()
+    const { data, error } = await supabase.rpc('verify_note_pin', { p_pin: pin })
 
-    if (!data?.pin_hash) return false
+    if (error) {
+      console.error('[profile] verifyPin failed', error)
+      return false
+    }
 
-    const inputHash = await hashPin(pin)
-    return inputHash === data.pin_hash
+    return data === true
   },
 
   removePin: async () => {

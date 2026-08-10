@@ -12,6 +12,7 @@ import {
   type ClientRequestConstructorOptions,
 } from 'electron'
 import { initAutoUpdater, setupUpdaterIpc } from './updater'
+import { isSafeExternalUrl } from './url-utils'
 
 // Handle EPIPE errors that occur when stdout is closed (e.g., tray app without terminal)
 process.on('uncaughtException', (error) => {
@@ -43,13 +44,8 @@ import {
   extractJsonFromScript,
   findShortcodeMedia,
   normalizeTypename,
-  pickBestImageUrl,
-  pickBestVideoUrl,
-  normalizeMediaNode,
   collectMediaItems,
   extractCaption,
-  type ImageCandidate,
-  type VideoCandidate,
 } from './instagram-utils'
 import {
   searchBooks,
@@ -85,6 +81,22 @@ export interface YouTubeOEmbedData {
   videoUrl: string
 }
 const INSTAGRAM_LOGIN_URL = 'https://www.instagram.com/accounts/login/'
+const INSTAGRAM_LOGIN_ALLOWED_DOMAINS = ['instagram.com', 'cdninstagram.com', 'facebook.com']
+
+function isAllowedInstagramLoginUrl(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+
+  if (parsed.protocol !== 'https:') return false
+
+  return INSTAGRAM_LOGIN_ALLOWED_DOMAINS.some(
+    (domain) => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+  )
+}
 
 type NetRequestOptions = Pick<
   ClientRequestConstructorOptions,
@@ -122,6 +134,17 @@ async function ensureInstagramLogin(): Promise<boolean> {
         nodeIntegration: false,
         contextIsolation: true,
       },
+    })
+
+    loginWindow.webContents.setWindowOpenHandler(({ url }) => {
+      openExternalSafely(url)
+      return { action: 'deny' }
+    })
+
+    loginWindow.webContents.on('will-navigate', (event, url) => {
+      if (!isAllowedInstagramLoginUrl(url)) {
+        event.preventDefault()
+      }
     })
 
     let resolved = false
@@ -722,7 +745,11 @@ async function fetchYouTubeOEmbed(videoUrl: string): Promise<YouTubeOEmbedData |
 
 function setupIpcHandlers(): void {
   ipcMain.handle('shell:openExternal', async (_event, url: string) => {
+    if (!isSafeExternalUrl(url)) {
+      return { success: false }
+    }
     await shell.openExternal(url)
+    return { success: true }
   })
 
   ipcMain.handle('instagram:ensureLogin', async () => ensureInstagramLogin())
@@ -905,6 +932,50 @@ function getRendererUrl(hash = ''): string {
   return `file://${join(__dirname, '../renderer/index.html')}${hash ? `#${hash}` : ''}`
 }
 
+function openExternalSafely(url: string): void {
+  if (isSafeExternalUrl(url)) {
+    void shell.openExternal(url)
+  }
+}
+
+function isAppOriginUrl(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+
+  if (parsed.protocol === 'file:') return true
+
+  const rendererUrl = process.env.ELECTRON_RENDERER_URL
+  if (rendererUrl) {
+    try {
+      return parsed.origin === new URL(rendererUrl).origin
+    } catch {
+      return false
+    }
+  }
+
+  return false
+}
+
+// 앱 자체 창(main, quick capture) 보안 강화:
+// window.open은 모두 차단(http/https는 외부 브라우저로), 앱 origin 밖으로의 navigation 금지
+function hardenAppWindow(window: BrowserWindow): void {
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    openExternalSafely(url)
+    return { action: 'deny' }
+  })
+
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!isAppOriginUrl(url)) {
+      event.preventDefault()
+      openExternalSafely(url)
+    }
+  })
+}
+
 function createQuickCaptureWindow(): void {
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
     // 이미 창이 있으면 포커스
@@ -935,6 +1006,8 @@ function createQuickCaptureWindow(): void {
       nodeIntegration: false,
     },
   })
+
+  hardenAppWindow(quickCaptureWindow)
 
   quickCaptureWindow.loadURL(getRendererUrl('quick-capture'))
 
@@ -1053,6 +1126,8 @@ function createWindow(): void {
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
   })
+
+  hardenAppWindow(mainWindow)
 
   mainWindow.loadURL(getRendererUrl())
 

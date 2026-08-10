@@ -31,7 +31,6 @@ import {
   createCommand,
   LexicalCommand,
 } from 'lexical'
-import { resolveNoteEditorShortcut } from '../shortcuts/noteEditor'
 
 const URL_MATCHER =
   /((https?:\/\/(www\.)?|www\.)[a-zA-Z0-9][-a-zA-Z0-9@:%._+~#=]{0,254}[a-zA-Z0-9]\.[a-z]{2,63}(\/[-a-zA-Z0-9@:%_+.~#?&/=]*)?)/

@@ -7,6 +7,7 @@ import { TagList } from './TagList'
 import { TagInput, TagInputHandle } from './TagInput'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { PinDialog, type PinDialogMode } from './PinDialog'
+import { ConfirmDialog } from './ConfirmDialog'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
@@ -34,6 +35,7 @@ export const NoteCard = memo(
       const editorRef = useRef<LexicalEditorHandle>(null)
       const tagInputRef = useRef<TagInputHandle>(null)
       const [showPinDialog, setShowPinDialog] = useState(false)
+      const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false)
       const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
       const [isExpanded, setIsExpanded] = useState(false)
       const [isEditing, setIsEditing] = useState(false)
@@ -236,11 +238,8 @@ export const NoteCard = memo(
                     {!isLocked && (
                       <button
                         className="delete-btn"
-                        onClick={() => {
-                          if (window.confirm('이 노트를 삭제하시겠습니까?')) {
-                            deleteNote(note.id)
-                          }
-                        }}
+                        title="삭제"
+                        onClick={() => deleteNote(note.id)}
                       >
                         ×
                       </button>
@@ -258,11 +257,8 @@ export const NoteCard = memo(
                     </button>
                     <button
                       className="delete-btn"
-                      onClick={() => {
-                        if (window.confirm('이 노트를 삭제하시겠습니까?')) {
-                          deleteNote(note.id)
-                        }
-                      }}
+                      title="삭제"
+                      onClick={() => deleteNote(note.id)}
                     >
                       ×
                     </button>
@@ -279,13 +275,7 @@ export const NoteCard = memo(
                     </button>
                     <button
                       className="permanent-delete-btn"
-                      onClick={() => {
-                        if (
-                          window.confirm('이 노트를 영구 삭제하시겠습니까? 복원할 수 없습니다.')
-                        ) {
-                          permanentlyDeleteNote(note.id)
-                        }
-                      }}
+                      onClick={() => setShowPermanentDeleteConfirm(true)}
                       title="영구 삭제"
                     >
                       🗑️
@@ -350,6 +340,19 @@ export const NoteCard = memo(
               mode={pinDialogMode}
               onSuccess={handlePinSuccess}
               onCancel={() => setShowPinDialog(false)}
+            />
+          )}
+          {showPermanentDeleteConfirm && (
+            <ConfirmDialog
+              title="영구 삭제"
+              message="이 노트를 영구 삭제하시겠습니까? 복원할 수 없습니다."
+              confirmLabel="영구 삭제"
+              danger
+              onConfirm={() => {
+                setShowPermanentDeleteConfirm(false)
+                permanentlyDeleteNote(note.id)
+              }}
+              onCancel={() => setShowPermanentDeleteConfirm(false)}
             />
           )}
         </>

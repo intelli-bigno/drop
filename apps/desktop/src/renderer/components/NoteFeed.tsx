@@ -9,6 +9,7 @@ import { CategoryFilter } from './CategoryFilter'
 import { ViewModeSelector } from './ViewModeSelector'
 import { SearchDialog } from './SearchDialog'
 import { PinDialog, type PinDialogMode } from './PinDialog'
+import { ConfirmDialog } from './ConfirmDialog'
 import { isCreateNoteShortcut, isSearchShortcut } from '../shortcuts/noteGlobal'
 import { resolveNoteFeedShortcut } from '../shortcuts/noteFeed'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../shortcuts/tagList'
@@ -26,6 +27,7 @@ const LARGE_TEXT_THRESHOLD_CHARS = 1000
 export function NoteFeed() {
   const {
     notes,
+    isLoading,
     createNote,
     deleteNote,
     addAttachment,
@@ -42,7 +44,6 @@ export function NoteFeed() {
     trashedNotes,
     archivedNotes,
     restoreNote,
-    permanentlyDeleteNote,
     emptyTrash,
     archiveNote,
     unarchiveNote,
@@ -59,6 +60,7 @@ export function NoteFeed() {
   const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
   const [showUnlockAllDialog, setShowUnlockAllDialog] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
+  const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -450,9 +452,8 @@ export function NoteFeed() {
 
       e.preventDefault()
       e.stopPropagation()
-      if (window.confirm('이 노트를 삭제하시겠습니까?')) {
-        deleteNote(noteId)
-      }
+      // 소프트 삭제 (휴지통으로) — 실행 취소 토스트로 복구 가능
+      deleteNote(noteId)
     }
 
     window.addEventListener('keydown', handleDeleteKeyDown)
@@ -472,9 +473,8 @@ export function NoteFeed() {
 
       e.preventDefault()
       e.stopPropagation()
-      if (window.confirm('이 노트를 보관하시겠습니까?')) {
-        archiveNote(noteId)
-      }
+      // 보관 — 실행 취소 토스트로 복구 가능
+      archiveNote(noteId)
     }
 
     window.addEventListener('keydown', handleArchiveKeyDown)
@@ -572,7 +572,8 @@ export function NoteFeed() {
         if (currentFocusedIndex === null) return
         e.preventDefault()
         const item = currentOrderedNotes[currentFocusedIndex]
-        if (item && window.confirm('이 노트를 삭제하시겠습니까?')) {
+        if (item) {
+          // 소프트 삭제 (휴지통으로) — 실행 취소 토스트로 복구 가능
           deleteNoteRef.current(item.note.id)
           if (currentOrderedNotes.length > 1) {
             const nextIndex =
@@ -769,6 +770,19 @@ export function NoteFeed() {
           onCancel={() => setPinDialogNoteId(null)}
         />
       )}
+      {showEmptyTrashConfirm && (
+        <ConfirmDialog
+          title="휴지통 비우기"
+          message="휴지통의 모든 노트가 영구 삭제됩니다. 복원할 수 없습니다."
+          confirmLabel="비우기"
+          danger
+          onConfirm={() => {
+            setShowEmptyTrashConfirm(false)
+            emptyTrash()
+          }}
+          onCancel={() => setShowEmptyTrashConfirm(false)}
+        />
+      )}
       {showUnlockAllDialog && (
         <PinDialog
           mode="unlock-all"
@@ -816,21 +830,54 @@ export function NoteFeed() {
             </>
           )}
           {viewMode === 'trash' && trashedNotes.length > 0 && (
-            <button
-              className="empty-trash-btn"
-              onClick={() => {
-                if (window.confirm('휴지통을 비우시겠습니까? 모든 노트가 영구 삭제됩니다.')) {
-                  emptyTrash()
-                }
-              }}
-            >
+            <button className="empty-trash-btn" onClick={() => setShowEmptyTrashConfirm(true)}>
               비우기
             </button>
           )}
         </div>
       </div>
       <div className="feed-content">
-        {grouped.map(({ date, items }) => (
+        {isLoading && viewMode === 'active' && orderedNotes.length === 0 ? (
+          // 로딩 중 스켈레톤 카드
+          <div className="feed-skeleton" aria-hidden="true">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="skeleton-card">
+                <div className="skeleton-line skeleton-line-sm" />
+                <div className="skeleton-line" />
+                <div className="skeleton-line skeleton-line-lg" />
+              </div>
+            ))}
+          </div>
+        ) : orderedNotes.length === 0 ? (
+          // 빈 상태 (뷰 모드별 안내)
+          <div className="feed-empty">
+            {viewMode === 'trash' ? (
+              <p>휴지통이 비어 있습니다</p>
+            ) : viewMode === 'archived' ? (
+              <p>보관된 노트가 없습니다</p>
+            ) : filterTag ? (
+              <>
+                <p>'#{filterTag}' 태그의 노트가 없습니다</p>
+                <button className="feed-empty-action" onClick={() => setFilterTag(null)}>
+                  필터 해제
+                </button>
+              </>
+            ) : categoryFilter && categoryFilter !== 'all' ? (
+              <p>이 카테고리에 해당하는 노트가 없습니다</p>
+            ) : (
+              <>
+                <p>아직 노트가 없습니다</p>
+                <p className="feed-empty-hint">
+                  <kbd>n</kbd> 키를 누르거나 붙여넣기로 바로 노트를 만들 수 있어요
+                </p>
+                <button className="feed-empty-action" onClick={handleCreateNote}>
+                  첫 노트 만들기
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+        grouped.map(({ date, items }) => (
           <div key={date} className="date-group">
             <div className="date-label">{date}</div>
             {items.map((item) => {
@@ -857,7 +904,8 @@ export function NoteFeed() {
               )
             })}
           </div>
-        ))}
+        ))
+        )}
       </div>
     </div>
   )
