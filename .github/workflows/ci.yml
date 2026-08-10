@@ -29,6 +29,12 @@ jobs:
       - name: TypeCheck Desktop
         run: pnpm --filter @drop/desktop typecheck
 
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test:run
+
       - name: Build Desktop
         run: pnpm --filter @drop/desktop build
         env:

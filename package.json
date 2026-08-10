@@ -11,16 +11,20 @@
     "build:local": "pnpm --filter @drop/desktop build:local",
     "build:remote": "pnpm --filter @drop/desktop build:remote",
     "test": "vitest",
+    "test:run": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^27.3.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
     "vitest": "^2.1.8"
   }
 }
