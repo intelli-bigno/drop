@@ -173,8 +173,15 @@ body {
 .feed-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 28px;
+  padding: var(--space-5) var(--space-6);
   scroll-behavior: smooth;
+}
+
+/* 넓은 창에서 읽기 좋은 줄 길이 유지 */
+.feed-content > * {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Custom Scrollbar */
