@@ -8,7 +8,7 @@
 --
 -- 주의: MCP 서버의 storage 접근은 이제 anon 정책이 아닌 mcp-storage Edge Function(service role) 경유.
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- ============================================
 -- 1. 위험 정책 제거
@@ -29,7 +29,7 @@ ALTER TABLE user_profiles
 
 -- 기존 평문 키를 해시로 이관 (기존 클라이언트 키는 계속 동작)
 UPDATE user_profiles
-SET mcp_api_key_hash = encode(digest(mcp_api_key, 'sha256'), 'hex'),
+SET mcp_api_key_hash = encode(extensions.digest(mcp_api_key, 'sha256'), 'hex'),
     mcp_key_prefix = left(mcp_api_key, 4),
     mcp_key_created_at = COALESCE(mcp_key_created_at, now())
 WHERE mcp_api_key IS NOT NULL AND mcp_api_key_hash IS NULL;
@@ -47,7 +47,7 @@ CREATE OR REPLACE FUNCTION generate_mcp_api_key()
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   new_key TEXT;
@@ -117,7 +117,7 @@ CREATE OR REPLACE FUNCTION mcp_validate_key(api_key TEXT)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   uid UUID;
@@ -144,7 +144,7 @@ CREATE OR REPLACE FUNCTION get_user_id_by_mcp_key(api_key TEXT)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   found_user_id UUID;
@@ -385,7 +385,7 @@ CREATE OR REPLACE FUNCTION set_note_pin(p_pin TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
   IF auth.uid() IS NULL THEN
@@ -408,7 +408,7 @@ CREATE OR REPLACE FUNCTION verify_note_pin(p_pin TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   stored_hash TEXT;
