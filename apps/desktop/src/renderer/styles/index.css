@@ -124,24 +124,12 @@ body {
 
 .feed-header {
   position: relative;
-  padding: 0 16px;
-  padding-top: 38px;
-  height: 72px;
+  padding: 0 var(--space-4);
+  height: 48px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  -webkit-app-region: drag;
   display: flex;
   align-items: center;
-}
-
-.feed-header::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 100px;
-  height: 38px;
-  -webkit-app-region: no-drag;
 }
 
 .feed-header-row {
@@ -3283,8 +3271,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
-  padding-top: 48px;
+  /* 좌측 88px = 트래픽 라이트 클리어런스 — 탭을 신호등과 같은 줄에 배치 */
+  padding: var(--space-2) var(--space-5) var(--space-2) 88px;
+  min-height: 48px;
   border-bottom: 1px solid var(--border-color);
   -webkit-app-region: drag;
   background: var(--bg-primary);
