@@ -383,7 +383,7 @@ class NoteCard extends ConsumerWidget {
                       ? Colors.red
                       : isTranscribing
                       ? const Color(0xFF4A9EFF)
-                      : const Color(0xFF888888),
+                      : const Color(0xFF9A9A9A),
                   fontSize: 12,
                   fontWeight: isRecording || isTranscribing
                       ? FontWeight.w600
@@ -393,17 +393,21 @@ class NoteCard extends ConsumerWidget {
             ],
           ),
           if (isRecording || isTranscribing)
-            GestureDetector(
-              onTap: isRecording
-                  ? () => ref.read(recordingProvider.notifier).cancelRecording()
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                onPressed: isRecording
+                    ? () =>
+                          ref.read(recordingProvider.notifier).cancelRecording()
+                    : null,
+                tooltip: '녹음 취소',
+                padding: EdgeInsets.zero,
+                icon: Icon(
                   Icons.close,
                   color: isTranscribing
                       ? const Color(0xFF444444)
-                      : const Color(0xFF888888),
+                      : const Color(0xFF9A9A9A),
                   size: 18,
                 ),
               ),
@@ -463,7 +467,7 @@ class NoteCard extends ConsumerWidget {
                   ),
                   child: const Text(
                     '취소',
-                    style: TextStyle(color: Color(0xFF888888), fontSize: 14),
+                    style: TextStyle(color: Color(0xFF9A9A9A), fontSize: 14),
                   ),
                 ),
               ),
@@ -769,14 +773,14 @@ class NoteCard extends ConsumerWidget {
         children: [
           Icon(
             _getAttachmentIcon(attachment.type),
-            color: const Color(0xFF888888),
+            color: const Color(0xFF9A9A9A),
             size: 14,
           ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               attachment.filename ?? attachment.type.name,
-              style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
+              style: const TextStyle(color: Color(0xFF9A9A9A), fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -840,7 +844,7 @@ class NoteCard extends ConsumerWidget {
       case 3:
         return const Color(0xFFFF4444); // Red - high
       default:
-        return const Color(0xFF888888);
+        return const Color(0xFF9A9A9A);
     }
   }
 
@@ -1047,7 +1051,7 @@ class _InstagramAttachmentCard extends ConsumerWidget {
                   child: Text(
                     '@${attachment.authorName}',
                     style: const TextStyle(
-                      color: Color(0xFF888888),
+                      color: Color(0xFF9A9A9A),
                       fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -1138,29 +1142,42 @@ class _AudioAttachmentChipState extends ConsumerState<_AudioAttachmentChip> {
     );
 
     return urlAsync.when(
-      data: (url) => GestureDetector(
-        onTap: () => _togglePlay(url),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF242424),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFF333333)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _isPlaying ? Icons.pause : Icons.play_arrow,
-                color: const Color(0xFF888888),
-                size: 16,
+      data: (url) => Semantics(
+        button: true,
+        label: _isPlaying ? '오디오 일시정지' : '오디오 재생',
+        child: InkWell(
+          onTap: () => _togglePlay(url),
+          borderRadius: BorderRadius.circular(4),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF242424),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xFF333333)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: const Color(0xFF9A9A9A),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.attachment.filename ?? '오디오',
+                      style: const TextStyle(
+                        color: Color(0xFF9A9A9A),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                widget.attachment.filename ?? 'audio',
-                style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1186,7 +1203,7 @@ class _AudioAttachmentChipState extends ConsumerState<_AudioAttachmentChip> {
         ),
         child: const Icon(
           Icons.error_outline,
-          color: Color(0xFF888888),
+          color: Color(0xFF9A9A9A),
           size: 16,
         ),
       ),

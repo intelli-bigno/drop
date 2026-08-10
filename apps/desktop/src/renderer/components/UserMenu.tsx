@@ -55,13 +55,31 @@ export function UserMenu() {
   }
 
   const handleCopyMcpToken = async () => {
-    const { data, error } = await supabase.rpc('get_mcp_api_key')
-    if (error) {
-      console.error('Failed to get MCP API key:', error)
+    // 키는 서버에 해시로만 저장되므로 평문은 발급 시 1회만 받을 수 있음.
+    // 기존 키가 있으면 재발급(기존 키 무효화) 여부를 확인한다.
+    const { data: existing, error: checkError } = await supabase.rpc('get_mcp_api_key')
+    if (checkError) {
+      console.error('Failed to get MCP API key:', checkError)
       return
     }
-    if (data) {
-      await navigator.clipboard.writeText(data)
+
+    let token = existing as string | null
+    const alreadyIssued = typeof token === 'string' && !token.startsWith('drop_')
+    if (alreadyIssued) {
+      const ok = window.confirm(
+        'MCP 키는 보안상 다시 볼 수 없습니다.\n새 키를 발급하면 기존 키는 즉시 무효화됩니다. 재발급할까요?'
+      )
+      if (!ok) return
+      const { data: regenerated, error: regenError } = await supabase.rpc('regenerate_mcp_api_key')
+      if (regenError) {
+        console.error('Failed to regenerate MCP API key:', regenError)
+        return
+      }
+      token = regenerated as string
+    }
+
+    if (token) {
+      await navigator.clipboard.writeText(token)
       setTokenCopied(true)
       setTimeout(() => setTokenCopied(false), 2000)
     }

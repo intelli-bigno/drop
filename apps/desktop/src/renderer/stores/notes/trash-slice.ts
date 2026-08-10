@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand'
 import { supabase } from '../../lib/supabase'
+import { useToastStore } from '../toast'
 import type { NotesState, TrashSlice } from './types'
 import type { NoteRow, Note, AttachmentRow, TagRow } from '@drop/shared'
 import { noteRowToNote, attachmentRowToAttachment, tagRowToTag } from '@drop/shared'
@@ -84,6 +85,10 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[trash] restoreNote failed', error)
+      useToastStore.getState().showToast({
+        message: '노트를 복원하지 못했습니다',
+        variant: 'error',
+      })
       return
     }
 
@@ -92,8 +97,9 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
       trashedNotes: state.trashedNotes.filter((n) => n.id !== noteId),
     }))
 
-    // active 노트 목록 새로고침
+    // active/보관 노트 목록 새로고침 (보관된 노트를 복원한 경우 보관함으로 돌아감)
     get().loadNotes()
+    get().loadArchived()
   },
 
   permanentlyDeleteNote: async (noteId) => {
@@ -104,6 +110,10 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[trash] permanentlyDeleteNote failed', error)
+      useToastStore.getState().showToast({
+        message: '노트를 영구 삭제하지 못했습니다',
+        variant: 'error',
+      })
       return
     }
 
@@ -124,6 +134,10 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[trash] emptyTrash failed', error)
+      useToastStore.getState().showToast({
+        message: '휴지통을 비우지 못했습니다',
+        variant: 'error',
+      })
       return
     }
 
@@ -189,6 +203,13 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
   },
 
   archiveNote: async (noteId) => {
+    // Optimistic: active 목록에서 먼저 제거하고, 실패 시 롤백
+    const prevNotes = get().notes
+
+    set((state) => ({
+      notes: state.notes.filter((n) => n.id !== noteId),
+    }))
+
     const { error } = await supabase
       .from('notes')
       .update({ archived_at: new Date().toISOString() })
@@ -196,13 +217,21 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[archive] archiveNote failed', error)
+      set({ notes: prevNotes })
+      useToastStore.getState().showToast({
+        message: '노트를 보관하지 못했습니다',
+        variant: 'error',
+      })
       return
     }
 
-    // active 목록에서 제거
-    set((state) => ({
-      notes: state.notes.filter((n) => n.id !== noteId),
-    }))
+    useToastStore.getState().showToast({
+      message: '노트가 보관되었습니다',
+      actionLabel: '실행 취소',
+      onAction: () => {
+        get().unarchiveNote(noteId)
+      },
+    })
   },
 
   unarchiveNote: async (noteId) => {
@@ -213,6 +242,10 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[archive] unarchiveNote failed', error)
+      useToastStore.getState().showToast({
+        message: '보관을 해제하지 못했습니다',
+        variant: 'error',
+      })
       return
     }
 

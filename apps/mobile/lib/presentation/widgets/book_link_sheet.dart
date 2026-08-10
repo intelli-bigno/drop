@@ -78,7 +78,7 @@ class _BookLinkSheetState extends ConsumerState<BookLinkSheet>
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Color(0xFF888888)),
+                      icon: const Icon(Icons.close, color: Color(0xFF9A9A9A)),
                     ),
                   ],
                 ),
@@ -88,7 +88,7 @@ class _BookLinkSheetState extends ConsumerState<BookLinkSheet>
                 controller: _tabController,
                 indicatorColor: const Color(0xFF4A9EFF),
                 labelColor: const Color(0xFF4A9EFF),
-                unselectedLabelColor: const Color(0xFF888888),
+                unselectedLabelColor: const Color(0xFF9A9A9A),
                 tabs: const [
                   Tab(text: '내 라이브러리'),
                   Tab(text: '책 검색'),
@@ -130,7 +130,7 @@ class _BookLinkSheetState extends ConsumerState<BookLinkSheet>
                 SizedBox(height: 16),
                 Text(
                   '연결할 책이 없습니다',
-                  style: TextStyle(color: Color(0xFF888888)),
+                  style: TextStyle(color: Color(0xFF9A9A9A)),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -351,7 +351,7 @@ class _BookLinkItem extends StatelessWidget {
                   Text(
                     book.author,
                     style: const TextStyle(
-                      color: Color(0xFF888888),
+                      color: Color(0xFF9A9A9A),
                       fontSize: 12,
                     ),
                     maxLines: 1,
@@ -439,7 +439,7 @@ class _SearchResultItem extends StatelessWidget {
                   Text(
                     result.author,
                     style: const TextStyle(
-                      color: Color(0xFF888888),
+                      color: Color(0xFF9A9A9A),
                       fontSize: 12,
                     ),
                     maxLines: 1,

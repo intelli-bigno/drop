@@ -43,14 +43,14 @@ class LinkedBooksSection extends ConsumerWidget {
                     children: [
                       const Icon(
                         Icons.book_outlined,
-                        color: Color(0xFF888888),
+                        color: Color(0xFF9A9A9A),
                         size: 14,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '연결된 책 (${books.length})',
                         style: const TextStyle(
-                          color: Color(0xFF888888),
+                          color: Color(0xFF9A9A9A),
                           fontSize: 12,
                         ),
                       ),
@@ -198,7 +198,7 @@ class LinkedBooksChips extends ConsumerWidget {
                     child: Text(
                       book.title,
                       style: const TextStyle(
-                        color: Color(0xFF888888),
+                        color: Color(0xFF9A9A9A),
                         fontSize: 10,
                       ),
                       maxLines: 1,

@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../auth'
+import { useToastStore } from '../toast'
 import { tagRowToTag, noteRowToNote, attachmentRowToAttachment, bookRowToBook } from '@drop/shared'
 import type { NoteRow, AttachmentRow, TagRow, BookRow, Attachment, Tag, Book } from '@drop/shared'
 import type { NotesState, NotesSlice } from './types'
@@ -116,6 +117,14 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
     } catch (error) {
       console.error('Failed to load notes:', error)
       set({ isLoading: false })
+      useToastStore.getState().showToast({
+        message: '노트를 불러오지 못했습니다',
+        variant: 'error',
+        actionLabel: '재시도',
+        onAction: () => {
+          get().loadNotes()
+        },
+      })
     }
   },
 
@@ -246,17 +255,43 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
   },
 
   deleteNote: async (id) => {
+    // Optimistic: 목록에서 먼저 제거하고, 실패 시 롤백 (보관함 뷰에서의 삭제도 포함)
+    const prevNotes = get().notes
+    const prevArchivedNotes = get().archivedNotes
+    const prevSelectedNoteId = get().selectedNoteId
+
+    set((state) => ({
+      notes: state.notes.filter((n) => n.id !== id),
+      archivedNotes: state.archivedNotes.filter((n) => n.id !== id),
+      selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
+    }))
+
     const { error } = await supabase
       .from('notes')
       .update({ deleted_at: new Date().toISOString(), is_deleted: true })
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      console.error('[notes] deleteNote failed', error)
+      set({
+        notes: prevNotes,
+        archivedNotes: prevArchivedNotes,
+        selectedNoteId: prevSelectedNoteId,
+      })
+      useToastStore.getState().showToast({
+        message: '노트를 삭제하지 못했습니다',
+        variant: 'error',
+      })
+      return
+    }
 
-    set((state) => ({
-      notes: state.notes.filter((n) => n.id !== id),
-      selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
-    }))
+    useToastStore.getState().showToast({
+      message: '노트가 삭제되었습니다',
+      actionLabel: '실행 취소',
+      onAction: () => {
+        get().restoreNote(id)
+      },
+    })
   },
 
   selectNote: (id) => {
@@ -266,7 +301,14 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
   updateNotePriority: async (id, priority) => {
     const { error } = await supabase.from('notes').update({ priority }).eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      console.error('[notes] updateNotePriority failed', error)
+      useToastStore.getState().showToast({
+        message: '우선순위를 변경하지 못했습니다',
+        variant: 'error',
+      })
+      return
+    }
 
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, priority } : n)),
@@ -285,7 +327,14 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       .update({ is_pinned: newPinned, pinned_at: pinnedAt })
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      console.error('[notes] togglePinNote failed', error)
+      useToastStore.getState().showToast({
+        message: newPinned ? '노트를 고정하지 못했습니다' : '고정을 해제하지 못했습니다',
+        variant: 'error',
+      })
+      return
+    }
 
     set((state) => ({
       notes: state.notes.map((n) =>

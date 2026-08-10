@@ -9,6 +9,7 @@ import { UserMenu } from './components/UserMenu'
 import { BookSearchDialog } from './components/BookSearchDialog'
 import { BooksView } from './components/BooksView'
 import { BookDetail } from './components/BookDetail'
+import { Toaster } from './components/Toaster'
 import { isTextInputTarget, getClosestNoteId } from './lib/dom-utils'
 
 const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
@@ -186,6 +187,7 @@ function App() {
 
       <BookSearchDialog />
       {selectedBookId && <BookDetail />}
+      <Toaster />
     </div>
   )
 }

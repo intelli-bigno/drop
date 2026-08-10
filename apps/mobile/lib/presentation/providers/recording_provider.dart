@@ -163,19 +163,20 @@ class RecordingNotifier extends _$RecordingNotifier {
       // Attach audio to note
       await _attachAudioToNote(noteId, audioPath);
 
+      // Clean up audio file (노트 업데이트 + 첨부 업로드가 모두 성공한 뒤에만 삭제)
+      await AudioRecorderService.deleteAudioFile(audioPath);
+
       // Reset state
       state = const RecordingState();
     } catch (e) {
       debugPrint('[RecordingProvider] Failed to stop recording: $e');
+      // 실패 시 로컬 오디오 파일은 보존 (녹음 유실 방지)
       state = state.copyWith(
         phase: RecordingPhase.idle,
         error: '녹음 처리 중 오류가 발생했습니다',
         clearActiveNoteId: true,
         clearAudioPath: true,
       );
-    } finally {
-      // Clean up audio file
-      await AudioRecorderService.deleteAudioFile(audioPath);
     }
   }
 
@@ -261,6 +262,8 @@ class RecordingNotifier extends _$RecordingNotifier {
       ref.read(notesProvider.notifier).addAttachmentToNote(noteId, attachment);
     } catch (e) {
       debugPrint('[RecordingProvider] Failed to attach audio: $e');
+      // 첨부 실패는 상위(stopRecording)에서 처리하도록 전파
+      rethrow;
     }
   }
 }

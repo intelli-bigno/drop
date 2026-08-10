@@ -15,8 +15,11 @@ function getSupabaseConfig(): { url: string; anonKey: string } {
   return { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY }
 }
 
+const USER_ID_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
 let supabaseInstance: SupabaseClient | null = null
 let validatedUserId: string | null = null
+let validatedAt = 0
 
 function getApiKey(): string {
   if (!API_KEY) {
@@ -38,7 +41,7 @@ export function getSupabaseClient(): SupabaseClient {
 }
 
 export async function validateApiKey(): Promise<string> {
-  if (validatedUserId) {
+  if (validatedUserId && Date.now() - validatedAt < USER_ID_CACHE_TTL_MS) {
     return validatedUserId
   }
 
@@ -56,6 +59,7 @@ export async function validateApiKey(): Promise<string> {
   }
 
   validatedUserId = data as string
+  validatedAt = Date.now()
   return validatedUserId
 }
 

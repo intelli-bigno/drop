@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ENV_PATH = join(__dirname, '..', '.env')
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface AuthTokens {
   accessToken: string
   refreshToken: string

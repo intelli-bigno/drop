@@ -291,7 +291,7 @@ export function cleanInstagramCaption(text: string): string {
   const trimmed = decodeHtmlEntities(text).trim()
   if (!trimmed) return ''
 
-  const likesPrefix = /^\d[\d,\.Kk]*\s+likes?,\s+\d[\d,\.Kk]*\s+comments?\s+-\s+/i
+  const likesPrefix = /^\d[\d,.Kk]*\s+likes?,\s+\d[\d,.Kk]*\s+comments?\s+-\s+/i
   if (likesPrefix.test(trimmed)) {
     const quoted = trimmed.match(/:\s*[""]([\s\S]*)[""]\.?$/)
     if (quoted?.[1]) return quoted[1].trim()

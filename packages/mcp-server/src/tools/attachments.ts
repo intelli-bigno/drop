@@ -1,7 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { readFileSync } from 'fs'
-import { getSupabaseClient, callMcpRpc, getUserId } from '../supabase.js'
+import { readFileSync, statSync } from 'fs'
+import { homedir } from 'os'
+import { resolve, sep } from 'path'
+import { callMcpRpc, getUserId } from '../supabase.js'
+import { uploadViaProxy, signViaProxy, deleteViaProxy } from '../storage-proxy.js'
+
+const SIGNED_URL_EXPIRY_SECONDS = 60 * 60 // 1 hour
+const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024 // 25MB
 
 interface Attachment {
   id: string
@@ -42,7 +48,6 @@ export function registerAttachmentsTools(server: McpServer) {
     },
     async ({ noteId, base64Data, filename, mimeType }) => {
       try {
-        const supabase = getSupabaseClient()
         const userId = await getUserId()
 
         const detectedMimeType = mimeType || detectMimeType(filename)
@@ -54,16 +59,15 @@ export function registerAttachmentsTools(server: McpServer) {
         const ext = filename.split('.').pop() || 'bin'
         const storagePath = `${userId}/${noteId}/${Date.now()}.${ext}`
 
-        const { error: uploadError } = await supabase.storage
-          .from('attachments')
-          .upload(storagePath, buffer, {
-            contentType: detectedMimeType,
-            upsert: false,
-          })
-
-        if (uploadError) {
+        let signedUrl: string
+        try {
+          const uploaded = await uploadViaProxy(storagePath, base64Data, detectedMimeType)
+          signedUrl = uploaded.signedUrl
+        } catch (uploadErr) {
           return {
-            content: [{ type: 'text' as const, text: `Upload error: ${uploadError.message}` }],
+            content: [
+              { type: 'text' as const, text: `Upload error: ${(uploadErr as Error).message}` },
+            ],
             isError: true,
           }
         }
@@ -76,10 +80,6 @@ export function registerAttachmentsTools(server: McpServer) {
           p_mime_type: detectedMimeType,
           p_size: fileSize,
         })
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('attachments').getPublicUrl(storagePath)
 
         return {
           content: [
@@ -94,7 +94,7 @@ export function registerAttachmentsTools(server: McpServer) {
                   mimeType: detectedMimeType,
                   size: fileSize,
                   storagePath,
-                  publicUrl,
+                  signedUrl,
                 },
                 null,
                 2
@@ -119,26 +119,27 @@ export function registerAttachmentsTools(server: McpServer) {
     },
     async ({ noteId }) => {
       try {
-        const supabase = getSupabaseClient()
         const result = await callMcpRpc<ListAttachmentsResult>('mcp_list_attachments', {
           p_note_id: noteId,
         })
 
-        const attachments = result.attachments.map((a) => {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from('attachments').getPublicUrl(a.storage_path)
+        const attachments = await Promise.all(
+          result.attachments.map(async (a) => {
+            const signedUrl = await signViaProxy(a.storage_path, SIGNED_URL_EXPIRY_SECONDS)
+              .then((r) => r.signedUrl)
+              .catch(() => null)
 
-          return {
-            id: a.id,
-            type: a.type,
-            filename: a.filename,
-            mimeType: a.mime_type,
-            size: a.size,
-            publicUrl,
-            createdAt: a.created_at,
-          }
-        })
+            return {
+              id: a.id,
+              type: a.type,
+              filename: a.filename,
+              mimeType: a.mime_type,
+              size: a.size,
+              signedUrl,
+              createdAt: a.created_at,
+            }
+          })
+        )
 
         return {
           content: [
@@ -165,13 +166,11 @@ export function registerAttachmentsTools(server: McpServer) {
     },
     async ({ attachmentId }) => {
       try {
-        const supabase = getSupabaseClient()
-
         const result = await callMcpRpc<DeleteAttachmentResult>('mcp_delete_attachment', {
           p_attachment_id: attachmentId,
         })
 
-        await supabase.storage.from('attachments').remove([result.storage_path])
+        await deleteViaProxy(result.storage_path)
 
         return {
           content: [{ type: 'text' as const, text: `Attachment ${attachmentId} deleted` }],
@@ -194,8 +193,16 @@ export function registerAttachmentsTools(server: McpServer) {
     },
     async ({ noteId, filePath }) => {
       try {
-        const supabase = getSupabaseClient()
         const userId = await getUserId()
+
+        assertPathAllowed(filePath)
+
+        const { size: statSize } = statSync(filePath)
+        if (statSize > MAX_UPLOAD_SIZE_BYTES) {
+          throw new Error(
+            `File too large: ${Math.round(statSize / 1024 / 1024)}MB exceeds the 25MB upload limit`
+          )
+        }
 
         const buffer = readFileSync(filePath)
         const filename = filePath.split('/').pop() || 'file'
@@ -206,16 +213,13 @@ export function registerAttachmentsTools(server: McpServer) {
         const ext = filename.split('.').pop() || 'bin'
         const storagePath = `${userId}/${noteId}/${Date.now()}.${ext}`
 
-        const { error: uploadError } = await supabase.storage
-          .from('attachments')
-          .upload(storagePath, buffer, {
-            contentType: mimeType,
-            upsert: false,
-          })
-
-        if (uploadError) {
+        try {
+          await uploadViaProxy(storagePath, buffer.toString('base64'), mimeType)
+        } catch (uploadErr) {
           return {
-            content: [{ type: 'text' as const, text: `Upload error: ${uploadError.message}` }],
+            content: [
+              { type: 'text' as const, text: `Upload error: ${(uploadErr as Error).message}` },
+            ],
             isError: true,
           }
         }
@@ -245,6 +249,22 @@ export function registerAttachmentsTools(server: McpServer) {
       }
     }
   )
+}
+
+function assertPathAllowed(filePath: string): void {
+  const resolved = resolve(filePath)
+  const home = resolve(homedir())
+
+  if (resolved === home || !resolved.startsWith(home + sep)) {
+    return
+  }
+
+  const topLevel = resolved.slice(home.length + 1).split(sep)[0]
+  if (topLevel.startsWith('.')) {
+    throw new Error(
+      `Access denied: reading from ~/${topLevel} is not allowed (sensitive directory)`
+    )
+  }
 }
 
 function detectMimeType(filename: string): string {

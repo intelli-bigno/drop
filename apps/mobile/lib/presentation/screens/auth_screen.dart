@@ -29,7 +29,7 @@ class AuthScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Quick note-taking app',
+                  '빠르게 기록하는 노트 앱',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
@@ -42,9 +42,9 @@ class AuthScreen extends ConsumerWidget {
                   ),
                   error: (e, _) => Column(
                     children: [
-                      Text(
-                        'Error: $e',
-                        style: const TextStyle(color: Colors.red),
+                      const Text(
+                        '로그인 중 오류가 발생했습니다',
+                        style: TextStyle(color: Colors.red),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -94,7 +94,7 @@ class _GoogleSignInButton extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           const Text(
-            'Sign in with Google',
+            'Google로 로그인',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,

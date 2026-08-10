@@ -49,16 +49,20 @@ class BooksScreen extends ConsumerWidget {
             Expanded(
               child: filteredBooks.isEmpty
                   ? _buildEmptyState(filter)
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredBooks.length,
-                      itemBuilder: (context, index) {
-                        final book = filteredBooks[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: BookCard(book: book),
-                        );
-                      },
+                  : RefreshIndicator(
+                      onRefresh: () => ref.refresh(booksProvider.future),
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredBooks.length,
+                        itemBuilder: (context, index) {
+                          final book = filteredBooks[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: BookCard(book: book),
+                          );
+                        },
+                      ),
                     ),
             ),
           ],
@@ -245,7 +249,7 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? chipColor : const Color(0xFF888888),
+                color: isSelected ? chipColor : const Color(0xFF9A9A9A),
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),

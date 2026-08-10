@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { supabase } from '../lib/supabase'
+import { ConfirmDialog } from './ConfirmDialog'
 import type { ReadingStatus, Note } from '@drop/shared'
 
 const STATUS_LABELS: Record<ReadingStatus, string> = {
@@ -34,6 +36,7 @@ export function BookDetail() {
     deleteBook,
     selectNote,
   } = useNotesStore()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   if (!selectedBookWithNotes) return null
 
@@ -51,10 +54,7 @@ export function BookDetail() {
   }
 
   const handleDelete = () => {
-    if (window.confirm('이 책을 삭제하시겠습니까? 연결된 노트는 삭제되지 않습니다.')) {
-      deleteBook(book.id)
-      selectBook(null)
-    }
+    setShowDeleteConfirm(true)
   }
 
   const handleNoteClick = (noteId: string) => {
@@ -166,6 +166,21 @@ export function BookDetail() {
             책 삭제
           </button>
         </div>
+
+        {showDeleteConfirm && (
+          <ConfirmDialog
+            title="책 삭제"
+            message="이 책을 삭제하시겠습니까? 연결된 노트는 삭제되지 않습니다."
+            confirmLabel="삭제"
+            danger
+            onConfirm={() => {
+              setShowDeleteConfirm(false)
+              deleteBook(book.id)
+              selectBook(null)
+            }}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        )}
       </div>
     </div>
   )

@@ -133,7 +133,7 @@ class _BookSearchScreenState extends ConsumerState<BookSearchScreen> {
                     Text(
                       error.toString(),
                       style: const TextStyle(
-                        color: Color(0xFF888888),
+                        color: Color(0xFF9A9A9A),
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
@@ -276,8 +276,8 @@ class _BookSearchScreenState extends ConsumerState<BookSearchScreen> {
       Navigator.pop(context); // Dismiss loading
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('추가 실패: $e'),
+        const SnackBar(
+          content: Text('책을 추가하지 못했습니다'),
           backgroundColor: Colors.red,
         ),
       );
@@ -362,7 +362,7 @@ class _SearchResultCard extends StatelessWidget {
                 Text(
                   result.author,
                   style: const TextStyle(
-                    color: Color(0xFF888888),
+                    color: Color(0xFF9A9A9A),
                     fontSize: 12,
                   ),
                   maxLines: 1,

@@ -78,7 +78,7 @@ class _RecordingSheetState extends ConsumerState<RecordingSheet> {
             const Text(
               '버튼을 눌러 녹음을 시작하세요',
               style: TextStyle(
-                color: Color(0xFF888888),
+                color: Color(0xFF9A9A9A),
                 fontSize: 13,
               ),
             ),
@@ -195,7 +195,7 @@ class _RecordingSheetState extends ConsumerState<RecordingSheet> {
                 },
                 child: const Text(
                   '취소',
-                  style: TextStyle(color: Color(0xFF888888)),
+                  style: TextStyle(color: Color(0xFF9A9A9A)),
                 ),
               ),
             ),
