@@ -164,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Icon(Icons.error_outline, color: Colors.red, size: 48),
                     const SizedBox(height: 16),
                     Text(
-                      'An error occurred',
+                      '오류가 발생했습니다',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.white,
                           ),
@@ -180,7 +180,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => ref.invalidate(notesProvider),
-                      child: const Text('Retry'),
+                      child: const Text('다시 시도'),
                     ),
                   ],
                 ),
@@ -346,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to access camera: $e')),
+          const SnackBar(content: Text('카메라에 접근할 수 없습니다')),
         );
       }
     }
@@ -364,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to access gallery: $e')),
+          const SnackBar(content: Text('갤러리에 접근할 수 없습니다')),
         );
       }
     }
@@ -405,7 +405,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create note: $e')),
+          const SnackBar(content: Text('노트를 생성하지 못했습니다')),
         );
       }
     }
@@ -447,60 +447,64 @@ class _NoteFeed extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-      itemCount: sortedDates.length + 1, // +1 for header
-      itemBuilder: (context, index) {
-        // Header item (ViewModeSelector + CategoryFilter)
-        if (index == 0) {
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(notesProvider.future),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        itemCount: sortedDates.length + 1, // +1 for header
+        itemBuilder: (context, index) {
+          // Header item (ViewModeSelector + CategoryFilter)
+          if (index == 0) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: headerWidgets,
+            );
+          }
+
+          final dateIndex = index - 1;
+          final date = sortedDates[dateIndex];
+          final dateNotes = grouped[date]!;
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: headerWidgets,
-          );
-        }
-
-        final dateIndex = index - 1;
-        final date = sortedDates[dateIndex];
-        final dateNotes = grouped[date]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(bottom: 12, top: dateIndex > 0 ? 24 : 8),
-              child: Text(
-                date,
-                style: const TextStyle(
-                  color: Color(0xFF888888),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(bottom: 12, top: dateIndex > 0 ? 24 : 8),
+                child: Text(
+                  date,
+                  style: const TextStyle(
+                    color: Color(0xFF9A9A9A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-            ...dateNotes.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NoteCard(
-                    note: item.note,
-                    depth: item.depth,
-                    viewMode: viewMode,
-                    isSelectionMode: isSelectionMode,
-                    isSelected: selectionState.selectedIds.contains(item.note.id),
-                    onEdit: () => _openEditComposer(context, item.note),
-                    onReply: () => _openReplyComposer(context, item.note.id),
-                    onLongPress: () {
-                      if (!isSelectionMode) {
-                        HapticFeedback.mediumImpact();
-                        ref.read(selectionProvider.notifier).enterSelectionMode(item.note.id);
-                      }
-                    },
-                    onSelect: () {
-                      ref.read(selectionProvider.notifier).toggleSelection(item.note.id);
-                    },
-                  ),
-                )),
-          ],
-        );
-      },
+              ...dateNotes.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: NoteCard(
+                      note: item.note,
+                      depth: item.depth,
+                      viewMode: viewMode,
+                      isSelectionMode: isSelectionMode,
+                      isSelected: selectionState.selectedIds.contains(item.note.id),
+                      onEdit: () => _openEditComposer(context, item.note),
+                      onReply: () => _openReplyComposer(context, item.note.id),
+                      onLongPress: () {
+                        if (!isSelectionMode) {
+                          HapticFeedback.mediumImpact();
+                          ref.read(selectionProvider.notifier).enterSelectionMode(item.note.id);
+                        }
+                      },
+                      onSelect: () {
+                        ref.read(selectionProvider.notifier).toggleSelection(item.note.id);
+                      },
+                    ),
+                  )),
+            ],
+          );
+        },
+      ),
     );
   }
 

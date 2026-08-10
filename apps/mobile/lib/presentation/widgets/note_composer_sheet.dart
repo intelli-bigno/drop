@@ -83,7 +83,7 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to access camera: $e')));
+        ).showSnackBar(const SnackBar(content: Text('카메라에 접근할 수 없습니다')));
       }
     }
   }
@@ -106,7 +106,7 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to access gallery: $e')));
+        ).showSnackBar(const SnackBar(content: Text('갤러리에 접근할 수 없습니다')));
       }
     }
   }
@@ -196,7 +196,7 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+        ).showSnackBar(const SnackBar(content: Text('저장에 실패했습니다')));
       }
     } finally {
       if (mounted) {
@@ -211,11 +211,11 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
     final hasMedia = _pendingMedia.isNotEmpty;
     final canSave = _isEditing || content.isNotEmpty || hasMedia;
 
-    String title = 'New Note';
+    String title = '새 노트';
     if (_isEditing) {
-      title = 'Edit Note';
+      title = '노트 편집';
     } else if (_hasSharedContent) {
-      title = 'Save to DROP';
+      title = 'DROP에 저장';
     }
 
     return Padding(
@@ -299,7 +299,7 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
             autofocus: true,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
-              hintText: 'Enter content',
+              hintText: '내용을 입력하세요',
               hintStyle: TextStyle(color: Color(0xFF666666)),
               filled: true,
               fillColor: Color(0xFF232323),
@@ -317,13 +317,13 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
               children: [
                 _buildMediaButton(
                   icon: Icons.camera_alt,
-                  label: 'Camera',
+                  label: '카메라',
                   onPressed: _isSaving ? null : _pickFromCamera,
                 ),
                 const SizedBox(width: 12),
                 _buildMediaButton(
                   icon: Icons.photo_library,
-                  label: 'Gallery',
+                  label: '갤러리',
                   onPressed: _isSaving ? null : _pickFromGallery,
                 ),
                 const Spacer(),
@@ -339,12 +339,12 @@ class _NoteComposerSheetState extends ConsumerState<NoteComposerSheet> {
             children: [
               TextButton(
                 onPressed: _isSaving ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: const Text('취소'),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: _isSaving || !canSave ? null : _save,
-                child: Text(_isSaving ? 'Saving...' : 'Save'),
+                child: Text(_isSaving ? '저장 중...' : '저장'),
               ),
             ],
           ),

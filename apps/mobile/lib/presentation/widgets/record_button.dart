@@ -71,7 +71,7 @@ class _RecordButtonState extends ConsumerState<RecordButton>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('녹음을 시작할 수 없습니다: $e')),
+          const SnackBar(content: Text('녹음을 시작할 수 없습니다')),
         );
       }
     }
@@ -188,7 +188,7 @@ class _RecordButtonState extends ConsumerState<RecordButton>
           Text(
             _recorder.formattedTime,
             style: const TextStyle(
-              color: Color(0xFF888888),
+              color: Color(0xFF9A9A9A),
               fontSize: 16,
               fontFamily: 'monospace',
             ),

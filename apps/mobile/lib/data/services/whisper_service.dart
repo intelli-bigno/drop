@@ -1,24 +1,33 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:drop_mobile/core/config/secrets.dart';
+import 'package:drop_mobile/core/config/supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide MultipartFile;
 
-/// OpenAI Whisper transcription service
+/// Audio transcription service (Supabase Edge Function -> Whisper)
 class WhisperService {
+  /// Whisper API upload limit (25MB)
+  static const int maxFileSizeBytes = 25 * 1024 * 1024;
+
+  static const Duration _connectTimeout = Duration(seconds: 15);
+  static const Duration _receiveTimeout = Duration(seconds: 120);
+
   final Dio _dio;
-  final String _apiKey;
   final String _endpoint;
-  final String _model;
+  final SupabaseClient _supabase;
 
   WhisperService({
     Dio? dio,
-    String? apiKey,
-    String endpoint = 'https://api.openai.com/v1/audio/transcriptions',
-    String model = 'whisper-1',
-  })  : _dio = dio ?? Dio(),
-        _apiKey = apiKey ?? Secrets.openAIAPIKey,
-        _endpoint = endpoint,
-        _model = model;
+    String? endpoint,
+    SupabaseClient? supabase,
+  })  : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: _connectTimeout,
+              receiveTimeout: _receiveTimeout,
+            )),
+        _supabase = supabase ?? Supabase.instance.client,
+        _endpoint =
+            endpoint ?? '${SupabaseConfig.url}/functions/v1/transcribe';
 
   /// Transcribe audio file to text
   Future<String> transcribe({
@@ -31,8 +40,9 @@ class WhisperService {
       throw WhisperException.fileNotFound();
     }
 
-    if (_apiKey.isEmpty) {
-      throw WhisperException.invalidApiKey();
+    final fileSize = file.lengthSync();
+    if (fileSize > maxFileSizeBytes) {
+      throw WhisperException.fileTooLarge(fileSize);
     }
 
     WhisperException? lastError;
@@ -43,10 +53,12 @@ class WhisperService {
       } on WhisperException catch (e) {
         if (e.type == WhisperErrorType.rateLimited ||
             e.type == WhisperErrorType.serverError) {
-          // Exponential backoff
-          final delay = Duration(seconds: 1 << attempt);
-          await Future.delayed(delay);
           lastError = e;
+          // Exponential backoff (마지막 시도 후에는 대기하지 않음)
+          if (attempt < retryCount - 1) {
+            final delay = Duration(seconds: 1 << attempt);
+            await Future.delayed(delay);
+          }
         } else {
           rethrow;
         }
@@ -57,9 +69,12 @@ class WhisperService {
   }
 
   Future<String> _performTranscription(String audioPath, String? language) async {
+    final accessToken = _supabase.auth.currentSession?.accessToken;
+    if (accessToken == null) {
+      throw WhisperException.notAuthenticated();
+    }
+
     final formData = FormData.fromMap({
-      'model': _model,
-      'response_format': 'json',
       if (language != null) 'language': language,
       'file': await MultipartFile.fromFile(
         audioPath,
@@ -74,7 +89,7 @@ class WhisperService {
         data: formData,
         options: Options(
           headers: {
-            'Authorization': 'Bearer $_apiKey',
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
@@ -88,7 +103,7 @@ class WhisperService {
       final statusCode = e.response?.statusCode;
 
       if (statusCode == 401) {
-        throw WhisperException.invalidApiKey();
+        throw WhisperException.notAuthenticated();
       } else if (statusCode == 429) {
         throw WhisperException.rateLimited();
       } else if (statusCode != null && statusCode >= 500) {
@@ -98,8 +113,11 @@ class WhisperService {
       // Try to parse error message from response
       final data = e.response?.data;
       if (data is Map<String, dynamic> && data.containsKey('error')) {
-        final error = data['error'] as Map<String, dynamic>;
-        throw WhisperException.apiError(error['message'] as String? ?? 'Unknown error');
+        final error = data['error'];
+        final message = error is Map<String, dynamic>
+            ? error['message'] as String?
+            : error?.toString();
+        throw WhisperException.apiError(message ?? 'Unknown error');
       }
 
       throw WhisperException.networkError(e.message ?? 'Network error');
@@ -109,8 +127,9 @@ class WhisperService {
 
 enum WhisperErrorType {
   invalidUrl,
-  invalidApiKey,
+  notAuthenticated,
   fileNotFound,
+  fileTooLarge,
   networkError,
   apiError,
   decodingError,
@@ -134,14 +153,22 @@ class WhisperException implements Exception {
         message: 'Invalid API URL',
       );
 
-  factory WhisperException.invalidApiKey() => WhisperException._(
-        type: WhisperErrorType.invalidApiKey,
-        message: 'Invalid API key',
+  factory WhisperException.notAuthenticated() => WhisperException._(
+        type: WhisperErrorType.notAuthenticated,
+        message: 'Not authenticated. Please sign in and try again.',
+        statusCode: 401,
       );
 
   factory WhisperException.fileNotFound() => WhisperException._(
         type: WhisperErrorType.fileNotFound,
         message: 'Audio file not found',
+      );
+
+  factory WhisperException.fileTooLarge(int sizeBytes) => WhisperException._(
+        type: WhisperErrorType.fileTooLarge,
+        message:
+            'Audio file too large (${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)}MB). '
+            'Maximum allowed size is 25MB.',
       );
 
   factory WhisperException.networkError(String detail) => WhisperException._(

@@ -54,7 +54,7 @@ class BookCard extends ConsumerWidget {
                 Text(
                   book.author,
                   style: const TextStyle(
-                    color: Color(0xFF888888),
+                    color: Color(0xFF9A9A9A),
                     fontSize: 12,
                   ),
                   maxLines: 1,
@@ -280,7 +280,7 @@ class _StatusChangeSheetState extends State<_StatusChangeSheet> {
           const SizedBox(height: 24),
           const Text(
             '읽기 상태',
-            style: TextStyle(color: Color(0xFF888888), fontSize: 12),
+            style: TextStyle(color: Color(0xFF9A9A9A), fontSize: 12),
           ),
           const SizedBox(height: 8),
           Row(
@@ -296,7 +296,7 @@ class _StatusChangeSheetState extends State<_StatusChangeSheet> {
             const SizedBox(height: 24),
             const Text(
               '평점',
-              style: TextStyle(color: Color(0xFF888888), fontSize: 12),
+              style: TextStyle(color: Color(0xFF9A9A9A), fontSize: 12),
             ),
             const SizedBox(height: 8),
             Row(
@@ -364,7 +364,7 @@ class _StatusChangeSheetState extends State<_StatusChangeSheet> {
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF4A9EFF) : const Color(0xFF888888),
+                color: isSelected ? const Color(0xFF4A9EFF) : const Color(0xFF9A9A9A),
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -441,7 +441,7 @@ class LinkedBookCard extends StatelessWidget {
                       ),
                       child: const Icon(
                         Icons.close,
-                        color: Color(0xFF888888),
+                        color: Color(0xFF9A9A9A),
                         size: 12,
                       ),
                     ),

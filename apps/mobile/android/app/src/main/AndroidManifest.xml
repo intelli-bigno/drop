@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
     <!-- Permissions for widgets -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
