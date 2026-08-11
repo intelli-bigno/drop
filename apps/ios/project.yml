@@ -7,6 +7,13 @@ options:
   groupSortPosition: top
   generateEmptyDirectories: true
 
+# 접속 대상(localdev / remote)은 빌드 구성으로 가른다.
+# 개발 중에도 리모트를 봐야 할 때가 있어 Debug를 둘로 나눴다.
+configs:
+  Debug-localdev: debug
+  Debug-remote: debug
+  Release-remote: release
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -27,6 +34,10 @@ targets:
     platform: iOS
     sources:
       - path: Drop
+    configFiles:
+      Debug-localdev: Config/Config-localdev.xcconfig
+      Debug-remote: Config/Config-remote.xcconfig
+      Release-remote: Config/Config-remote.xcconfig
     dependencies:
       - package: DropCore
         product: DropCore
@@ -46,11 +57,24 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
 
 schemes:
-  Drop:
+  Drop-localdev:
     build:
       targets:
         Drop: all
     run:
-      config: Debug
+      config: Debug-localdev
+    test:
+      config: Debug-localdev
     archive:
-      config: Release
+      config: Release-remote
+
+  Drop-remote:
+    build:
+      targets:
+        Drop: all
+    run:
+      config: Debug-remote
+    test:
+      config: Debug-remote
+    archive:
+      config: Release-remote

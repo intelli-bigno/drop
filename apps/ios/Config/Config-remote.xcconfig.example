@@ -1,0 +1,11 @@
+// 리모트(운영) Supabase로 붙는 구성. 사용법은 Config-localdev.xcconfig.example과 같다.
+//
+//   cp Config/Config-remote.xcconfig.example Config/Config-remote.xcconfig
+//   # 또는: export SUPABASE_URL_REMOTE=... SUPABASE_ANON_KEY_REMOTE=... && make ios-config
+//
+// TestFlight/배포 빌드는 이 구성을 쓴다.
+
+DROP_ENVIRONMENT = remote
+
+SUPABASE_URL = https:/$()/여기에-프로젝트-ref.supabase.co
+SUPABASE_ANON_KEY = 여기에-리모트-anon-key를-넣는다
