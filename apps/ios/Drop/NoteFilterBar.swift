@@ -8,6 +8,30 @@ struct NoteFilterBar: View {
 
     var body: some View {
         VStack(spacing: DropTheme.Spacing.base) {
+            // 검색은 여기 둔다. `.searchable`은 iOS 26에서 화면 하단에 붙어
+            // 액션 버튼과 겹친다.
+            HStack(spacing: DropTheme.Spacing.base) {
+                Image(systemName: "magnifyingglass")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                TextField("노트 검색", text: $store.searchText)
+                    .textFieldStyle(.plain)
+                    .autocorrectionDisabled()
+                if !store.searchText.isEmpty {
+                    Button {
+                        store.searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, DropTheme.Spacing.comfortable)
+            .padding(.vertical, DropTheme.Spacing.base)
+            .background(Color.secondary.opacity(0.12), in: Capsule())
+            .padding(.horizontal, DropTheme.Spacing.comfortable)
+
             Picker("보기", selection: $store.viewMode) {
                 Text("노트").tag(NoteViewMode.active)
                 Text("보관").tag(NoteViewMode.archived)

@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - ios
+          - ios-native
           - android
           - mobile
         default: ios
@@ -327,3 +328,105 @@ jobs:
         with:
           name: DROP-android-apk
           path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+
+  # iOS 네이티브(apps/ios) TestFlight 배포.
+  # Flutter 잡(release-ios)과 별개다 — 번들 ID가 달라 두 앱이 공존한다.
+  # 태그로는 나가지 않는다. 검증 빌드는 수동 실행으로만:
+  #   gh workflow run release.yml -f target=ios-native
+  release-ios-native:
+    if: inputs.target == 'ios-native'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -switch "$XCODE"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Prepare build configuration
+        working-directory: apps/ios
+        env:
+          SUPABASE_URL_REMOTE: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY_REMOTE: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          bash scripts/ios-config.sh
+          # 로컬 구성은 필요 없지만 프로젝트 생성이 두 파일을 모두 요구한다
+          cp apps/ios/Config/Config-remote.xcconfig apps/ios/Config/Config-localdev.xcconfig
+
+      - name: Generate project
+        working-directory: apps/ios
+        run: xcodegen generate
+
+      - name: Import signing assets
+        env:
+          CERTIFICATES_P12: ${{ secrets.CERTIFICATES_P12 }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          IOS_NATIVE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_PROVISIONING_PROFILE }}
+          IOS_NATIVE_SHARE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_SHARE_PROVISIONING_PROFILE }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          echo -n "$CERTIFICATES_P12" | base64 --decode -o $CERTIFICATE_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$CSC_KEY_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # 프로파일은 UUID 이름으로 두어야 xcodebuild가 찾는다
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          for pair in "app:$IOS_NATIVE_PROVISIONING_PROFILE" "share:$IOS_NATIVE_SHARE_PROVISIONING_PROFILE"; do
+            NAME=${pair%%:*}; DATA=${pair#*:}
+            [ -z "$DATA" ] && { echo "❌ $NAME 프로파일 시크릿이 비어 있습니다"; exit 1; }
+            TMP=$RUNNER_TEMP/$NAME.mobileprovision
+            echo -n "$DATA" | base64 --decode -o "$TMP"
+            UUID=$(security cms -D -i "$TMP" | plutil -extract UUID raw -)
+            cp "$TMP" ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+            echo "$NAME → $UUID"
+          done
+
+      - name: Archive
+        working-directory: apps/ios
+        run: |
+          xcodebuild -project Drop.xcodeproj \
+            -scheme Drop-remote \
+            -configuration Release-remote \
+            -archivePath $RUNNER_TEMP/Drop.xcarchive \
+            -destination 'generic/platform=iOS' \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            archive
+
+      - name: Export IPA
+        working-directory: apps/ios
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/Drop.xcarchive \
+            -exportPath $RUNNER_TEMP/ipa \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload to TestFlight
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun altool --upload-app --type ios \
+            -f $RUNNER_TEMP/ipa/*.ipa \
+            -u "$APPLE_ID" \
+            -p "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DROP-ios-native-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
