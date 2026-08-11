@@ -10,7 +10,10 @@ struct RootView: View {
     var body: some View {
         #if DEBUG
         if PreviewLaunch.isActive {
-            HomeView(repository: PreviewLaunch.makeRepository())
+            HomeView(
+                repository: PreviewLaunch.makeRepository(),
+                previewAttachmentURL: PreviewLaunch.attachmentURL
+            )
         } else {
             authenticatedBody
         }

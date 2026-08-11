@@ -1,6 +1,7 @@
 #if DEBUG
 import DropCore
 import Foundation
+import UIKit
 
 /// 자격증명 없이 화면을 띄워 보기 위한 디버그 전용 경로.
 ///
@@ -14,6 +15,30 @@ enum PreviewLaunch {
     @MainActor
     static func makeRepository() -> any NotesRepository {
         InMemoryNotesRepository(notes: sampleNotes)
+    }
+
+    /// 썸네일 렌더링 경로를 자격증명 없이도 확인하기 위해 임시 파일 URL을 준다.
+    @MainActor
+    static func attachmentURL(for attachment: Attachment) -> URL? {
+        guard attachment.isImage || attachment.isVideo else { return nil }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("preview-\(attachment.id).png")
+        if !FileManager.default.fileExists(atPath: url.path) {
+            try? samplePNG(seed: attachment.id).write(to: url)
+        }
+        return url
+    }
+
+    /// 색만 다른 단색 PNG. 그림 내용은 중요하지 않고, 실제로 그려지는지가 중요하다.
+    private static func samplePNG(seed: String) -> Data {
+        let size = CGSize(width: 240, height: 240)
+        let hue = Double(abs(seed.hashValue) % 100) / 100
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            UIColor(hue: hue, saturation: 0.5, brightness: 0.9, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+        }
+        return image.pngData() ?? Data()
     }
 
     private static var sampleNotes: [Note] {
@@ -35,6 +60,20 @@ enum PreviewLaunch {
                 content: "장보기: 우유, 커피 원두, 사과",
                 tags: [tag("생활")],
                 createdAt: now.addingTimeInterval(-3600), updatedAt: now, source: .desktop
+            ),
+            Note(
+                id: "5", displayID: 13,
+                content: "제주 사진 몇 장",
+                attachments: (1...3).map { index in
+                    DropCore.Attachment(
+                        id: "img\(index)", noteID: "5", type: .image,
+                        storagePath: "u/5/img\(index).png", filename: "img\(index).png",
+                        mimeType: "image/png", size: 240_000, createdAt: now
+                    )
+                },
+                tags: [tag("사진")],
+                createdAt: now.addingTimeInterval(-600), updatedAt: now, source: .mobile,
+                hasMedia: true
             ),
             Note(
                 id: "3", displayID: 10,

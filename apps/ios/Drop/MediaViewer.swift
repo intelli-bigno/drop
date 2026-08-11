@@ -6,10 +6,12 @@ import SwiftUI
 /// `widgets/media_viewer.dart` 대응. 비공개 버킷이라 서명 URL을 받아 띄운다.
 struct MediaViewer: View {
     let attachments: [Attachment]
+    /// 목록 화면이 쓰던 것과 같은 제공자를 받는다 — 썸네일로 이미 받아 둔 서명 URL을
+    /// 재사용해 뷰어를 열 때 다시 발급받지 않는다.
+    let urlProvider: (Attachment) async -> URL?
     @State var current: Attachment
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.dropContainer) private var container
     @State private var urls: [String: URL] = [:]
     @State private var failed: Set<String> = []
 
@@ -51,12 +53,10 @@ struct MediaViewer: View {
     }
 
     private func loadURL(for attachment: Attachment) async {
-        guard urls[attachment.id] == nil, let container else { return }
-        do {
-            urls[attachment.id] = try await container
-                .makeAttachmentsRepository()
-                .signedURL(for: attachment.storagePath)
-        } catch {
+        guard urls[attachment.id] == nil else { return }
+        if let url = await urlProvider(attachment) {
+            urls[attachment.id] = url
+        } else {
             failed.insert(attachment.id)
         }
     }

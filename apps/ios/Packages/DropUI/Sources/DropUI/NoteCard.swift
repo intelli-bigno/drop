@@ -8,11 +8,21 @@ public struct NoteCard: View {
     private let note: Note
     private let isSelected: Bool
     private let isSelecting: Bool
+    private let attachmentURL: (Attachment) async -> URL?
+    private let onOpenAttachment: (Attachment) -> Void
 
-    public init(note: Note, isSelected: Bool = false, isSelecting: Bool = false) {
+    public init(
+        note: Note,
+        isSelected: Bool = false,
+        isSelecting: Bool = false,
+        attachmentURL: @escaping (Attachment) async -> URL? = { _ in nil },
+        onOpenAttachment: @escaping (Attachment) -> Void = { _ in }
+    ) {
         self.note = note
         self.isSelected = isSelected
         self.isSelecting = isSelecting
+        self.attachmentURL = attachmentURL
+        self.onOpenAttachment = onOpenAttachment
     }
 
     public var body: some View {
@@ -54,19 +64,21 @@ public struct NoteCard: View {
                 }
 
                 if !note.attachments.isEmpty {
-                    HStack(spacing: DropTheme.Spacing.base) {
-                        ForEach(note.attachments.prefix(4)) { attachment in
-                            Label(attachment.formattedSize, systemImage: icon(for: attachment.type))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .labelStyle(.titleAndIcon)
-                        }
-                        if note.attachments.count > 4 {
-                            Text("+\(note.attachments.count - 4)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DropTheme.Spacing.base) {
+                            ForEach(note.attachments) { attachment in
+                                AttachmentThumbnail(attachment: attachment, urlProvider: attachmentURL)
+                                    // 선택 모드에서는 탭이 선택을 바꿔야 한다 —
+                                    // 여기서 뷰어가 열리면 선택이 어긋난다.
+                                    .onTapGesture {
+                                        guard !isSelecting else { return }
+                                        onOpenAttachment(attachment)
+                                    }
+                            }
                         }
                     }
+                    // 카드 밖으로 나가는 가로 스크롤이 세로 스크롤을 방해하지 않게.
+                    .scrollClipDisabled(false)
                 }
 
                 if !note.tags.isEmpty {
@@ -88,15 +100,4 @@ public struct NoteCard: View {
         .contentShape(Rectangle())
     }
 
-    private func icon(for type: AttachmentType) -> String {
-        switch type {
-        case .image: "photo"
-        case .audio: "waveform"
-        case .video: "video"
-        case .file: "doc"
-        case .text: "doc.text"
-        case .instagram, .youtube: "link"
-        case .unknown: "questionmark.circle"
-        }
-    }
 }

@@ -14,9 +14,19 @@ struct HomeView: View {
     @State private var isRecording = false
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var viewingAttachments: AttachmentPresentation?
+    /// 썸네일용 서명 URL 캐시. 스크롤할 때마다 다시 발급받지 않기 위해 화면 단위로 하나 둔다.
+    @State private var attachmentURLs: AttachmentURLCache?
 
-    init(repository: any NotesRepository) {
+    /// 프리뷰 모드에서는 컨테이너가 없어 서명 URL을 받을 수 없다.
+    /// 그 경우에만 대체 제공자를 받아 썸네일 경로를 그대로 태워 본다.
+    private let previewAttachmentURL: ((Attachment) -> URL?)?
+
+    init(
+        repository: any NotesRepository,
+        previewAttachmentURL: ((Attachment) -> URL?)? = nil
+    ) {
         _notes = State(wrappedValue: NotesStore(repository: repository))
+        self.previewAttachmentURL = previewAttachmentURL
     }
 
     var body: some View {
@@ -26,12 +36,16 @@ struct HomeView: View {
             content
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
-                .searchable(text: $notes.searchText, prompt: "노트 검색")
+                // .searchable을 쓰면 iOS 26에서 검색창이 화면 하단에 붙어
+                // 액션 버튼과 겹친다. 검색은 필터 줄 안에 직접 둔다.
                 .toolbar { toolbar }
                 .safeAreaInset(edge: .top, spacing: 0) { filters }
                 .safeAreaInset(edge: .bottom) { bottomBar }
                 .refreshable { await notes.load() }
                 .task {
+                    if attachmentURLs == nil, let container {
+                        attachmentURLs = AttachmentURLCache(repository: container.makeAttachmentsRepository())
+                    }
                     await notes.load()
                     // 공유 시트로 들어온 항목을 여기서 비운다. 확장은 적어 두기만 한다.
                     await drainSharedInbox()
@@ -61,7 +75,11 @@ struct HomeView: View {
                     }
                 }
                 .sheet(item: $viewingAttachments) { presentation in
-                    MediaViewer(attachments: presentation.attachments, current: presentation.current)
+                    MediaViewer(
+                        attachments: presentation.attachments,
+                        urlProvider: attachmentURL,
+                        current: presentation.current
+                    )
                 }
                 .onChange(of: photoSelection) { _, items in
                     guard !items.isEmpty else { return }
@@ -74,6 +92,12 @@ struct HomeView: View {
                     message: { Text(notes.errorMessage ?? "") }
                 )
         }
+    }
+
+    /// 썸네일·뷰어가 함께 쓰는 이미지 URL 제공자.
+    private func attachmentURL(_ attachment: Attachment) async -> URL? {
+        if let previewAttachmentURL { return previewAttachmentURL(attachment) }
+        return await attachmentURLs?.url(for: attachment.storagePath)
     }
 
     private var title: String {
@@ -98,7 +122,14 @@ struct HomeView: View {
                     NoteCard(
                         note: note,
                         isSelected: notes.selectedIDs.contains(note.id),
-                        isSelecting: notes.isSelecting
+                        isSelecting: notes.isSelecting,
+                        attachmentURL: attachmentURL,
+                        onOpenAttachment: { attachment in
+                            viewingAttachments = AttachmentPresentation(
+                                attachments: note.attachments.filter { $0.isImage || $0.isVideo },
+                                current: attachment
+                            )
+                        }
                     )
                     .onTapGesture {
                         if notes.isSelecting {
@@ -173,38 +204,52 @@ struct HomeView: View {
         if notes.isSelecting {
             SelectionActionBar(store: notes)
         } else {
-            HStack(spacing: DropTheme.Spacing.comfortable) {
+            // 세 버튼을 하나의 떠 있는 묶음으로 둔다.
+            // 크기가 제각각인 원 세 개가 흩어져 있으면 어느 것이 주 동작인지 읽히지 않는다.
+            HStack(spacing: 0) {
                 Spacer()
 
-                PhotosPicker(selection: $photoSelection, maxSelectionCount: 5, matching: .any(of: [.images, .videos])) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.title3)
-                        .frame(width: 48, height: 48)
-                }
-                .buttonStyle(.bordered)
-                .clipShape(Circle())
+                HStack(spacing: DropTheme.Spacing.comfortable) {
+                    PhotosPicker(
+                        selection: $photoSelection,
+                        maxSelectionCount: 5,
+                        matching: .any(of: [.images, .videos])
+                    ) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 20))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                    }
+                    .foregroundStyle(.primary)
 
-                Button {
-                    isRecording = true
-                } label: {
-                    Image(systemName: "mic.fill")
-                        .font(.title3)
-                        .frame(width: 48, height: 48)
-                }
-                .buttonStyle(.bordered)
-                .clipShape(Circle())
+                    Button {
+                        isRecording = true
+                    } label: {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 20))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                    }
+                    .foregroundStyle(.primary)
 
-                Button {
-                    composer = .new
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2.weight(.semibold))
-                        .frame(width: 56, height: 56)
+                    Button {
+                        composer = .new
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 22, weight: .semibold))
+                            .frame(width: 52, height: 52)
+                            .background(Color.accentColor, in: Circle())
+                            .foregroundStyle(.white)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
-                .clipShape(Circle())
+                .padding(.horizontal, DropTheme.Spacing.base)
+                .padding(.vertical, DropTheme.Spacing.base)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Color.primary.opacity(0.08)))
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
             }
-            .padding(DropTheme.Spacing.loose)
+            .padding(.horizontal, DropTheme.Spacing.loose)
+            .padding(.bottom, DropTheme.Spacing.base)
         }
     }
 
