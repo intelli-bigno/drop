@@ -199,20 +199,33 @@ flutter-clean:
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
 # ============================================
 
-# patch 버전 범프 → 빌드/서명/공증 → GitHub Release 발행 → 버전 커밋+태그
-# 자격증명은 1Password(op)에서 주입. 공증 실패 시: make release NOTARIZE=false
-NOTARIZE ?= true
+# 표준 경로: patch 버전 범프 → 커밋 + 태그 + push → GitHub Actions가 서명·공증·발행.
+# mac/iOS/Android가 한 번에 나가고, 설치본은 latest-mac.yml을 보고 자동 업데이트한다.
 release:
+	@test "$$(git rev-parse --abbrev-ref HEAD)" = "main" || { echo "✗ main에서만 릴리스한다 (현재: $$(git rev-parse --abbrev-ref HEAD))"; exit 1; }
+	@test -z "$$(git status --porcelain)" || { echo "✗ 워킹트리가 깨끗해야 한다"; exit 1; }
+	@git pull --ff-only
 	cd apps/desktop && npm version patch --no-git-tag-version
 	@VERSION=$$(node -p "require('./apps/desktop/package.json').version"); \
-	echo "→ v$$VERSION 빌드·서명·발행 (notarize=$(NOTARIZE))"; \
+	git add apps/desktop/package.json && \
+	git commit -m "chore(release): v$$VERSION" && \
+	git tag "v$$VERSION" && \
+	git push && git push origin "v$$VERSION" && \
+	echo "→ v$$VERSION 태그 push 완료 — GitHub Actions에서 빌드·공증·발행 진행 (gh run watch)"
+
+# 비상용: CI가 죽었을 때 로컬 맥에서 현재 버전 그대로 빌드·서명·공증 후 같은 릴리스에 업로드.
+# 버전 범프도 태그도 하지 않는다 — 태그는 항상 `make release`가 만든다.
+# 자격증명은 1Password(op)에서 주입. 공증 실패 시: make release-local NOTARIZE=false
+NOTARIZE ?= true
+release-local:
+	@VERSION=$$(node -p "require('./apps/desktop/package.json').version"); \
+	echo "→ v$$VERSION 로컬 빌드·서명·발행 (notarize=$(NOTARIZE))"; \
 	export APPLE_ID=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields apple_id); \
 	export APPLE_APP_SPECIFIC_PASSWORD=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields credential --reveal); \
 	export APPLE_TEAM_ID=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields team_id); \
 	export GH_TOKEN=$$(gh auth token); \
 	cd apps/desktop && pnpm exec electron-vite build --mode remote && \
-	pnpm exec electron-builder --mac --publish always -c.mac.notarize=$(NOTARIZE) && \
-	cd ../.. && git add apps/desktop/package.json && git commit -m "chore(release): v$$VERSION" && git tag "v$$VERSION"
+	pnpm exec electron-builder --mac --publish always -c.mac.notarize=$(NOTARIZE)
 
 # 최초 1회: 빌드된 앱을 /Applications 에 설치 (이후는 앱 내 자동 업데이트)
 install-local:
