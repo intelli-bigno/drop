@@ -4,7 +4,17 @@ import { useAuthStore } from '../stores/auth'
 import { supabase } from '../lib/supabase'
 import { useToastStore } from '../stores/toast'
 import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
+import { describeUpdateStatus, type UpdateStatus } from '../lib/update-status'
 import { TagManagementDialog } from './TagManagementDialog'
+
+// updater 이벤트의 info는 unknown으로 노출된다 — 필요한 필드만 안전하게 꺼낸다
+function versionOf(info: unknown): string {
+  if (info && typeof info === 'object' && 'version' in info) {
+    const version = (info as { version: unknown }).version
+    if (typeof version === 'string') return version
+  }
+  return '?'
+}
 
 export function UserMenu() {
   const { user, signOut } = useAuthStore()
@@ -14,6 +24,8 @@ export function UserMenu() {
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+  const [appVersion, setAppVersion] = useState<string | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ kind: 'idle' })
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -31,6 +43,36 @@ export function UserMenu() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    void window.api.updater.getVersion().then(setAppVersion)
+  }, [])
+
+  // 업데이트 이벤트 구독 — main 프로세스가 이미 내보내고 있으나 화면에 연결된 적이 없었다 (BRU-31)
+  useEffect(() => {
+    const unsubscribers = [
+      window.api.updater.onChecking(() => setUpdateStatus({ kind: 'checking' })),
+      window.api.updater.onNotAvailable(() => setUpdateStatus({ kind: 'up-to-date' })),
+      window.api.updater.onAvailable((info) =>
+        setUpdateStatus({ kind: 'available', version: versionOf(info) })
+      ),
+      window.api.updater.onDownloaded((info) =>
+        setUpdateStatus({ kind: 'downloaded', version: versionOf(info) })
+      ),
+      window.api.updater.onError((message) => setUpdateStatus({ kind: 'error', message })),
+    ]
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+  }, [])
+
+  const handleCheckForUpdates = () => {
+    if (import.meta.env.DEV) {
+      // main 프로세스가 개발 빌드에서는 확인을 건너뛴다 — 무한 '확인 중'을 막는다
+      setUpdateStatus({ kind: 'unsupported' })
+      return
+    }
+    setUpdateStatus({ kind: 'checking' })
+    void window.api.updater.check()
+  }
 
   // Calculate dropdown position when opening
   const handleToggle = () => {
@@ -165,6 +207,32 @@ export function UserMenu() {
           </svg>
           {tokenCopied ? 'Copied!' : 'Copy MCP Token'}
         </button>
+
+        <div className="user-menu-divider" />
+
+        <div className="user-menu-about">
+          <div className="user-menu-version">
+            <span>DROP</span>
+            <span className="user-menu-version-number">{appVersion ? `v${appVersion}` : '…'}</span>
+          </div>
+          <button
+            type="button"
+            className="user-menu-update-btn"
+            onClick={handleCheckForUpdates}
+            disabled={updateStatus.kind === 'checking'}
+          >
+            업데이트 확인
+          </button>
+          {describeUpdateStatus(updateStatus) && (
+            <p
+              className={`user-menu-update-status ${updateStatus.kind === 'error' ? 'is-error' : ''}`}
+            >
+              {describeUpdateStatus(updateStatus)}
+            </p>
+          )}
+        </div>
+
+        <div className="user-menu-divider" />
 
         <button className="user-menu-item" onClick={handleSignOut}>
           <svg
@@ -318,6 +386,59 @@ export function UserMenu() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .user-menu-about {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 10px 16px;
+        }
+
+        .user-menu-version {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          font-size: 13px;
+          color: var(--text-secondary);
+        }
+
+        .user-menu-version-number {
+          font-family: var(--font-mono);
+          font-size: 12px;
+          color: var(--text-tertiary);
+        }
+
+        .user-menu-update-btn {
+          align-self: flex-start;
+          padding: 5px 10px;
+          border-radius: var(--radius-sm);
+          font-size: 12px;
+          cursor: pointer;
+          background: transparent;
+          border: 1px solid var(--border-color);
+          color: var(--text-secondary);
+          transition: all var(--transition-fast);
+        }
+
+        .user-menu-update-btn:hover:not(:disabled) {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .user-menu-update-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .user-menu-update-status {
+          margin: 0;
+          font-size: 12px;
+          color: var(--text-tertiary);
+        }
+
+        .user-menu-update-status.is-error {
+          color: var(--danger);
         }
 
         .user-menu-divider {
