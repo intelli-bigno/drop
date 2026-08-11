@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- B. OLED Outline — 딥블랙 스퀘어클 + 틸 스트로크 물방울 (앱 다크 정체성 그대로) -->
+  <defs>
+    <linearGradient id="b-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17171b"/>
+      <stop offset="1" stop-color="#09090b"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="229" fill="url(#b-bg)"/>
+  <path d="M512 252 C512 252 692 480 692 596 A180 180 0 0 1 332 596 C332 480 512 252 512 252 Z"
+        fill="none" stroke="#14b8a6" stroke-width="64" stroke-linejoin="round"/>
+</svg>

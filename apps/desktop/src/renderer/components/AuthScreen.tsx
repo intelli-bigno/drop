@@ -6,6 +6,20 @@ export function AuthScreen() {
   return (
     <div className="auth-screen">
       <div className="auth-container">
+        {/* 앱 아이콘과 같은 마크 — 소스: apps/desktop/build/logo/a-solid-drop.svg */}
+        <svg className="auth-logo" viewBox="0 0 1024 1024" width="72" height="72" aria-hidden="true">
+          <defs>
+            <linearGradient id="auth-logo-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#2dd4bf" />
+              <stop offset="1" stopColor="#0d9488" />
+            </linearGradient>
+          </defs>
+          <rect width="1024" height="1024" rx="229" fill="url(#auth-logo-bg)" />
+          <path
+            d="M512 236C512 236 704 476 704 598A192 192 0 0 1 320 598C320 476 512 236 512 236Z"
+            fill="#fafafa"
+          />
+        </svg>
         <h1 className="auth-title">DROP</h1>
         <p className="auth-subtitle">생각을 떨어뜨리는 가장 빠른 곳</p>
 
@@ -53,6 +67,11 @@ export function AuthScreen() {
           gap: 16px;
           padding: 48px;
           -webkit-app-region: no-drag;
+        }
+
+        .auth-logo {
+          display: block;
+          border-radius: 18px;
         }
 
         .auth-title {
