@@ -12,7 +12,7 @@ public enum AttachmentType: String, Sendable, Codable, Equatable {
     }
 }
 
-public struct Attachment: Sendable, Equatable, Identifiable, Codable {
+public struct Attachment: Sendable, Equatable, Hashable, Identifiable, Codable {
     public let id: String
     public let noteID: String
     public let type: AttachmentType

@@ -1,12 +1,17 @@
 import DropCore
 import DropUI
+import PhotosUI
 import SwiftUI
 
 /// `screens/home_screen.dart` 대응. 앱 사용 시간의 대부분이 여기다.
 struct HomeView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(\.dropContainer) private var container
     @State private var notes: NotesStore
     @State private var composer: ComposerTarget?
+    @State private var isRecording = false
+    @State private var photoSelection: [PhotosPickerItem] = []
+    @State private var viewingAttachments: AttachmentPresentation?
 
     init(repository: any NotesRepository) {
         _notes = State(wrappedValue: NotesStore(repository: repository))
@@ -34,6 +39,18 @@ struct HomeView: View {
                             await notes.update(id: note.id, content: content)
                         }
                     }
+                }
+                .sheet(isPresented: $isRecording) {
+                    RecordingSheet { url, transcript in
+                        await addAudioNote(fileURL: url, transcript: transcript)
+                    }
+                }
+                .sheet(item: $viewingAttachments) { presentation in
+                    MediaViewer(attachments: presentation.attachments, current: presentation.current)
+                }
+                .onChange(of: photoSelection) { _, items in
+                    guard !items.isEmpty else { return }
+                    Task { await addPhotoNote(items: items) }
                 }
                 .alert(
                     "문제가 생겼습니다",
@@ -141,8 +158,27 @@ struct HomeView: View {
         if notes.isSelecting {
             SelectionActionBar(store: notes)
         } else {
-            HStack {
+            HStack(spacing: DropTheme.Spacing.comfortable) {
                 Spacer()
+
+                PhotosPicker(selection: $photoSelection, maxSelectionCount: 5, matching: .any(of: [.images, .videos])) {
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.title3)
+                        .frame(width: 48, height: 48)
+                }
+                .buttonStyle(.bordered)
+                .clipShape(Circle())
+
+                Button {
+                    isRecording = true
+                } label: {
+                    Image(systemName: "mic.fill")
+                        .font(.title3)
+                        .frame(width: 48, height: 48)
+                }
+                .buttonStyle(.bordered)
+                .clipShape(Circle())
+
                 Button {
                     composer = .new
                 } label: {
@@ -152,8 +188,8 @@ struct HomeView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .clipShape(Circle())
-                .padding(DropTheme.Spacing.loose)
             }
+            .padding(DropTheme.Spacing.loose)
         }
     }
 
@@ -178,6 +214,60 @@ struct HomeView: View {
             }
         }
     }
+}
+
+private extension HomeView {
+    /// 녹음 노트: 전사 텍스트를 본문으로 넣고 오디오를 첨부한다.
+    /// 전사에 실패했으면 본문이 비지만, **녹음 자체는 남는다** — 여기서 막으면
+    /// 사용자가 방금 말한 내용을 통째로 잃는다.
+    func addAudioNote(fileURL: URL, transcript: String?) async {
+        await notes.create(content: transcript ?? "")
+        guard let container, let note = notes.visibleNotes.first else { return }
+
+        do {
+            let data = try Data(contentsOf: fileURL)
+            _ = try await container.makeAttachmentsRepository().upload(
+                data: data,
+                fileName: fileURL.lastPathComponent,
+                type: .audio,
+                toNote: note.id
+            )
+            try? FileManager.default.removeItem(at: fileURL)
+            await notes.load()
+        } catch {
+            notes.report(error: error)
+        }
+    }
+
+    func addPhotoNote(items: [PhotosPickerItem]) async {
+        defer { photoSelection = [] }
+        await notes.create(content: "")
+        guard let container, let note = notes.visibleNotes.first else { return }
+
+        let repository = container.makeAttachmentsRepository()
+        for item in items {
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
+                let isVideo = item.supportedContentTypes.contains { $0.conforms(to: .movie) }
+                _ = try await repository.upload(
+                    data: data,
+                    fileName: item.itemIdentifier ?? (isVideo ? "video.mp4" : "image.jpg"),
+                    type: isVideo ? .video : .image,
+                    toNote: note.id
+                )
+            } catch {
+                notes.report(error: error)
+            }
+        }
+        await notes.load()
+    }
+}
+
+struct AttachmentPresentation: Identifiable {
+    let attachments: [Attachment]
+    let current: Attachment
+
+    var id: String { current.id }
 }
 
 /// iOS 17에서는 `swipeActions`가 `List` 안에서만 동작한다.
