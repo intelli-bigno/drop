@@ -1,6 +1,7 @@
 import { app, dialog, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater, type UpdateInfo } from 'electron-updater'
 import log from 'electron-log'
+import { markQuitting } from './quit-state'
 
 // Configure logging
 log.transports.file.level = 'info'
@@ -110,11 +111,21 @@ autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       })
       .then((result) => {
         if (result.response === 0) {
-          autoUpdater.quitAndInstall()
+          installUpdate()
         }
       })
   }
 })
+
+// 업데이트 설치 = 앱 종료 + 교체 + 재실행.
+// markQuitting() 없이 호출하면 창 닫기가 숨기기로 가로채여 앱이 죽지 않고,
+// ShipIt이 종료를 기다리며 무한 대기해 업데이트가 적용되지 않는다.
+// isForceRunAfter=true 를 줘야 설치 후 앱이 다시 켜진다.
+function installUpdate(): void {
+  log.info('[updater] Quitting to install update')
+  markQuitting()
+  autoUpdater.quitAndInstall(false, true)
+}
 
 function sendToRenderer(channel: string, data?: unknown): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -133,7 +144,7 @@ export function setupUpdaterIpc(): void {
   })
 
   ipcMain.handle('updater:install', () => {
-    autoUpdater.quitAndInstall()
+    installUpdate()
   })
 
   ipcMain.handle('updater:getVersion', () => {

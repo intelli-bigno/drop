@@ -12,6 +12,7 @@ import {
   type ClientRequestConstructorOptions,
 } from 'electron'
 import { initAutoUpdater, setupUpdaterIpc } from './updater'
+import { isQuitting, markQuitting, shouldHideOnClose } from './quit-state'
 import { isSafeExternalUrl } from './url-utils'
 
 // Handle EPIPE errors that occur when stdout is closed (e.g., tray app without terminal)
@@ -822,7 +823,6 @@ function setupIpcHandlers(): void {
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 let quickCaptureWindow: BrowserWindow | null = null
-let isQuitting = false
 
 function getRendererUrl(hash = ''): string {
   if (process.env.ELECTRON_RENDERER_URL) {
@@ -1034,7 +1034,7 @@ function createWindow(): void {
   // macOS: Cmd+W로 창을 닫으면 숨기기만 함 (앱은 계속 실행)
   // 단, app.quit() 호출 시에는 실제로 종료
   mainWindow.on('close', (event) => {
-    if (process.platform === 'darwin' && !isQuitting) {
+    if (shouldHideOnClose(process.platform, isQuitting())) {
       event.preventDefault()
       mainWindow?.hide()
       // 독에서도 숨김 (메뉴바 앱처럼 동작)
@@ -1118,9 +1118,9 @@ app.whenReady().then(() => {
   })
 })
 
-// app.quit() 호출 시 isQuitting 플래그 설정
+// app.quit() 호출 시 종료 상태로 전환 — 이후 창 닫기는 숨기지 않고 실제로 닫힌다
 app.on('before-quit', () => {
-  isQuitting = true
+  markQuitting()
 })
 
 // 메뉴바 앱으로 동작: 창을 모두 닫아도 앱 종료하지 않음
