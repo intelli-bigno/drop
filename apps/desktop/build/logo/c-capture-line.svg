@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- C. Capture Line — 물방울이 캡처 라인으로 떨어지는 순간 (퀵캡처 은유) -->
+  <defs>
+    <linearGradient id="c-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17171b"/>
+      <stop offset="1" stop-color="#09090b"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="229" fill="url(#c-bg)"/>
+  <path d="M512 196 C512 196 660 386 660 486 A148 148 0 0 1 364 486 C364 386 512 196 512 196 Z" fill="#14b8a6"/>
+  <rect x="272" y="712" width="480" height="52" rx="26" fill="#fafafa" opacity="0.92"/>
+  <rect x="272" y="812" width="296" height="52" rx="26" fill="#fafafa" opacity="0.38"/>
+</svg>

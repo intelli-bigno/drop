@@ -45,7 +45,7 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "notarize": true,
-      "icon": "build/icon.png"
+      "icon": "build/icon.icns"
     },
     "dmg": {
       "title": "DROP",
