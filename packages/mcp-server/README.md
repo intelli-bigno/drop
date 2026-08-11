@@ -125,3 +125,15 @@ DROP_TOKEN=your-api-key pnpm start
 ## License
 
 MIT
+
+## 동작 확인 (스모크 테스트)
+
+```bash
+pnpm build
+DROP_TOKEN=drop_xxx pnpm smoke
+```
+
+MCP 프로토콜을 실제로 태워 핸드셰이크 → 인증 → 노트 생성·수정·조회·검색·태그·삭제까지 확인한다.
+`SUPABASE_URL` / `SUPABASE_ANON_KEY`를 생략하면 로컬 스택(`supabase start`)을 본다.
+
+노트를 만들고 지우므로 실제 계정이 아닌 테스트 계정에서 돌린다.
