@@ -1,7 +1,8 @@
 import type { KeyEventLike } from './types'
 import { isPrimaryModifier } from './matchers'
+import { matchesKey } from './keys'
 
-export const isCreateNoteShortcut = (event: KeyEventLike) => event.key === 'n' || event.key === 'ㅜ'
+export const isCreateNoteShortcut = (event: KeyEventLike) => matchesKey('createNote', event.key)
 
 export const isSearchShortcut = (event: KeyEventLike) =>
-  isPrimaryModifier(event) && (event.key === 'k' || event.key === 'ㅏ')
+  isPrimaryModifier(event) && matchesKey('search', event.key)

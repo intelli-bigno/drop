@@ -1,5 +1,6 @@
 import type { KeyEventLike } from './types'
 import { isPrimaryModifier } from './matchers'
+import { KEYS, matchesKey } from './keys'
 
 export type NoteFeedShortcutAction =
   | 'clearFocus'
@@ -16,44 +17,30 @@ export type NoteFeedShortcutAction =
   | 'setPriority2'
   | 'setPriority3'
 
+// Enter는 수식키에 따라 세 갈래로 갈라지므로 키 룩업이 아니라 아래에서 따로 처리한다.
+const KEY_LOOKUP: NoteFeedShortcutAction[] = [
+  'clearFocus',
+  'focusNext',
+  'focusPrev',
+  'deleteFocused',
+  'copyFocused',
+  'togglePin',
+  'setPriority0',
+  'setPriority1',
+  'setPriority2',
+  'setPriority3',
+]
+
 export function resolveNoteFeedShortcut(event: KeyEventLike): NoteFeedShortcutAction | null {
-  switch (event.key) {
-    case 'Escape':
-      return 'clearFocus'
-    case 'ArrowDown':
-    case 'j':
-    case 'ㅓ': // 한글 j
-      return 'focusNext'
-    case 'ArrowUp':
-    case 'k':
-    case 'ㅏ': // 한글 k
-      return 'focusPrev'
-    case 'Enter':
-      if (isPrimaryModifier(event)) {
-        return 'createSibling'
-      }
-      if (event.shiftKey) {
-        return 'replyToFocused'
-      }
-      return 'openFocused'
-    case 'Delete':
-    case 'Backspace':
-      return 'deleteFocused'
-    case 'c':
-    case 'ㅊ': // 한글 c
-      return 'copyFocused'
-    case 'p':
-    case 'ㅔ': // 한글 p
-      return 'togglePin'
-    case '0':
-      return 'setPriority0'
-    case '1':
-      return 'setPriority1'
-    case '2':
-      return 'setPriority2'
-    case '3':
-      return 'setPriority3'
-    default:
-      return null
+  if (matchesKey('openFocused', event.key)) {
+    if (isPrimaryModifier(event)) return 'createSibling'
+    if (event.shiftKey) return 'replyToFocused'
+    return 'openFocused'
   }
+
+  for (const action of KEY_LOOKUP) {
+    if ((KEYS[action] as readonly string[]).includes(event.key)) return action
+  }
+
+  return null
 }
