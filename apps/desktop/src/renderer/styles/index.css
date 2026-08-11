@@ -3097,7 +3097,7 @@ body {
 .view-mode-icon,
 .category-filter-icon,
 .search-dialog-icon,
-.attachment-text-icon{
+.attachment-text-icon {
   display: inline-flex;
   align-items: center;
 }
@@ -3105,7 +3105,7 @@ body {
 .view-mode-icon .icon,
 .category-filter-icon .icon,
 .search-dialog-icon .icon,
-.attachment-text-icon .icon{
+.attachment-text-icon .icon {
   vertical-align: middle;
 }
 
