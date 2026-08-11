@@ -77,3 +77,48 @@ jobs:
       - name: Analyze
         working-directory: apps/mobile
         run: flutter analyze
+
+  # iOS 네이티브 (apps/ios) — Flutter를 대체하는 트랙
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # 러너에 깔린 Xcode 버전은 이미지 업데이트마다 바뀐다.
+      # 특정 경로를 박아 두면 그때마다 CI가 깨지므로 가장 최신 것을 고른다.
+      - name: Select Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "using $XCODE"
+          sudo xcode-select -switch "$XCODE"
+          xcodebuild -version
+          swift --version
+
+      # 도메인 로직 테스트. 시뮬레이터가 필요 없어 가장 빠른 신호다.
+      - name: DropCore tests
+        working-directory: apps/ios/Packages/DropCore
+        run: swift test
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # 실제 값은 필요 없다 — 빌드가 통과하는지만 본다.
+      # 컴파일 시점에 들어가는 값이라 자리표시자로 충분하다.
+      - name: Prepare build configuration
+        working-directory: apps/ios
+        run: |
+          cp Config/Config-localdev.xcconfig.example Config/Config-localdev.xcconfig
+          cp Config/Config-remote.xcconfig.example Config/Config-remote.xcconfig
+
+      - name: Generate project
+        working-directory: apps/ios
+        run: xcodegen generate
+
+      - name: Build (simulator)
+        working-directory: apps/ios
+        run: |
+          xcodebuild -project Drop.xcodeproj \
+            -scheme Drop-localdev \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
