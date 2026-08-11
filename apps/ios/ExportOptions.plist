@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>J2Y925QHNV</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<!-- 앱과 확장 각각의 프로파일이 필요하다. 이름은 Apple Developer 포털에서
+	     프로파일을 만들 때 붙인 것과 정확히 같아야 한다. -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.intellieffect.drop.mobile.next</key>
+		<string>DROP Native App Store</string>
+		<key>com.intellieffect.drop.mobile.next.share</key>
+		<string>DROP Native Share App Store</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>
