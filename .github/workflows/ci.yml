@@ -117,8 +117,22 @@ jobs:
       - name: Build (simulator)
         working-directory: apps/ios
         run: |
+          SIM_ID=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print([x['udid'] for r in d.values() for x in r if 'iPhone' in x['name']][0])")
+          echo "SIM_ID=$SIM_ID" >> "$GITHUB_ENV"
           xcodebuild -project Drop.xcodeproj \
             -scheme Drop-localdev \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=$SIM_ID" \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      # 빌드만으로는 번들 구성 오류가 드러나지 않는다.
+      # DropShare에 CFBundleExecutable이 빠졌을 때 빌드는 통과하고
+      # 설치에서만 거부됐다 — 그래서 설치까지 해 본다.
+      - name: Install on simulator
+        working-directory: apps/ios
+        run: |
+          xcrun simctl boot "$SIM_ID" || true
+          xcrun simctl install "$SIM_ID" \
+            build/Build/Products/Debug-localdev-iphonesimulator/Drop.app
