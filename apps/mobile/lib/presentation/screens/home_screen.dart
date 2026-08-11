@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:drop_mobile/data/models/models.dart';
 import 'package:drop_mobile/data/repositories/attachments_repository.dart';
@@ -216,12 +215,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       actions: [
-        // Books button
-        IconButton(
-          icon: const Icon(Icons.book_outlined, color: Colors.white70),
-          onPressed: () => context.push('/books'),
-          tooltip: '내 책장',
-        ),
         // Selection mode button
         IconButton(
           icon: const Icon(Icons.checklist, color: Colors.white70),

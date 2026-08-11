@@ -13,8 +13,6 @@ export type IconName =
   | 'lock-open'
   | 'corner-up-left'
   | 'x'
-  | 'book'
-  | 'book-open'
   | 'check'
   | 'file-text'
   | 'camera'
@@ -94,15 +92,6 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />
-    </>
-  ),
-  book: (
-    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
-  ),
-  'book-open': (
-    <>
-      <path d="M12 7v14" />
-      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,

@@ -1,8 +1,7 @@
 /// <reference path="../../preload/index.d.ts" />
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { FileIcon, defaultStyles } from 'react-file-icon'
-import type { Attachment, BookMetadata } from '@drop/shared'
-import { isBookMetadata } from '@drop/shared'
+import type { Attachment } from '@drop/shared'
 import { getAttachmentUrl, getSignedAttachmentUrl } from '../lib/supabase'
 import { Icon } from './Icon'
 
@@ -501,104 +500,6 @@ function YouTubeAttachment({
   )
 }
 
-function BookAttachment({
-  attachment,
-  onRemove,
-}: {
-  attachment: Attachment
-  onRemove: () => void
-}) {
-  const isLoading = attachment.metadata?.loading === true
-  const metadata = attachment.metadata as BookMetadata | undefined
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [hasError, setHasError] = useState(false)
-
-  // 표지 이미지 URL 로드
-  useEffect(() => {
-    if (!metadata?.coverStoragePath) {
-      // Storage 경로가 없으면 원본 URL 사용
-      if (metadata?.cover) {
-        setCoverUrl(metadata.cover)
-      }
-      return
-    }
-
-    let cancelled = false
-    const load = async () => {
-      const signed = await getSignedAttachmentUrl(metadata.coverStoragePath!)
-      if (cancelled) return
-      if (signed) {
-        setCoverUrl(signed)
-      } else {
-        setCoverUrl(getAttachmentUrl(metadata.coverStoragePath!))
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [metadata?.coverStoragePath, metadata?.cover])
-
-  // 로딩 중인 경우 skeleton 표시
-  if (isLoading) {
-    return (
-      <div className="attachment-card attachment-book attachment-loading">
-        <div className="attachment-book-content">
-          <div className="attachment-book-cover">
-            <div className="attachment-skeleton" />
-          </div>
-          <div className="attachment-book-info">
-            <div className="attachment-book-header">
-              <span className="attachment-book-icon" aria-hidden="true"><Icon name="book" size={14} /></span>
-              <span className="attachment-book-label">책</span>
-            </div>
-            <span className="attachment-skeleton-text" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!metadata || !isBookMetadata(attachment.metadata)) {
-    return null
-  }
-
-  return (
-    <div className="attachment-card attachment-book">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
-      <div className="attachment-book-content">
-        <div className="attachment-book-cover">
-          {hasError || !coverUrl ? (
-            <div className="attachment-book-placeholder">
-              <Icon name="book" size={20} />
-            </div>
-          ) : (
-            <img
-              src={coverUrl}
-              alt={metadata.title}
-              onError={() => setHasError(true)}
-            />
-          )}
-        </div>
-        <div className="attachment-book-info">
-          <div className="attachment-book-header">
-            <span className="attachment-book-icon" aria-hidden="true"><Icon name="book" size={14} /></span>
-            <span className="attachment-book-label">책</span>
-          </div>
-          <p className="attachment-book-title">{metadata.title}</p>
-          <span className="attachment-book-author">{metadata.author}</span>
-          {metadata.publisher && (
-            <span className="attachment-book-publisher">
-              {metadata.publisher}
-              {metadata.pubDate && ` · ${metadata.pubDate.substring(0, 4)}`}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function InstagramAttachment({
   attachment,
   onRemove,
@@ -807,14 +708,6 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
           case 'youtube':
             return (
               <YouTubeAttachment
-                key={attachment.id}
-                attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
-              />
-            )
-          case 'book':
-            return (
-              <BookAttachment
                 key={attachment.id}
                 attachment={attachment}
                 onRemove={() => onRemove(attachment.id)}

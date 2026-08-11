@@ -19,57 +19,6 @@ const api = {
   youtube: {
     fetchOEmbed: (url: string) => ipcRenderer.invoke('youtube:fetchOEmbed', url),
   },
-  aladin: {
-    /**
-     * 책 검색 (알라딘 ItemSearch API)
-     * @param query 검색어 (제목, 저자, ISBN 등)
-     * @param page 페이지 번호 (1부터 시작)
-     */
-    search: (query: string, page?: number) => ipcRenderer.invoke('aladin:search', query, page),
-    /**
-     * ISBN으로 책 상세 정보 조회
-     * @param isbn13 13자리 ISBN
-     */
-    getBookByIsbn: (isbn13: string) => ipcRenderer.invoke('aladin:getBookByIsbn', isbn13),
-    /**
-     * 알라딘 ItemId로 책 상세 정보 조회
-     * @param itemId 알라딘 상품 ID
-     */
-    getBookByItemId: (itemId: string) => ipcRenderer.invoke('aladin:getBookByItemId', itemId),
-    /**
-     * 표지 이미지 다운로드 (base64 반환)
-     * @param coverUrl 표지 URL
-     */
-    downloadCover: (coverUrl: string): Promise<string | null> =>
-      ipcRenderer.invoke('aladin:downloadCover', coverUrl),
-    /**
-     * 알라딘 URL 파싱
-     * @param url 알라딘 상품 URL
-     */
-    parseUrl: (url: string): Promise<{ itemId: string } | null> =>
-      ipcRenderer.invoke('aladin:parseUrl', url),
-  },
-  books: {
-    /**
-     * 통합 책 검색 (알라딘 + 네이버 + 카카오 + Google Books)
-     * @param query 검색어 (제목, 저자, ISBN 등)
-     * @param options 검색 옵션 (sources, limit, page, preferKorean)
-     */
-    search: (
-      query: string,
-      options?: {
-        sources?: ('aladin' | 'naver' | 'kakao' | 'google')[]
-        limit?: number
-        page?: number
-        preferKorean?: boolean
-      }
-    ) => ipcRenderer.invoke('books:search', query, options),
-    /**
-     * 사용 가능한 API 소스 목록 조회
-     */
-    getAvailableSources: (): Promise<('aladin' | 'naver' | 'kakao' | 'google')[]> =>
-      ipcRenderer.invoke('books:getAvailableSources'),
-  },
   quickCapture: {
     open: () => ipcRenderer.invoke('quickCapture:open'),
     close: () => ipcRenderer.invoke('quickCapture:close'),

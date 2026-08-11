@@ -2,8 +2,6 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drop_mobile/presentation/screens/home_screen.dart';
 import 'package:drop_mobile/presentation/screens/auth_screen.dart';
-import 'package:drop_mobile/presentation/screens/books_screen.dart';
-import 'package:drop_mobile/presentation/screens/book_search_screen.dart';
 import 'package:drop_mobile/presentation/providers/auth_provider.dart';
 
 part 'router.g.dart';
@@ -39,16 +37,6 @@ GoRouter router(Ref ref) {
         path: '/',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/books',
-        name: 'books',
-        builder: (context, state) => const BooksScreen(),
-      ),
-      GoRoute(
-        path: '/books/search',
-        name: 'bookSearch',
-        builder: (context, state) => const BookSearchScreen(),
       ),
     ],
   );

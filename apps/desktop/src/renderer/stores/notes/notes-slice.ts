@@ -2,8 +2,8 @@ import type { StateCreator } from 'zustand'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../auth'
 import { useToastStore } from '../toast'
-import { tagRowToTag, noteRowToNote, attachmentRowToAttachment, bookRowToBook } from '@drop/shared'
-import type { NoteRow, AttachmentRow, TagRow, BookRow, Attachment, Tag, Book } from '@drop/shared'
+import { tagRowToTag, noteRowToNote, attachmentRowToAttachment } from '@drop/shared'
+import type { NoteRow, AttachmentRow, TagRow, Attachment, Tag } from '@drop/shared'
 import type { NotesState, NotesSlice } from './types'
 import { calculateNoteCategories } from '../../lib/note-category-utils'
 
@@ -59,23 +59,6 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         noteTagRows = (data ?? []) as unknown as NoteTagWithTag[]
       }
 
-      // 연결된 책 로드
-      interface BookNoteWithBook {
-        note_id: string
-        book_id: string
-        books: BookRow
-      }
-      let bookNoteRows: BookNoteWithBook[] = []
-      if (noteIds.length > 0) {
-        const { data, error: bookNotesError } = await supabase
-          .from('book_notes')
-          .select('note_id, book_id, books(*)')
-          .in('note_id', noteIds)
-
-        if (bookNotesError) throw bookNotesError
-        bookNoteRows = (data ?? []) as unknown as BookNoteWithBook[]
-      }
-
       // 첨부파일을 노트별로 그룹화
       const attachmentsByNote = new Map<string, Attachment[]>()
       for (const row of attachmentRows) {
@@ -94,22 +77,12 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         tagsByNote.set(row.note_id, existing)
       }
 
-      // 책을 노트별로 그룹화
-      const booksByNote = new Map<string, Book[]>()
-      for (const row of bookNoteRows) {
-        const book = bookRowToBook(row.books)
-        const existing = booksByNote.get(row.note_id) ?? []
-        existing.push(book)
-        booksByNote.set(row.note_id, existing)
-      }
-
-      // 노트와 첨부파일, 태그, 책 결합
+      // 노트와 첨부파일, 태그 결합
       const notes = (noteRows ?? []).map((row) =>
         noteRowToNote(
           row as NoteRow,
           attachmentsByNote.get(row.id) ?? [],
-          tagsByNote.get(row.id) ?? [],
-          booksByNote.get(row.id) ?? []
+          tagsByNote.get(row.id) ?? []
         )
       )
 
@@ -140,7 +113,6 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         parentId: null,
         attachments: [],
         tags: [],
-        linkedBooks: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'desktop' as const,
@@ -169,7 +141,6 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       parentId: parentId ?? null,
       attachments: [],
       tags: [],
-      linkedBooks: [],
       createdAt: now,
       updatedAt: now,
       source: 'desktop' as const,
@@ -352,8 +323,8 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         const { eventType, new: newRow, old: oldRow } = payload
 
         if (eventType === 'INSERT') {
-          // realtime에서는 연관 데이터(태그, 첨부파일, 책)를 포함하지 않으므로 빈 배열로 초기화
-          const note = noteRowToNote(newRow as NoteRow, [], [], [])
+          // realtime에서는 연관 데이터(태그, 첨부파일)를 포함하지 않으므로 빈 배열로 초기화
+          const note = noteRowToNote(newRow as NoteRow, [], [])
           set((state) => {
             // 이미 존재하면 무시 (로컬에서 생성한 경우)
             if (state.notes.some((n) => n.id === note.id)) return state
