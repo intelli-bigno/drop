@@ -16,6 +16,18 @@ public final class DropEnvironmentContainer: Sendable {
 
     /// Supabase 인증 게이트웨이. 로그인 창을 띄우는 쪽(GoogleIdentityProvider)은
     /// 화면이 필요하므로 앱 타겟에서 주입한다.
+    public func makeNotesRepository() -> any NotesRepository {
+        SupabaseNotesRepository(client: supabase)
+    }
+
+    public func makeTagsRepository() -> any TagsRepository {
+        SupabaseTagsRepository(client: supabase)
+    }
+
+    public func makeAttachmentsRepository() -> any AttachmentsRepository {
+        SupabaseAttachmentsRepository(client: supabase)
+    }
+
     @MainActor
     public func makeAuthStore(identityProvider: any GoogleIdentityProvider) -> AuthStore {
         AuthStore(
@@ -30,7 +42,15 @@ public final class DropEnvironmentContainer: Sendable {
             configuration: configuration,
             supabase: SupabaseClient(
                 supabaseURL: configuration.supabaseURL,
-                supabaseKey: configuration.supabaseAnonKey
+                supabaseKey: configuration.supabaseAnonKey,
+                options: SupabaseClientOptions(
+                    // SDK 기본 디코더는 우리 모델이 기대하는 snake_case 변환과
+                    // 분수초 있는/없는 timestamptz 처리를 하지 않는다. 반드시 갈아끼운다.
+                    db: SupabaseClientOptions.DatabaseOptions(
+                        encoder: DropJSON.encoder,
+                        decoder: DropJSON.decoder
+                    )
+                )
             )
         )
     }
