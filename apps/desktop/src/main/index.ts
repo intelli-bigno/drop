@@ -1104,13 +1104,14 @@ function createTray(): void {
 }
 
 function registerGlobalShortcuts(): void {
-  // Ctrl+Space로 Quick Capture 열기
-  const registered = globalShortcut.register('Control+Space', () => {
+  // Quick Capture 핫키 — dev 빌드는 설치본(Ctrl+Space)과 충돌하지 않게 별도 키 사용
+  const accelerator = app.isPackaged ? 'Control+Space' : 'Control+Shift+Space'
+  const registered = globalShortcut.register(accelerator, () => {
     createQuickCaptureWindow()
   })
 
   if (!registered) {
-    console.warn('[globalShortcut] Ctrl+Space registration failed - may be in use by another app')
+    console.warn(`[globalShortcut] ${accelerator} registration failed - may be in use by another app`)
   }
 }
 
@@ -1175,6 +1176,11 @@ function handleOAuthCallback(url: string): void {
       mainWindow.focus()
     }
   }
+}
+
+// dev 실행이 설치본과 세션/캐시(userData)를 공유하지 않도록 분리 — whenReady 이전에 설정해야 함
+if (!app.isPackaged) {
+  app.setPath('userData', `${app.getPath('userData')}-dev`)
 }
 
 app.whenReady().then(() => {

@@ -194,3 +194,28 @@ flutter-codegen:
 # Flutter 정리
 flutter-clean:
 	cd apps/mobile && flutter clean && rm -rf .dart_tool build
+
+# ============================================
+# Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
+# ============================================
+
+# patch 버전 범프 → 빌드/서명/공증 → GitHub Release 발행 → 버전 커밋+태그
+# 자격증명은 1Password(op)에서 주입. 공증 실패 시: make release NOTARIZE=false
+NOTARIZE ?= true
+release:
+	cd apps/desktop && npm version patch --no-git-tag-version
+	@VERSION=$$(node -p "require('./apps/desktop/package.json').version"); \
+	echo "→ v$$VERSION 빌드·서명·발행 (notarize=$(NOTARIZE))"; \
+	export APPLE_ID=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields apple_id); \
+	export APPLE_APP_SPECIFIC_PASSWORD=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields credential --reveal); \
+	export APPLE_TEAM_ID=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields team_id); \
+	export GH_TOKEN=$$(gh auth token); \
+	cd apps/desktop && pnpm exec electron-vite build --mode remote && \
+	pnpm exec electron-builder --mac --publish always -c.mac.notarize=$(NOTARIZE) && \
+	cd ../.. && git add apps/desktop/package.json && git commit -m "chore(release): v$$VERSION" && git tag "v$$VERSION"
+
+# 최초 1회: 빌드된 앱을 /Applications 에 설치 (이후는 앱 내 자동 업데이트)
+install-local:
+	rm -rf /Applications/DROP.app
+	cp -R apps/desktop/release/mac-arm64/DROP.app /Applications/
+	@echo "→ /Applications/DROP.app 설치 완료"
