@@ -2,7 +2,8 @@
         electron-rebuild electron-dev electron-dev-local electron-dev-remote \
         electron-build electron-build-local electron-build-remote \
         flutter-setup flutter-dev flutter-dev-remote flutter-build flutter-build-ipa flutter-testflight \
-        flutter-analyze flutter-test flutter-codegen flutter-clean
+        flutter-analyze flutter-test flutter-codegen flutter-clean \
+        ios-generate ios-test ios-build ios-dev ios-open ios-clean
 
 .DEFAULT_GOAL := help
 
@@ -39,6 +40,14 @@ help:
 	@echo "    make flutter-test         - Flutter 테스트"
 	@echo "    make flutter-codegen      - Flutter 코드 재생성"
 	@echo "    make flutter-clean        - Flutter 정리"
+	@echo ""
+	@echo "  iOS 네이티브 (Flutter 대체 트랙)"
+	@echo "    make ios-generate         - project.yml → Drop.xcodeproj 생성"
+	@echo "    make ios-test             - DropCore 테스트 (시뮬레이터 불필요)"
+	@echo "    make ios-build            - 시뮬레이터용 빌드"
+	@echo "    make ios-dev              - 시뮬레이터에서 실행"
+	@echo "    make ios-open             - Xcode로 열기"
+	@echo "    make ios-clean            - 생성물 정리"
 
 # ============================================
 # 기본 설정
@@ -194,6 +203,43 @@ flutter-codegen:
 # Flutter 정리
 flutter-clean:
 	cd apps/mobile && flutter clean && rm -rf .dart_tool build
+
+# ============================================
+# iOS 네이티브 (apps/ios) — Flutter 앱을 대체하는 트랙, BRU-6~22
+# ============================================
+
+# xcode-select가 CommandLineTools를 가리키고 있어 명시가 필요하다.
+IOS_DEVELOPER_DIR := /Applications/Xcode.app/Contents/Developer
+IOS_DIR := apps/ios
+IOS_SIMULATOR ?= platform=iOS Simulator,name=iPhone 17
+
+# project.yml → Drop.xcodeproj 생성 (.xcodeproj는 커밋하지 않는다)
+ios-generate:
+	@command -v xcodegen >/dev/null || { echo "❌ xcodegen이 없습니다: brew install xcodegen"; exit 1; }
+	cd $(IOS_DIR) && xcodegen generate
+
+# 도메인 로직 테스트 — 시뮬레이터 없이 돈다
+ios-test:
+	cd $(IOS_DIR)/Packages/DropCore && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) swift test
+
+# 시뮬레이터용 빌드
+ios-build: ios-generate
+	cd $(IOS_DIR) && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) xcodebuild \
+		-project Drop.xcodeproj -scheme Drop \
+		-destination 'generic/platform=iOS Simulator' build
+
+# 시뮬레이터에서 실행
+ios-dev: ios-generate
+	cd $(IOS_DIR) && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) xcodebuild \
+		-project Drop.xcodeproj -scheme Drop \
+		-destination '$(IOS_SIMULATOR)' build
+
+# Xcode로 열기
+ios-open: ios-generate
+	open $(IOS_DIR)/Drop.xcodeproj
+
+ios-clean:
+	rm -rf $(IOS_DIR)/Drop.xcodeproj $(IOS_DIR)/Packages/*/.build
 
 # ============================================
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)

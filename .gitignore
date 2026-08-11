@@ -15,3 +15,12 @@ supabase/.env
 
 # Serena MCP plugin
 .serena/
+
+# iOS (apps/ios)
+# project.yml이 SoT다 — .xcodeproj는 `make ios-generate`로 만든다 (머지 충돌 회피)
+apps/ios/Drop.xcodeproj/
+xcuserdata/
+DerivedData/
+.build/
+*.xcworkspace/xcshareddata/swiftpm/Package.resolved
+.swiftpm/
