@@ -6,7 +6,9 @@ import SwiftUI
 /// `screens/home_screen.dart` 대응. 앱 사용 시간의 대부분이 여기다.
 struct HomeView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(DropRouter.self) private var router
     @Environment(\.dropContainer) private var container
+    @Environment(\.scenePhase) private var scenePhase
     @State private var notes: NotesStore
     @State private var composer: ComposerTarget?
     @State private var isRecording = false
@@ -29,11 +31,24 @@ struct HomeView: View {
                 .safeAreaInset(edge: .top, spacing: 0) { filters }
                 .safeAreaInset(edge: .bottom) { bottomBar }
                 .refreshable { await notes.load() }
-                .task { await notes.load() }
+                .task {
+                    await notes.load()
+                    // 공유 시트로 들어온 항목을 여기서 비운다. 확장은 적어 두기만 한다.
+                    await drainSharedInbox()
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    // 앱이 살아 있는 채로 공유가 들어오면 복귀 시점에 비운다.
+                    guard phase == .active else { return }
+                    Task { await drainSharedInbox() }
+                }
+                .onChange(of: router.pendingComposeText) { _, text in
+                    guard text != nil else { return }
+                    composer = .newWithText(router.consumeComposeText() ?? "")
+                }
                 .sheet(item: $composer) { target in
                     NoteComposerSheet(target: target) { content in
                         switch target {
-                        case .new:
+                        case .new, .newWithText:
                             await notes.create(content: content)
                         case let .existing(note):
                             await notes.update(id: note.id, content: content)
@@ -239,6 +254,39 @@ private extension HomeView {
         }
     }
 
+    /// 공유 시트로 들어온 항목을 노트로 만든다.
+    ///
+    /// 첨부 업로드가 실패해도 노트는 남긴다 — 사용자가 공유한 텍스트/링크까지
+    /// 함께 잃는 것이 더 나쁘다.
+    func drainSharedInbox() async {
+        guard let inbox = SharedInbox(), let container else { return }
+        let items = (try? inbox.drain()) ?? []
+        guard !items.isEmpty else { return }
+
+        let attachments = container.makeAttachmentsRepository()
+        for item in items {
+            await notes.create(content: item.text)
+            guard let note = notes.visibleNotes.first else { continue }
+
+            for fileName in item.fileNames {
+                let url = inbox.fileURL(named: fileName)
+                do {
+                    let data = try Data(contentsOf: url)
+                    _ = try await attachments.upload(
+                        data: data,
+                        fileName: fileName,
+                        type: AttachmentType.forFileName(fileName),
+                        toNote: note.id
+                    )
+                } catch {
+                    notes.report(error: error)
+                }
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+        await notes.load()
+    }
+
     func addPhotoNote(items: [PhotosPickerItem]) async {
         defer { photoSelection = [] }
         await notes.create(content: "")
@@ -280,11 +328,14 @@ private extension View {
 
 enum ComposerTarget: Identifiable {
     case new
+    /// 딥링크로 들어온 초안 — 본문이 미리 채워진 채로 열린다.
+    case newWithText(String)
     case existing(Note)
 
     var id: String {
         switch self {
         case .new: "새-노트"
+        case let .newWithText(text): "새-노트-\(text.hashValue)"
         case let .existing(note): note.id
         }
     }

@@ -15,10 +15,10 @@ struct NoteComposerSheet: View {
     init(target: ComposerTarget, onSubmit: @escaping (String) async -> Void) {
         self.target = target
         self.onSubmit = onSubmit
-        if case let .existing(note) = target {
-            _text = State(initialValue: note.content)
-        } else {
-            _text = State(initialValue: "")
+        switch target {
+        case let .existing(note): _text = State(initialValue: note.content)
+        case let .newWithText(text): _text = State(initialValue: text)
+        case .new: _text = State(initialValue: "")
         }
     }
 
@@ -49,8 +49,8 @@ struct NoteComposerSheet: View {
     }
 
     private var isNew: Bool {
-        if case .new = target { return true }
-        return false
+        if case .existing = target { return false }
+        return true
     }
 
     private var trimmed: String {

@@ -10,6 +10,17 @@ public enum AttachmentType: String, Sendable, Codable, Equatable {
         let raw = try decoder.singleValueContainer().decode(String.self)
         self = AttachmentType(rawValue: raw) ?? .unknown
     }
+
+    /// 확장자로 종류를 짐작한다. 공유로 들어온 파일은 종류가 함께 오지 않는다.
+    public static func forFileName(_ name: String) -> AttachmentType {
+        switch MIMEType.forExtension(StoragePath.fileExtension(of: name) ?? "") {
+        case let mime where mime.hasPrefix("image/"): .image
+        case let mime where mime.hasPrefix("video/"): .video
+        case let mime where mime.hasPrefix("audio/"): .audio
+        case "text/plain": .text
+        default: .file
+        }
+    }
 }
 
 public struct Attachment: Sendable, Equatable, Hashable, Identifiable, Codable {

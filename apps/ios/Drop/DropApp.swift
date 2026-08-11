@@ -8,6 +8,7 @@ struct DropApp: App {
     /// "로그인이 안 된다" 같은 엉뚱한 증상으로 나타나 원인 추적이 길어진다.
     private let container: DropEnvironmentContainer
     @State private var auth: AuthStore
+    @State private var router = DropRouter()
 
     init() {
         let container: DropEnvironmentContainer
@@ -40,9 +41,17 @@ struct DropApp: App {
             RootView()
                 .environment(\.dropContainer, container)
                 .environment(auth)
+                .environment(router)
                 .task { await auth.restore() }
-                // Google 로그인 콜백. 앱이 자기 URL 스킴으로 되돌아올 때 SDK에 넘긴다.
-                .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
+                .onOpenURL { url in
+                    // 우리가 아는 링크면 화면 이동으로, 아니면 Google 로그인 콜백으로 넘긴다.
+                    // 여기서 전부 삼키면 로그인이 끊긴다.
+                    if let link = DropLink(url: url) {
+                        router.handle(link)
+                    } else {
+                        GIDSignIn.sharedInstance.handle(url)
+                    }
+                }
         }
     }
 }
