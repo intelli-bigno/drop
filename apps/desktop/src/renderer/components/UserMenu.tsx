@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuthStore } from '../stores/auth'
 import { supabase } from '../lib/supabase'
+import { useToastStore } from '../stores/toast'
+import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
 import { TagManagementDialog } from './TagManagementDialog'
 
 export function UserMenu() {
@@ -34,9 +36,12 @@ export function UserMenu() {
   const handleToggle = () => {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
+      // 우측 정렬 기준. 트리거가 왼쪽에 있으면 right가 커져 메뉴가 화면 밖으로 나가므로 클램프한다.
+      const MENU_WIDTH = 260
+      const maxRight = Math.max(window.innerWidth - MENU_WIDTH - 8, 8)
       setDropdownPos({
         top: rect.bottom + 8,
-        right: window.innerWidth - rect.right,
+        right: Math.min(window.innerWidth - rect.right, maxRight),
       })
     }
     setIsOpen(!isOpen)
@@ -55,34 +60,49 @@ export function UserMenu() {
   }
 
   const handleCopyMcpToken = async () => {
-    // 키는 서버에 해시로만 저장되므로 평문은 발급 시 1회만 받을 수 있음.
-    // 기존 키가 있으면 재발급(기존 키 무효화) 여부를 확인한다.
-    const { data: existing, error: checkError } = await supabase.rpc('get_mcp_api_key')
+    const showToast = useToastStore.getState().showToast
+
+    // 키는 서버에 해시로만 저장되므로 평문은 발급 시 1회만 받을 수 있다.
+    // get_mcp_api_key()는 이미 발급됐으면 평문이 아니라 접두사만 돌려준다.
+    const { data: existingPrefix, error: checkError } = await supabase.rpc('get_mcp_api_key')
     if (checkError) {
-      console.error('Failed to get MCP API key:', checkError)
+      console.error('[mcp] get_mcp_api_key failed', checkError)
+      showToast({ message: '토큰 상태를 확인하지 못했습니다', variant: 'error' })
       return
     }
 
-    let token = existing as string | null
-    const alreadyIssued = typeof token === 'string' && !token.startsWith('drop_')
-    if (alreadyIssued) {
+    if (decideMcpTokenAction(existingPrefix as string | null) === 'confirm-regenerate') {
       const ok = window.confirm(
         'MCP 키는 보안상 다시 볼 수 없습니다.\n새 키를 발급하면 기존 키는 즉시 무효화됩니다. 재발급할까요?'
       )
       if (!ok) return
-      const { data: regenerated, error: regenError } = await supabase.rpc('regenerate_mcp_api_key')
-      if (regenError) {
-        console.error('Failed to regenerate MCP API key:', regenError)
-        return
-      }
-      token = regenerated as string
     }
 
-    if (token) {
-      await navigator.clipboard.writeText(token)
-      setTokenCopied(true)
-      setTimeout(() => setTokenCopied(false), 2000)
+    const { data: issued, error: issueError } = await supabase.rpc('regenerate_mcp_api_key')
+    if (issueError) {
+      console.error('[mcp] regenerate_mcp_api_key failed', issueError)
+      showToast({ message: '토큰을 발급하지 못했습니다', variant: 'error' })
+      return
     }
+
+    const token = issued as string | null
+    if (!isPlaintextToken(token)) {
+      console.error('[mcp] unexpected token payload', token)
+      showToast({ message: '토큰을 발급하지 못했습니다', variant: 'error' })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(token as string)
+    } catch (err) {
+      console.error('[mcp] clipboard write failed', err)
+      showToast({ message: '복사에 실패했습니다 — 콘솔에서 토큰을 확인하세요', variant: 'error' })
+      return
+    }
+
+    setTokenCopied(true)
+    showToast({ message: 'MCP 토큰을 복사했습니다' })
+    setTimeout(() => setTokenCopied(false), 2000)
   }
 
   const handleOpenTagManagement = () => {

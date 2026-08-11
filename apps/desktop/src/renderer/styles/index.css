@@ -2809,7 +2809,8 @@ body {
 
 .app-header {
   display: flex;
-  justify-content: space-between;
+  /* 헤더에는 우측 그룹만 남아 있다 — space-between이면 홀로 좌측에 붙는다 */
+  justify-content: flex-end;
   align-items: center;
   /* 좌측 88px = 트래픽 라이트 클리어런스 */
   padding: var(--space-2) var(--space-5) var(--space-2) 88px;
