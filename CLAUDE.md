@@ -3,8 +3,17 @@
 - **원문 보존의 법칙 절대 준수.** 모든 결정사항·조사 결과는 raw → summary → index 형태로 기록한다.
 - **워크트리·브랜치 분리가 기본.** 작업은 `.claude/worktrees/` 아래 새 워크트리에서 시작한다. **PR을 올린 뒤에는 원래 main 체크아웃 디렉토리로 돌아온다** — 워크트리 안에서 `git checkout main` 하지 말 것(git이 거부한다). 워크트리·브랜치는 **머지될 때까지 디스크에 유지**한다(리뷰 대응·빌드 캐시). 정리는 머지 또는 PR 폐기 시점.
 - **Calendar·Email은 항상 `gog` CLI로 처리한다.**
-- **이슈 트래킹**: 이 레포는 개인 프로젝트이므로 GitHub Issues를 쓴다. 회사(INT) 업무만 `int-linear` MCP를 쓴다 — 개인 BRU 워크스페이스는 폐기(2026-07-27)되었으니 재연결·사용 금지.
+- **이슈 트래킹**: 기본은 GitHub Issues(개인 프로젝트)다. 단 **iOS 네이티브 전환 트랙(BRU-6 ~ BRU-22)만은 Linear**를 쓴다 — INT 워크스페이스 안의 "Bruce — 개인·성장" 팀(key `BRU`), 프로젝트 "DROP iOS 네이티브 전환". 폐기된 개인 BRU 워크스페이스(2026-07-27)와는 다른 것이며, `int-linear` MCP(`mcp__int-linear__*`)로 접근한다.
+- **Linear 업데이트는 작업의 일부다 — 착수 전·중·후 3시점을 반드시 남긴다.** 코드를 고치고 Linear를 안 건드리면 그 작업은 없었던 일이 된다.
+  - **착수 전**: 대상 이슈를 `In Progress`로 전환하고 무엇을·왜·어디까지 할지 코멘트로 남긴다. 이슈가 없으면 이슈부터 만들고 시작한다(소급 생성 금지).
+  - **작업 중**: 결정·판정·차단·스코프 변경이 생긴 그 시점에 코멘트로 누적한다. 새로 발견한 문제는 별도 이슈로 분리해 링크한다.
+  - **착수 후**: `In Review`로 전환하고 검증 방법 + 완료 증거(실측 출력·PR 링크)를 남긴다. 증거 없는 In Review는 반려 대상. 머지 확인되면 `Done`.
+  - **실측하지 못한 것은 못 했다고 쓴다.** 상태명·라벨명의 정본은 INT 팀 문서 "이슈 컨벤션 — 라이프사이클 게이트"(slugId `fc050897a60d`) — 여기에 복제하지 않는다.
 - **팀 위키** wiki.intellieffect.com은 팀 열람실이다. 회의록·레퍼런스·결정 등 wiki-native 문서는 Supabase `wiki_pages`가 SoT — 읽기는 `wiki-read`, 쓰기는 `wiki-add` 스킬. 이 레포 문서를 위키로 옮기지 않는다.
+
+# MOBILE — 두 개의 앱이 병렬로 존재한다
+
+`apps/mobile`(Flutter, 현행)과 `apps/ios`(SwiftUI 네이티브, 전환 중)가 같은 Supabase를 본다. Flutter 제거는 TestFlight 실사용 패리티 확인 후(BRU-22)에만 한다. 네이티브 쪽 규칙·명령은 `apps/ios/README.md`.
 
 # MOBILE (Flutter) 주의사항
 
