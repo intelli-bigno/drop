@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNotesStore } from './stores/notes'
 import { useAuthStore } from './stores/auth'
 import { useProfileStore } from './stores/profile'
@@ -6,61 +6,16 @@ import { NoteFeed } from './components/NoteFeed'
 import { AuthScreen } from './components/AuthScreen'
 import { QuickCapture } from './components/QuickCapture'
 import { UserMenu } from './components/UserMenu'
-import { BookSearchDialog } from './components/BookSearchDialog'
-import { BooksView } from './components/BooksView'
-import { BookDetail } from './components/BookDetail'
 import { Toaster } from './components/Toaster'
-import { isTextInputTarget, getClosestNoteId } from './lib/dom-utils'
 
 const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
 const envLabel = isLocal ? 'LOCAL' : 'REMOTE'
 
-type MainTab = 'notes' | 'books'
-
 function App() {
-  const {
-    loadNotes,
-    loadTags,
-    loadBooks,
-    subscribeToChanges,
-    createNote,
-    openBookSearch,
-    openBookSearchForLinking,
-    selectedBookId,
-  } = useNotesStore()
+  const { loadNotes, loadTags, subscribeToChanges, createNote } = useNotesStore()
   const { user, isAuthLoading, initializeAuth } = useAuthStore()
   const loadProfile = useProfileStore((s) => s.loadProfile)
   const [route, setRoute] = useState(() => window.location.hash.replace('#', '') || 'main')
-  const [activeTab, setActiveTab] = useState<MainTab>('notes')
-
-  // 단축키: Cmd+Shift+B (책 검색), Cmd+B (노트에 책 연결)
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // Cmd+Shift+B: 책 검색 (서재에 추가)
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
-        e.preventDefault()
-        openBookSearch()
-        return
-      }
-
-      // Cmd+B: 노트 편집 중일 때 책 연결 (피드 포커스는 NoteFeed에서 처리)
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'b') {
-        if (isTextInputTarget(document.activeElement)) {
-          const noteId = getClosestNoteId(document.activeElement)
-          if (noteId) {
-            e.preventDefault()
-            openBookSearchForLinking(noteId)
-          }
-        }
-      }
-    },
-    [openBookSearch, openBookSearchForLinking]
-  )
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
 
   // Handle hash-based routing
   useEffect(() => {
@@ -105,7 +60,6 @@ function App() {
 
     loadNotes()
     loadTags()
-    loadBooks()
     loadProfile()
 
     // Realtime 구독 시작
@@ -114,7 +68,7 @@ function App() {
     return () => {
       unsubscribe()
     }
-  }, [user, loadNotes, loadTags, loadBooks, loadProfile, subscribeToChanges])
+  }, [user, loadNotes, loadTags, loadProfile, subscribeToChanges])
 
   // Quick Capture route - minimal UI, separate window
   if (route === 'quick-capture') {
@@ -147,20 +101,6 @@ function App() {
   return (
     <div className="app">
       <div className="app-header">
-        <div className="app-tabs">
-          <button
-            className={`app-tab ${activeTab === 'notes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notes')}
-          >
-            노트
-          </button>
-          <button
-            className={`app-tab ${activeTab === 'books' ? 'active' : ''}`}
-            onClick={() => setActiveTab('books')}
-          >
-            서재
-          </button>
-        </div>
         <div className="app-header-right">
           {import.meta.env.DEV && (
             <div
@@ -182,11 +122,9 @@ function App() {
       </div>
 
       <div className="app-content">
-        {activeTab === 'notes' ? <NoteFeed /> : <BooksView />}
+        <NoteFeed />
       </div>
 
-      <BookSearchDialog />
-      {selectedBookId && <BookDetail />}
       <Toaster />
     </div>
   )

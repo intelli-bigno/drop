@@ -1,55 +1,4 @@
-import type {
-  Note,
-  Attachment,
-  Tag,
-  AladinSearchResult,
-  Book,
-  ReadingStatus,
-  BookWithNotes,
-} from '@drop/shared'
-
-// Book slice - 읽기 관리 시스템
-export type BookSearchMode = 'add' | 'link' // add: 서재에 추가, link: 노트에 연결
-
-export interface BookSlice {
-  // State
-  books: Book[]
-  selectedBookId: string | null
-  selectedBookWithNotes: BookWithNotes | null
-  isBookSearchOpen: boolean
-  bookSearchMode: BookSearchMode
-  linkTargetNoteId: string | null // link 모드일 때 연결할 노트 ID
-  librarySearchResults: Book[] // 내 서재 검색 결과
-  aladinSearchResults: AladinSearchResult[] // 알라딘 검색 결과
-  isSearchingBooks: boolean
-  isBooksLoading: boolean
-  bookFilter: ReadingStatus | 'all'
-
-  // 책 목록 관리
-  loadBooks: () => Promise<void>
-  setBookFilter: (filter: ReadingStatus | 'all') => void
-
-  // 검색 모달
-  openBookSearch: () => void
-  openBookSearchForLinking: (noteId: string) => void // 노트에 책 연결용
-  closeBookSearch: () => void
-  searchBooks: (query: string) => Promise<void>
-
-  // 책 CRUD
-  addBookToLibrary: (isbn13: string) => Promise<Book | null>
-  updateBookStatus: (
-    bookId: string,
-    status: ReadingStatus,
-    options?: { rating?: number }
-  ) => Promise<void>
-  deleteBook: (bookId: string) => Promise<void>
-
-  // 책-노트 관계
-  selectBook: (bookId: string | null) => void
-  loadBookWithNotes: (bookId: string) => Promise<BookWithNotes | null>
-  linkNoteToBook: (bookId: string, noteId: string) => Promise<void>
-  unlinkNoteFromBook: (bookId: string, noteId: string) => Promise<void>
-}
+import type { Note, Attachment, Tag } from '@drop/shared'
 
 // Notes slice
 export interface NotesSlice {
@@ -159,7 +108,6 @@ export interface NotesState
     AttachmentsSlice,
     InstagramSlice,
     YouTubeSlice,
-    BookSlice,
     LockSlice,
     CategoryFilterSlice,
     TrashSlice {}

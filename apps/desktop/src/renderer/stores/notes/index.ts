@@ -4,7 +4,6 @@ import { createTagsSlice } from './tags-slice'
 import { createAttachmentsSlice } from './attachments-slice'
 import { createInstagramSlice } from './instagram-slice'
 import { createYouTubeSlice } from './youtube-slice'
-import { createBookSlice } from './book-slice'
 import { createLockSlice, createCategoryFilterSlice } from './lock-slice'
 import { createTrashSlice } from './trash-slice'
 import type { NotesState } from './types'
@@ -16,7 +15,6 @@ export const useNotesStore = create<NotesState>()((...a) => ({
   ...createAttachmentsSlice(...a),
   ...createInstagramSlice(...a),
   ...createYouTubeSlice(...a),
-  ...createBookSlice(...a),
   ...createLockSlice(...a),
   ...createCategoryFilterSlice(...a),
   ...createTrashSlice(...a),

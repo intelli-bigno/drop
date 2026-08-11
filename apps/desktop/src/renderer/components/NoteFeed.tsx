@@ -52,7 +52,6 @@ export function NoteFeed() {
     togglePinNote,
     selectedNoteId,
     selectNote,
-    openBookSearchForLinking,
   } = useNotesStore()
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
   const [tagDialogNoteId, setTagDialogNoteId] = useState<string | null>(null)
@@ -77,7 +76,6 @@ export function NoteFeed() {
   const updateNotePriorityRef =
     useRef<(id: string, priority: number) => Promise<void>>(updateNotePriority)
   const togglePinNoteRef = useRef<(id: string) => Promise<void>>(togglePinNote)
-  const openBookSearchForLinkingRef = useRef<(noteId: string) => void>(openBookSearchForLinking)
 
   // 새 노트 생성 + 첨부물 추가 헬퍼 (useDragAndDrop에서 사용하기 위해 먼저 정의)
   const createNoteWithFile = useCallback(
@@ -202,10 +200,6 @@ export function NoteFeed() {
   useEffect(() => {
     togglePinNoteRef.current = togglePinNote
   }, [togglePinNote])
-
-  useEffect(() => {
-    openBookSearchForLinkingRef.current = openBookSearchForLinking
-  }, [openBookSearchForLinking])
 
   const handleEscapeFromNormal = useCallback((index: number) => {
     setFocusedIndex(index)
@@ -519,17 +513,6 @@ export function NoteFeed() {
 
       if (currentOrderedNotes.length === 0) return
       if (isTextInputTarget(e.target)) return
-
-      // Cmd+B: 포커스된 노트에 책 연결 (다른 단축키보다 먼저 처리)
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'b') {
-        if (currentFocusedIndex === null) return
-        e.preventDefault()
-        const item = currentOrderedNotes[currentFocusedIndex]
-        if (item) {
-          openBookSearchForLinkingRef.current(item.note.id)
-        }
-        return
-      }
 
       const action = resolveNoteFeedShortcut(e as unknown as React.KeyboardEvent)
       if (!action) return

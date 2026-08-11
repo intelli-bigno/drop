@@ -47,18 +47,6 @@ import {
   collectMediaItems,
   extractCaption,
 } from './instagram-utils'
-import {
-  searchBooks,
-  getBookByIsbn,
-  getBookByItemId,
-  downloadCover,
-  parseAladinUrl,
-} from './aladin-utils'
-import {
-  searchBooksUnified,
-  getAvailableSources,
-  type SearchOptions,
-} from './book-search-service'
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0'
 const INSTAGRAM_USER_AGENT = USER_AGENT
@@ -828,95 +816,6 @@ function setupIpcHandlers(): void {
     })
 
     return oembedData
-  })
-
-  // ============================================
-  // 알라딘 API 핸들러
-  // ============================================
-
-  ipcMain.handle('aladin:search', async (_event, query: string, page?: number) => {
-    console.info('[aladin] search start', { query, page })
-    try {
-      const results = await searchBooks(query, page ?? 1)
-      console.info('[aladin] search done', { count: results.length })
-      return results
-    } catch (error) {
-      console.error('[aladin] search error:', error)
-      return []
-    }
-  })
-
-  ipcMain.handle('aladin:getBookByIsbn', async (_event, isbn13: string) => {
-    console.info('[aladin] getBookByIsbn start', { isbn13 })
-    try {
-      const book = await getBookByIsbn(isbn13)
-      if (!book) {
-        console.warn('[aladin] getBookByIsbn: no data')
-        return null
-      }
-      console.info('[aladin] getBookByIsbn done', { title: book.title })
-      return book
-    } catch (error) {
-      console.error('[aladin] getBookByIsbn error:', error)
-      return null
-    }
-  })
-
-  ipcMain.handle('aladin:getBookByItemId', async (_event, itemId: string) => {
-    console.info('[aladin] getBookByItemId start', { itemId })
-    try {
-      const book = await getBookByItemId(itemId)
-      if (!book) {
-        console.warn('[aladin] getBookByItemId: no data')
-        return null
-      }
-      console.info('[aladin] getBookByItemId done', { title: book.title })
-      return book
-    } catch (error) {
-      console.error('[aladin] getBookByItemId error:', error)
-      return null
-    }
-  })
-
-  ipcMain.handle('aladin:downloadCover', async (_event, coverUrl: string) => {
-    console.info('[aladin] downloadCover start', { coverUrl })
-    try {
-      const buffer = await downloadCover(coverUrl)
-      if (!buffer) {
-        console.warn('[aladin] downloadCover: no data')
-        return null
-      }
-      console.info('[aladin] downloadCover done', { size: buffer.length })
-      // Base64로 변환하여 반환 (IPC 전송용)
-      return buffer.toString('base64')
-    } catch (error) {
-      console.error('[aladin] downloadCover error:', error)
-      return null
-    }
-  })
-
-  ipcMain.handle('aladin:parseUrl', async (_event, url: string) => {
-    return parseAladinUrl(url)
-  })
-
-  // 통합 책 검색 API
-  ipcMain.handle('books:search', async (_event, query: string, options?: SearchOptions) => {
-    console.info('[books] unified search start', { query, options })
-    try {
-      const result = await searchBooksUnified(query, options)
-      console.info('[books] unified search done', {
-        count: result.results.length,
-        sources: result.sources,
-      })
-      return result
-    } catch (error) {
-      console.error('[books] unified search error:', error)
-      return { results: [], sources: [], totalCount: 0 }
-    }
-  })
-
-  ipcMain.handle('books:getAvailableSources', async () => {
-    return getAvailableSources()
   })
 }
 
