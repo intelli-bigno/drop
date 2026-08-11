@@ -1,6 +1,7 @@
 // PRD 3.2 Schema 기반 타입 정의
 
-export type NoteSource = 'mobile' | 'desktop' | 'web'
+// 'mcp' = MCP 서버(AI 어시스턴트)를 통해 만들어진 노트
+export type NoteSource = 'mobile' | 'desktop' | 'web' | 'mcp'
 
 export type AttachmentType = 'image' | 'audio' | 'video' | 'file' | 'text' | 'instagram' | 'youtube' | 'book'
 
