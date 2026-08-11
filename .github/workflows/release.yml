@@ -69,10 +69,11 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_NAME: ${{ secrets.CSC_NAME }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: pnpm --filter @drop/desktop dist:remote
+        # 발행은 아래 "Upload to GitHub Release" 한 곳만 한다.
+        # GH_TOKEN이 보이면 electron-builder가 스스로 draft 릴리스를 만들어 중복된다.
+        run: pnpm --filter @drop/desktop dist:remote -- --publish never
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
