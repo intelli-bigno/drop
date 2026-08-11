@@ -11,6 +11,19 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
   notes: [],
   selectedNoteId: null,
   isLoading: false,
+  pendingDeleteNoteId: null,
+
+  // 삭제는 항상 확인을 거친다 — 단축키든 버튼이든 여기로 모인다 (BRU-24)
+  requestDeleteNote: (id) => set({ pendingDeleteNoteId: id }),
+
+  cancelDeleteNote: () => set({ pendingDeleteNoteId: null }),
+
+  confirmDeleteNote: async () => {
+    const id = get().pendingDeleteNoteId
+    if (!id) return
+    set({ pendingDeleteNoteId: null })
+    await get().deleteNote(id)
+  },
 
   loadNotes: async () => {
     set({ isLoading: true })
