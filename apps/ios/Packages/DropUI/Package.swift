@@ -10,7 +10,10 @@ let package = Package(
     products: [
         .library(name: "DropUI", targets: ["DropUI"]),
     ],
+    dependencies: [
+        .package(path: "../DropCore"),
+    ],
     targets: [
-        .target(name: "DropUI"),
+        .target(name: "DropUI", dependencies: ["DropCore"]),
     ]
 )

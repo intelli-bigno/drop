@@ -8,41 +8,32 @@ struct RootView: View {
     @Environment(\.dropContainer) private var container
 
     var body: some View {
+        #if DEBUG
+        if PreviewLaunch.isActive {
+            HomeView(repository: PreviewLaunch.makeRepository())
+        } else {
+            authenticatedBody
+        }
+        #else
+        authenticatedBody
+        #endif
+    }
+
+    @ViewBuilder
+    private var authenticatedBody: some View {
         switch auth.state {
         case .undetermined:
             // 세션 확인 전에 로그인 화면을 띄우면 이미 로그인한 사용자에게
             // 로그인 화면이 한 번 깜빡인다.
             ProgressView()
         case .signedIn:
-            HomePlaceholderView()
+            if let container {
+                // 로그인한 사용자가 바뀌면 목록 상태를 처음부터 다시 만든다.
+                HomeView(repository: container.makeNotesRepository())
+                    .id(auth.user?.id)
+            }
         case .signedOut, .failed, .working:
             AuthView()
-        }
-    }
-}
-
-/// M3(BRU-12)에서 실제 홈 화면으로 교체된다.
-private struct HomePlaceholderView: View {
-    @Environment(AuthStore.self) private var auth
-    @Environment(\.dropContainer) private var container
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: DropTheme.Spacing.comfortable) {
-                Text(auth.user?.email ?? "로그인됨")
-                    .font(.headline)
-                if let container {
-                    Text("\(container.configuration.environment.rawValue) · \(container.configuration.supabaseURL.host() ?? "-")")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("DROP")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("로그아웃") { Task { await auth.signOut() } }
-                }
-            }
         }
     }
 }
