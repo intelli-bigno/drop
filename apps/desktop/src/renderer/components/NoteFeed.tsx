@@ -18,6 +18,7 @@ import { isToggleLockShortcut } from '../shortcuts/noteLock'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../shortcuts/noteTrash'
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
+import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { extractYouTubeUrls } from '../lib/youtube-url-utils'
 import { useDragAndDrop } from '../hooks'
 
@@ -31,6 +32,10 @@ export function NoteFeed() {
     isLoading,
     createNote,
     deleteNote,
+    requestDeleteNote,
+    pendingDeleteNoteId,
+    cancelDeleteNote,
+    confirmDeleteNote,
     addAttachment,
     createNoteWithInstagram,
     createNoteWithYouTube,
@@ -69,6 +74,7 @@ export function NoteFeed() {
   const focusedIndexRef = useRef<number | null>(focusedIndex)
   const orderedNotesRef = useRef<Array<{ note: Note; depth: number }>>([])
   const deleteNoteRef = useRef<(id: string) => void>(deleteNote)
+  const requestDeleteNoteRef = useRef<(id: string) => void>(requestDeleteNote)
   const handleReplyRef = useRef<(parentId: string) => Promise<void>>(() => Promise.resolve())
   const handleCreateSiblingRef = useRef<(parentId: string | null) => Promise<void>>(() =>
     Promise.resolve()
@@ -103,6 +109,12 @@ export function NoteFeed() {
     if (viewMode === 'archived') return archivedNotes
     return notes
   }, [viewMode, notes, trashedNotes, archivedNotes])
+
+  // 삭제 확인 대상 — 어느 뷰에서 눌렸든 현재 목록에서 찾는다
+  const pendingDeleteNote = useMemo(
+    () => (pendingDeleteNoteId ? baseNotes.find((n) => n.id === pendingDeleteNoteId) : undefined),
+    [pendingDeleteNoteId, baseNotes]
+  )
 
   const filteredNotes = useMemo(() => {
     if (viewMode !== 'active') return baseNotes
@@ -184,6 +196,10 @@ export function NoteFeed() {
   useEffect(() => {
     deleteNoteRef.current = deleteNote
   }, [deleteNote])
+
+  useEffect(() => {
+    requestDeleteNoteRef.current = requestDeleteNote
+  }, [requestDeleteNote])
 
   useEffect(() => {
     handleReplyRef.current = handleReply
@@ -447,13 +463,13 @@ export function NoteFeed() {
 
       e.preventDefault()
       e.stopPropagation()
-      // 소프트 삭제 (휴지통으로) — 실행 취소 토스트로 복구 가능
-      deleteNote(noteId)
+      // 확인 다이얼로그를 거친다 (BRU-24)
+      requestDeleteNote(noteId)
     }
 
     window.addEventListener('keydown', handleDeleteKeyDown)
     return () => window.removeEventListener('keydown', handleDeleteKeyDown)
-  }, [flatNotes, focusedIndex, viewMode, deleteNote])
+  }, [flatNotes, focusedIndex, viewMode, requestDeleteNote])
 
   // e 단축키로 보관
   useEffect(() => {
@@ -557,8 +573,8 @@ export function NoteFeed() {
         e.preventDefault()
         const item = currentOrderedNotes[currentFocusedIndex]
         if (item) {
-          // 소프트 삭제 (휴지통으로) — 실행 취소 토스트로 복구 가능
-          deleteNoteRef.current(item.note.id)
+          // 확인 다이얼로그를 거친다 (BRU-24)
+          requestDeleteNoteRef.current(item.note.id)
           if (currentOrderedNotes.length > 1) {
             const nextIndex =
               currentFocusedIndex >= currentOrderedNotes.length - 1
@@ -752,6 +768,21 @@ export function NoteFeed() {
             }
           }}
           onCancel={() => setPinDialogNoteId(null)}
+        />
+      )}
+      {pendingDeleteNote && (
+        <ConfirmDialog
+          title="노트를 삭제할까요?"
+          message={buildDeleteConfirmMessage({
+            content: pendingDeleteNote.content,
+            attachmentCount: pendingDeleteNote.attachments.length,
+          })}
+          confirmLabel="삭제"
+          danger
+          onConfirm={() => {
+            void confirmDeleteNote()
+          }}
+          onCancel={cancelDeleteNote}
         />
       )}
       {showEmptyTrashConfirm && (

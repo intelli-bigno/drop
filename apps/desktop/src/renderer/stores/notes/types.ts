@@ -6,6 +6,12 @@ export interface NotesSlice {
   selectedNoteId: string | null
   isLoading: boolean
 
+  /** 삭제 확인 대기 중인 노트. 모든 삭제 경로가 이 확인을 거친다 (BRU-24) */
+  pendingDeleteNoteId: string | null
+  requestDeleteNote: (id: string) => void
+  cancelDeleteNote: () => void
+  confirmDeleteNote: () => Promise<void>
+
   loadNotes: () => Promise<void>
   createNote: (initialContent?: string, parentId?: string) => Promise<Note>
   updateNote: (id: string, content: string) => Promise<void>

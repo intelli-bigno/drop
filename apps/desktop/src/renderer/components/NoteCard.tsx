@@ -53,7 +53,7 @@ export const NoteCard = memo(
       const {
         updateNote,
         updateNotePriority,
-        deleteNote,
+        requestDeleteNote,
         addAttachment,
         removeAttachment,
         temporarilyUnlockedNoteIds,
@@ -262,7 +262,7 @@ export const NoteCard = memo(
                         className="delete-btn"
                         title="삭제"
                         aria-label="삭제"
-                        onClick={() => deleteNote(note.id)}
+                        onClick={() => requestDeleteNote(note.id)}
                       >
                         <Icon name="x" />
                       </button>
@@ -283,7 +283,7 @@ export const NoteCard = memo(
                       className="delete-btn"
                       title="삭제"
                       aria-label="삭제"
-                      onClick={() => deleteNote(note.id)}
+                      onClick={() => requestDeleteNote(note.id)}
                     >
                       <Icon name="x" />
                     </button>
