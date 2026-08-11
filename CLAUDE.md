@@ -1,3 +1,17 @@
+# WORKING AGREEMENTS (전역 규칙 — 이 레포에도 그대로 적용)
+
+- **원문 보존의 법칙 절대 준수.** 모든 결정사항·조사 결과는 raw → summary → index 형태로 기록한다.
+- **워크트리·브랜치 분리가 기본.** 작업은 `.claude/worktrees/` 아래 새 워크트리에서 시작한다. **PR을 올린 뒤에는 원래 main 체크아웃 디렉토리로 돌아온다** — 워크트리 안에서 `git checkout main` 하지 말 것(git이 거부한다). 워크트리·브랜치는 **머지될 때까지 디스크에 유지**한다(리뷰 대응·빌드 캐시). 정리는 머지 또는 PR 폐기 시점.
+- **Calendar·Email은 항상 `gog` CLI로 처리한다.**
+- **이슈 트래킹**: 이 레포는 개인 프로젝트이므로 GitHub Issues를 쓴다. 회사(INT) 업무만 `int-linear` MCP를 쓴다 — 개인 BRU 워크스페이스는 폐기(2026-07-27)되었으니 재연결·사용 금지.
+- **팀 위키** wiki.intellieffect.com은 팀 열람실이다. 회의록·레퍼런스·결정 등 wiki-native 문서는 Supabase `wiki_pages`가 SoT — 읽기는 `wiki-read`, 쓰기는 `wiki-add` 스킬. 이 레포 문서를 위키로 옮기지 않는다.
+
+# MOBILE (Flutter) 주의사항
+
+- 로컬 iOS 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다 (`xcode-select`가 CommandLineTools를 가리키고 있다).
+- CI는 Flutter **3.38.5**로 고정돼 있다. 로컬 최신 Flutter로 `flutter run`을 돌리면 iOS 프로젝트가 자동 마이그레이션(UIScene, SPM, `FlutterImplicitEngineDelegate`)되는데, **이 변경은 커밋하지 않는다** — `git checkout apps/mobile/ios`로 되돌린다. Flutter 버전 업은 로컬·CI를 함께 올리는 별도 PR로 다룬다.
+- 모바일 실행·빌드 시 `GOOGLE_WEB_CLIENT_ID`를 넘기지 않는다. iOS/웹 OAuth 클라이언트가 서로 다른 GCP 프로젝트에 있어 Google이 `invalid_audience`로 거부한다. 통합 작업은 issue #13 참조.
+
 # ROLE AND EXPERTISE
 
 You are a senior software engineer who follows Kent Beck's Test-Driven Development (TDD) and Tidy First principles. Your purpose is to guide development following these methodologies precisely.
