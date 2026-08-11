@@ -3,7 +3,7 @@
         electron-build electron-build-local electron-build-remote \
         flutter-setup flutter-dev flutter-dev-remote flutter-build flutter-build-ipa flutter-testflight \
         flutter-analyze flutter-test flutter-codegen flutter-clean \
-        ios-generate ios-test ios-build ios-dev ios-open ios-clean
+        ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean
 
 .DEFAULT_GOAL := help
 
@@ -42,10 +42,13 @@ help:
 	@echo "    make flutter-clean        - Flutter 정리"
 	@echo ""
 	@echo "  iOS 네이티브 (Flutter 대체 트랙)"
+	@echo "    make ios-config           - 환경변수 → Config-*.xcconfig 생성"
 	@echo "    make ios-generate         - project.yml → Drop.xcodeproj 생성"
 	@echo "    make ios-test             - DropCore 테스트 (시뮬레이터 불필요)"
-	@echo "    make ios-build            - 시뮬레이터용 빌드"
-	@echo "    make ios-dev              - 시뮬레이터에서 실행"
+	@echo "    make ios-build            - 시뮬레이터용 빌드 (로컬 Supabase)"
+	@echo "    make ios-build-remote     - 시뮬레이터용 빌드 (리모트 Supabase)"
+	@echo "    make ios-dev              - 시뮬레이터에서 실행 (로컬 Supabase)"
+	@echo "    make ios-dev-remote       - 시뮬레이터에서 실행 (리모트 Supabase)"
 	@echo "    make ios-open             - Xcode로 열기"
 	@echo "    make ios-clean            - 생성물 정리"
 
@@ -213,26 +216,43 @@ IOS_DEVELOPER_DIR := /Applications/Xcode.app/Contents/Developer
 IOS_DIR := apps/ios
 IOS_SIMULATOR ?= platform=iOS Simulator,name=iPhone 17
 
+# 환경변수 → Config-*.xcconfig 생성 (실제 값이 든 파일은 커밋되지 않는다)
+# 필요한 값: SUPABASE_URL_LOCAL / SUPABASE_ANON_KEY_LOCAL / SUPABASE_URL_REMOTE / SUPABASE_ANON_KEY_REMOTE
+# (Flutter 타겟과 같은 이름을 쓴다 — .env.local을 그대로 재사용할 수 있게)
+ios-config:
+	@bash scripts/ios-config.sh
+
 # project.yml → Drop.xcodeproj 생성 (.xcodeproj는 커밋하지 않는다)
 ios-generate:
 	@command -v xcodegen >/dev/null || { echo "❌ xcodegen이 없습니다: brew install xcodegen"; exit 1; }
+	@test -f $(IOS_DIR)/Config/Config-localdev.xcconfig || { echo "❌ Config-localdev.xcconfig가 없습니다 → make ios-config"; exit 1; }
+	@test -f $(IOS_DIR)/Config/Config-remote.xcconfig || { echo "❌ Config-remote.xcconfig가 없습니다 → make ios-config"; exit 1; }
 	cd $(IOS_DIR) && xcodegen generate
 
 # 도메인 로직 테스트 — 시뮬레이터 없이 돈다
 ios-test:
 	cd $(IOS_DIR)/Packages/DropCore && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) swift test
 
-# 시뮬레이터용 빌드
+# 시뮬레이터용 빌드 (기본: 로컬 Supabase)
+IOS_SCHEME ?= Drop-localdev
+
 ios-build: ios-generate
 	cd $(IOS_DIR) && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) xcodebuild \
-		-project Drop.xcodeproj -scheme Drop \
+		-project Drop.xcodeproj -scheme $(IOS_SCHEME) \
 		-destination 'generic/platform=iOS Simulator' build
+
+# 리모트 Supabase를 보는 빌드
+ios-build-remote:
+	$(MAKE) ios-build IOS_SCHEME=Drop-remote
 
 # 시뮬레이터에서 실행
 ios-dev: ios-generate
 	cd $(IOS_DIR) && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) xcodebuild \
-		-project Drop.xcodeproj -scheme Drop \
+		-project Drop.xcodeproj -scheme $(IOS_SCHEME) \
 		-destination '$(IOS_SIMULATOR)' build
+
+ios-dev-remote:
+	$(MAKE) ios-dev IOS_SCHEME=Drop-remote
 
 # Xcode로 열기
 ios-open: ios-generate

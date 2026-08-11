@@ -19,13 +19,30 @@ apps/ios/
 
 | 명령 | 설명 |
 | --- | --- |
+| `make ios-config` | 환경변수 → `Config/Config-*.xcconfig` 생성 |
 | `make ios-test` | DropCore 테스트 (시뮬레이터 불필요, 가장 빠른 피드백) |
-| `make ios-build` | 시뮬레이터용 빌드 |
-| `make ios-dev` | 시뮬레이터에서 실행 |
+| `make ios-build` / `ios-build-remote` | 시뮬레이터용 빌드 (로컬 / 리모트 Supabase) |
+| `make ios-dev` / `ios-dev-remote` | 시뮬레이터에서 실행 |
 | `make ios-open` | Xcode로 열기 |
 | `make ios-clean` | 생성물 정리 |
 
-사전 준비: `brew install xcodegen`, Xcode 설치.
+사전 준비: `brew install xcodegen`, Xcode 설치, 그리고 **`make ios-config`** 1회.
+
+## 구성값이 흐르는 경로
+
+```
+.env.local 또는 export한 환경변수
+  → scripts/ios-config.sh
+  → apps/ios/Config/Config-{localdev,remote}.xcconfig   (gitignore)
+  → 빌드 설정 → Info.plist ($(SUPABASE_URL) 등)
+  → DropConfiguration (검증) → DropEnvironmentContainer → SupabaseClient
+```
+
+환경변수 이름은 Flutter 타겟과 같다 (`SUPABASE_URL_LOCAL` / `SUPABASE_ANON_KEY_LOCAL` / `SUPABASE_URL_REMOTE` / `SUPABASE_ANON_KEY_REMOTE`) — 기존 `.env.local`을 그대로 재사용한다.
+
+**xcconfig는 `//`부터를 주석으로 잘라먹는다.** URL은 `https:/$()/host` 형태로 써야 스킴이 살아남는다(`$()`는 빌드 시 빈 문자열). 생성 스크립트가 자동으로 처리하고, 그래도 스킴이 잘린 값이 들어오면 `DropConfiguration`이 `malformedURL`로 즉시 실패시킨다 — 조용히 잘못 붙는 경우는 없다.
+
+빌드 구성은 셋이다: `Debug-localdev`, `Debug-remote`, `Release-remote`. 스킴 `Drop-localdev` / `Drop-remote`가 각각을 실행하고, 아카이브는 둘 다 `Release-remote`를 쓴다.
 
 ## 규칙
 

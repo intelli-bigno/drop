@@ -24,3 +24,7 @@ DerivedData/
 .build/
 *.xcworkspace/xcshareddata/swiftpm/Package.resolved
 .swiftpm/
+
+# iOS 빌드 구성 (실제 값 — .example만 커밋)
+apps/ios/Config/Config-*.xcconfig
+!apps/ios/Config/*.example

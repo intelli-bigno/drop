@@ -11,8 +11,16 @@ let package = Package(
     products: [
         .library(name: "DropCore", targets: ["DropCore"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.54.1"),
+    ],
     targets: [
-        .target(name: "DropCore"),
+        .target(
+            name: "DropCore",
+            dependencies: [
+                .product(name: "Supabase", package: "supabase-swift"),
+            ]
+        ),
         .testTarget(name: "DropCoreTests", dependencies: ["DropCore"]),
     ]
 )
