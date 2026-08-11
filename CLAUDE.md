@@ -10,7 +10,9 @@
 
 - 로컬 iOS 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다 (`xcode-select`가 CommandLineTools를 가리키고 있다).
 - CI는 Flutter **3.38.5**로 고정돼 있다. 로컬 최신 Flutter로 `flutter run`을 돌리면 iOS 프로젝트가 자동 마이그레이션(UIScene, SPM, `FlutterImplicitEngineDelegate`)되는데, **이 변경은 커밋하지 않는다** — `git checkout apps/mobile/ios`로 되돌린다. Flutter 버전 업은 로컬·CI를 함께 올리는 별도 PR로 다룬다.
-- 모바일 실행·빌드 시 `GOOGLE_WEB_CLIENT_ID`를 넘기지 않는다. iOS/웹 OAuth 클라이언트가 서로 다른 GCP 프로젝트에 있어 Google이 `invalid_audience`로 거부한다. 통합 작업은 issue #13 참조.
+- 모바일 실행·빌드 시 `GOOGLE_WEB_CLIENT_ID`(= `serverClientId`)를 **반드시** 넘긴다. Supabase Google provider는 웹 클라이언트 하나만 audience로 신뢰하므로, 빼면 id_token의 audience가 플랫폼 클라이언트 ID가 되어 `Unacceptable audience`로 거부된다. Makefile의 `flutter-dev` / `flutter-build` / `flutter-build-ipa`가 이미 넘기고 있으니 그대로 쓰면 된다.
+- iOS·웹 OAuth 클라이언트는 같은 GCP 프로젝트(`bruce-clawdbot`)에 있어야 한다. 다르면 Google이 `invalid_audience: The audience client and the client need to be in the same project.`로 거부한다 (2026-08-11 실증, #17). Android는 아직 구 프로젝트에 남아 있다 — #19.
+- TestFlight에 검증용 빌드만 보낼 때는 태그를 만들지 말고 `gh workflow run release.yml -f target=ios`. 태그를 밀면 데스크톱 DMG 공증·GitHub Release·설치본 자동 업데이트까지 함께 나간다.
 
 # ROLE AND EXPERTISE
 
