@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNotesStore } from './stores/notes'
 import { useAuthStore } from './stores/auth'
 import { useProfileStore } from './stores/profile'
@@ -7,6 +7,9 @@ import { AuthScreen } from './components/AuthScreen'
 import { QuickCapture } from './components/QuickCapture'
 import { UserMenu } from './components/UserMenu'
 import { Toaster } from './components/Toaster'
+import { ShortcutCheatSheet } from './components/ShortcutCheatSheet'
+import { isCheatSheetShortcut } from './shortcuts/noteGlobal'
+import { isTextInputTarget } from './lib/dom-utils'
 
 const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
 const envLabel = isLocal ? 'LOCAL' : 'REMOTE'
@@ -16,6 +19,20 @@ function App() {
   const { user, isAuthLoading, initializeAuth } = useAuthStore()
   const loadProfile = useProfileStore((s) => s.loadProfile)
   const [route, setRoute] = useState(() => window.location.hash.replace('#', '') || 'main')
+  const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false)
+
+  // ⌘/ 또는 ? 로 단축키 치트시트. '?'는 수식키가 없으므로 입력 중에는 무시한다.
+  const handleCheatSheetKey = useCallback((e: KeyboardEvent) => {
+    if (!isCheatSheetShortcut(e)) return
+    if (!e.metaKey && !e.ctrlKey && isTextInputTarget(e.target)) return
+    e.preventDefault()
+    setIsCheatSheetOpen((open) => !open)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleCheatSheetKey)
+    return () => window.removeEventListener('keydown', handleCheatSheetKey)
+  }, [handleCheatSheetKey])
 
   // Handle hash-based routing
   useEffect(() => {
@@ -125,6 +142,7 @@ function App() {
         <NoteFeed />
       </div>
 
+      {isCheatSheetOpen && <ShortcutCheatSheet onClose={() => setIsCheatSheetOpen(false)} />}
       <Toaster />
     </div>
   )

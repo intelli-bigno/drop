@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { resolveNoteFeedShortcut } from '../noteFeed'
 import { resolveNoteEditorShortcut } from '../noteEditor'
-import { isCreateNoteShortcut, isSearchShortcut } from '../noteGlobal'
+import { isCreateNoteShortcut, isSearchShortcut, isCheatSheetShortcut } from '../noteGlobal'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../noteTrash'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../tagList'
 import { isToggleLockShortcut } from '../noteLock'
@@ -140,5 +140,20 @@ describe('lock shortcut', () => {
     expect(isToggleLockShortcut(key('l', { metaKey: true }))).toBe(true)
     expect(isToggleLockShortcut(key('ㅣ', { metaKey: true }))).toBe(true)
     expect(isToggleLockShortcut(key('l'))).toBe(false)
+  })
+})
+
+describe('cheat sheet shortcut', () => {
+  it('shouldOpenOnPrimarySlash', () => {
+    expect(isCheatSheetShortcut(key('/', { metaKey: true }))).toBe(true)
+    expect(isCheatSheetShortcut(key('/', { ctrlKey: true }))).toBe(true)
+  })
+
+  it('shouldOpenOnQuestionMarkWithoutModifier', () => {
+    expect(isCheatSheetShortcut(key('?'))).toBe(true)
+  })
+
+  it('shouldNotOpenOnPlainSlash', () => {
+    expect(isCheatSheetShortcut(key('/'))).toBe(false)
   })
 })
