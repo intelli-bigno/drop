@@ -12,6 +12,7 @@ import { NoteHistoryDialog } from './NoteHistoryDialog'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
+import { shouldTruncateNote } from '../lib/note-truncation'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
@@ -41,11 +42,8 @@ export const NoteCard = memo(
       const [isExpanded, setIsExpanded] = useState(false)
       const [isEditing, setIsEditing] = useState(false)
 
-      // 콘텐츠가 truncation이 필요한지 판단 (5줄 이상 또는 200자 이상)
-      const isTruncatable = useMemo(() => {
-        const lineCount = (note.content.match(/\n/g) || []).length + 1
-        return lineCount > 5 || note.content.length > 200
-      }, [note.content])
+      // 기본 노출은 2줄 — 판단 기준은 lib/note-truncation.ts (CSS 접힘 높이와 짝)
+      const isTruncatable = useMemo(() => shouldTruncateNote(note.content), [note.content])
 
       // 축소 상태: truncatable이고, 확장되지 않았고, 편집 중이 아닐 때
       const isCollapsed = isTruncatable && !isExpanded && !isEditing
@@ -208,6 +206,9 @@ export const NoteCard = memo(
                   {priorityInfo.symbol}
                 </button>
               )}
+              <div className="note-card-header-tags">
+                <TagList noteId={note.id} tags={note.tags} />
+              </div>
               <div className="note-card-actions">
                 {viewMode === 'active' && (
                   <>
@@ -343,7 +344,6 @@ export const NoteCard = memo(
                   onShowMore={() => setIsExpanded(true)}
                 />
                 <div className="note-tags-section">
-                  <TagList noteId={note.id} tags={note.tags} />
                   <TagInput
                     ref={tagInputRef}
                     noteId={note.id}
