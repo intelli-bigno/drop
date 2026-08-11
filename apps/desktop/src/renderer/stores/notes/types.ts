@@ -1,4 +1,4 @@
-import type { Note, Attachment, Tag } from '@drop/shared'
+import type { Note, Attachment, Tag, NoteRevision } from '@drop/shared'
 
 // Notes slice
 export interface NotesSlice {
@@ -14,6 +14,18 @@ export interface NotesSlice {
   deleteNote: (id: string) => Promise<void>
   selectNote: (id: string | null) => void
   subscribeToChanges: () => () => void
+}
+
+// Revisions slice — 편집 히스토리 (기록은 DB 트리거, 앱은 읽기·복원만)
+export interface RevisionsSlice {
+  revisionsByNote: Record<string, NoteRevision[]>
+  isRevisionsLoading: boolean
+  historyNoteId: string | null
+
+  openHistory: (noteId: string) => void
+  closeHistory: () => void
+  loadRevisions: (noteId: string) => Promise<void>
+  restoreRevision: (noteId: string, content: string) => Promise<void>
 }
 
 // Tags slice
@@ -108,6 +120,7 @@ export interface NotesState
     AttachmentsSlice,
     InstagramSlice,
     YouTubeSlice,
+    RevisionsSlice,
     LockSlice,
     CategoryFilterSlice,
     TrashSlice {}

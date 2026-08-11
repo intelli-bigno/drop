@@ -2,6 +2,7 @@ import type { SVGProps } from 'react'
 
 export type IconName =
   | 'pencil'
+  | 'history'
   | 'archive'
   | 'trash'
   | 'link'
@@ -92,6 +93,13 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />
+    </>
+  ),
+  history: (
+    <>
+      <path d="M3 3v5h5" />
+      <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+      <path d="M12 7v5l4 2" />
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,

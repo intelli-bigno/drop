@@ -180,6 +180,35 @@ export type Database = {
         }
         Relationships: []
       }
+      note_revisions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          note_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          note_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          note_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_revisions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_tags: {
         Row: {
           note_id: string
@@ -309,7 +338,10 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          mcp_api_key: string | null
+          mcp_api_key_hash: string | null
+          mcp_key_created_at: string | null
+          mcp_key_last_used_at: string | null
+          mcp_key_prefix: string | null
           pin_hash: string | null
           updated_at: string
           user_id: string
@@ -317,7 +349,10 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          mcp_api_key?: string | null
+          mcp_api_key_hash?: string | null
+          mcp_key_created_at?: string | null
+          mcp_key_last_used_at?: string | null
+          mcp_key_prefix?: string | null
           pin_hash?: string | null
           updated_at?: string
           user_id: string
@@ -325,7 +360,10 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          mcp_api_key?: string | null
+          mcp_api_key_hash?: string | null
+          mcp_key_created_at?: string | null
+          mcp_key_last_used_at?: string | null
+          mcp_key_prefix?: string | null
           pin_hash?: string | null
           updated_at?: string
           user_id?: string
@@ -340,6 +378,7 @@ export type Database = {
       generate_mcp_api_key: { Args: never; Returns: string }
       get_mcp_api_key: { Args: never; Returns: string }
       get_user_id_by_mcp_key: { Args: { api_key: string }; Returns: string }
+      has_note_pin: { Args: never; Returns: boolean }
       mcp_add_tags_to_note: {
         Args: { api_key: string; p_note_id: string; p_tag_names: string[] }
         Returns: Json
@@ -436,6 +475,8 @@ export type Database = {
       }
       mcp_validate_key: { Args: { api_key: string }; Returns: string }
       regenerate_mcp_api_key: { Args: never; Returns: string }
+      set_note_pin: { Args: { p_pin: string }; Returns: boolean }
+      verify_note_pin: { Args: { p_pin: string }; Returns: boolean }
     }
     Enums: {
       reading_status: "to_read" | "reading" | "completed"
