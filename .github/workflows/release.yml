@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  # 태그 없이 모바일만 테스터에게 보낼 때 쓴다 (데스크톱 릴리스는 나가지 않는다)
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '빌드·배포 대상'
+        type: choice
+        options:
+          - ios
+          - android
+          - mobile
+        default: ios
 
 permissions:
   contents: write
@@ -15,6 +26,8 @@ env:
 jobs:
   # Mac (Electron) 빌드 및 Notarization
   release-mac:
+    # 데스크톱은 태그 릴리스에서만 나간다 — 수동 실행은 모바일 전용
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +110,10 @@ jobs:
 
   # iOS (Flutter) 빌드 및 TestFlight 업로드
   release-ios:
+    if: >-
+      startsWith(github.ref, 'refs/tags/')
+      || inputs.target == 'ios'
+      || inputs.target == 'mobile'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -235,6 +252,10 @@ jobs:
 
   # Android (Flutter) 빌드 및 Firebase App Distribution 업로드
   release-android:
+    if: >-
+      startsWith(github.ref, 'refs/tags/')
+      || inputs.target == 'android'
+      || inputs.target == 'mobile'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
