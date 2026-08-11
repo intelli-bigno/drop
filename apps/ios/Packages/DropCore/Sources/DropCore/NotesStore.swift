@@ -146,6 +146,11 @@ public final class NotesStore {
         errorMessage = nil
     }
 
+    /// 화면 쪽(첨부 업로드 등)에서 생긴 오류도 같은 자리에 보여 준다.
+    public func report(error: Error) {
+        errorMessage = Self.message(for: error)
+    }
+
     public func trashSelected() async {
         let targets = selectedIDs
         // 일괄 처리 전에 선택을 비운다. 남겨 두면 다음 탭이 엉뚱한 노트에 걸린다.

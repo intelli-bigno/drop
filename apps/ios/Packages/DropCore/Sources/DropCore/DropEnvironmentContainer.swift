@@ -20,6 +20,15 @@ public final class DropEnvironmentContainer: Sendable {
         SupabaseNotesRepository(client: supabase)
     }
 
+    /// 전사는 Supabase Edge Function을 부른다. 인증 토큰은 호출 시점의 세션에서 꺼낸다 —
+    /// 미리 붙잡아 두면 만료된 토큰을 계속 쓰게 된다.
+    public func makeTranscriptionService() -> any TranscriptionService {
+        SupabaseTranscriptionService(
+            endpoint: configuration.supabaseURL.appendingPathComponent("functions/v1/transcribe"),
+            authorizationToken: { [supabase] in supabase.auth.currentSession?.accessToken }
+        )
+    }
+
     public func makeTagsRepository() -> any TagsRepository {
         SupabaseTagsRepository(client: supabase)
     }
