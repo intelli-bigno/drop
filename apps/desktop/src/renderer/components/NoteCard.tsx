@@ -8,6 +8,7 @@ import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
+import { NoteHistoryDialog } from './NoteHistoryDialog'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
@@ -64,6 +65,9 @@ export const NoteCard = memo(
         restoreNote,
         permanentlyDeleteNote,
         togglePinNote,
+        openHistory,
+        closeHistory,
+        historyNoteId,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
 
@@ -235,6 +239,16 @@ export const NoteCard = memo(
                     )}
                     {!isLocked && (
                       <button
+                        className="history-btn"
+                        onClick={() => openHistory(note.id)}
+                        title="편집 기록"
+                        aria-label="편집 기록"
+                      >
+                        <Icon name="history" />
+                      </button>
+                    )}
+                    {!isLocked && (
+                      <button
                         className="archive-btn"
                         onClick={() => archiveNote(note.id)}
                         title="보관"
@@ -366,6 +380,9 @@ export const NoteCard = memo(
               }}
               onCancel={() => setShowPermanentDeleteConfirm(false)}
             />
+          )}
+          {historyNoteId === note.id && (
+            <NoteHistoryDialog noteId={note.id} onClose={closeHistory} />
           )}
         </>
       )
