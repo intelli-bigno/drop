@@ -1,6 +1,6 @@
 {
   "name": "@drop/desktop",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "DROP - Quick note-taking app",
   "author": "DROP Team",
   "main": "./out/main/index.js",
