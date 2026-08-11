@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "dist": "electron-vite build && electron-builder --mac",
     "dist:local": "electron-vite build --mode localdev && electron-builder --mac",
-    "dist:remote": "electron-vite build --mode remote && electron-builder --mac"
+    "dist:remote": "electron-vite build --mode remote && electron-builder --mac",
+    "dist:remote:ci": "electron-vite build --mode remote && electron-builder --mac --publish never"
   },
   "build": {
     "appId": "com.intellieffect.drop.desktop",
