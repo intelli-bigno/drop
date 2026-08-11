@@ -28,6 +28,23 @@
 	<string>$(SUPABASE_URL)</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>GOOGLE_WEB_CLIENT_ID</key>
+	<string>$(GOOGLE_WEB_CLIENT_ID)</string>
+	<key>GOOGLE_IOS_CLIENT_ID</key>
+	<string>$(GOOGLE_IOS_CLIENT_ID)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Google 로그인 콜백. iOS 클라이언트 ID를 뒤집은 값이며
+				     scripts/ios-config.sh가 자동으로 계산해 넣는다. -->
+				<string>$(GOOGLE_IOS_CLIENT_ID_REVERSED)</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

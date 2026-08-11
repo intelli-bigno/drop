@@ -14,6 +14,16 @@ public final class DropEnvironmentContainer: Sendable {
         self.supabase = supabase
     }
 
+    /// Supabase 인증 게이트웨이. 로그인 창을 띄우는 쪽(GoogleIdentityProvider)은
+    /// 화면이 필요하므로 앱 타겟에서 주입한다.
+    @MainActor
+    public func makeAuthStore(identityProvider: any GoogleIdentityProvider) -> AuthStore {
+        AuthStore(
+            gateway: SupabaseAuthenticationGateway(client: supabase),
+            identityProvider: identityProvider
+        )
+    }
+
     /// 구성값으로 실제 Supabase 클라이언트를 만든다.
     public convenience init(configuration: DropConfiguration) {
         self.init(

@@ -27,6 +27,10 @@ packages:
     path: Packages/DropCore
   DropUI:
     path: Packages/DropUI
+  # 로그인 창을 띄우는 SDK라 화면에 붙어 있다 — DropCore가 아니라 앱 타겟이 쓴다.
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 9.2.0
 
 targets:
   Drop:
@@ -43,6 +47,8 @@ targets:
         product: DropCore
       - package: DropUI
         product: DropUI
+      - package: GoogleSignIn
+        product: GoogleSignIn
     settings:
       base:
         # 병렬 운영 기간 동안 Flutter 앱(com.intellieffect.drop.mobile)과 다른 번들 ID를 쓴다.

@@ -11,6 +11,8 @@ struct DropConfigurationTests {
         "SUPABASE_URL": "https://abcdefgh.supabase.co",
         "SUPABASE_ANON_KEY": "anon-key-value",
         "DROP_ENVIRONMENT": "remote",
+        "GOOGLE_WEB_CLIENT_ID": "web-client.apps.googleusercontent.com",
+        "GOOGLE_IOS_CLIENT_ID": "ios-client.apps.googleusercontent.com",
     ]
 
     @Test("Info.plist 값으로 구성을 만든다")
@@ -20,6 +22,43 @@ struct DropConfigurationTests {
         #expect(config.supabaseURL == URL(string: "https://abcdefgh.supabase.co"))
         #expect(config.supabaseAnonKey == "anon-key-value")
         #expect(config.environment == .remote)
+        #expect(config.googleWebClientID == "web-client.apps.googleusercontent.com")
+        #expect(config.googleIOSClientID == "ios-client.apps.googleusercontent.com")
+    }
+
+    /// 웹 클라이언트 ID(serverClientId)를 빠뜨리면 id_token의 audience가
+    /// iOS 클라이언트 ID가 되어 Supabase가 `Unacceptable audience`로 거부한다.
+    /// 런타임에 로그인 실패로 드러나기 전에 여기서 끊는다.
+    @Test("웹 클라이언트 ID가 없으면 실행 전에 실패한다")
+    func missingWebClientIDThrows() {
+        var plist = validPlist
+        plist.removeValue(forKey: "GOOGLE_WEB_CLIENT_ID")
+
+        #expect(throws: DropConfigurationError.missingValue("GOOGLE_WEB_CLIENT_ID")) {
+            try DropConfiguration(plist: plist)
+        }
+    }
+
+    @Test("iOS 클라이언트 ID가 없으면 실행 전에 실패한다")
+    func missingIOSClientIDThrows() {
+        var plist = validPlist
+        plist.removeValue(forKey: "GOOGLE_IOS_CLIENT_ID")
+
+        #expect(throws: DropConfigurationError.missingValue("GOOGLE_IOS_CLIENT_ID")) {
+            try DropConfiguration(plist: plist)
+        }
+    }
+
+    /// 두 값이 같다면 웹 클라이언트 ID 자리에 iOS 것을 잘못 넣은 것이다.
+    /// 이 실수는 정확히 #17에서 겪은 `Unacceptable audience`로 이어진다.
+    @Test("웹·iOS 클라이언트 ID가 같으면 잘못 넣은 것으로 본다")
+    func identicalClientIDsThrow() {
+        var plist = validPlist
+        plist["GOOGLE_WEB_CLIENT_ID"] = "ios-client.apps.googleusercontent.com"
+
+        #expect(throws: DropConfigurationError.webAndIOSClientIDsIdentical) {
+            try DropConfiguration(plist: plist)
+        }
     }
 
     @Test("환경 키가 없으면 localdev로 본다")

@@ -24,6 +24,14 @@ escape_url() {
   printf '%s' "$1" | sed 's|://|:/$()/|'
 }
 
+# Google 로그인 콜백 URL 스킴은 iOS 클라이언트 ID를 뒤집은 값이다.
+#   123-abc.apps.googleusercontent.com  →  com.googleusercontent.apps.123-abc
+reversed_client_id() {
+  local id="$1"
+  [[ -z "$id" ]] && return 0
+  printf 'com.googleusercontent.apps.%s' "${id%%.apps.googleusercontent.com}"
+}
+
 write_config() {
   local env_name="$1" url="$2" key="$3" out="$4"
 
@@ -43,8 +51,18 @@ DROP_ENVIRONMENT = $env_name
 
 SUPABASE_URL = $(escape_url "$url")
 SUPABASE_ANON_KEY = $key
+
+// serverClientId 에는 반드시 **웹** 클라이언트 ID를 넣는다.
+// iOS 것을 넣으면 id_token 의 audience 가 어긋나 Supabase 가 거부한다.
+GOOGLE_WEB_CLIENT_ID = ${GOOGLE_WEB_CLIENT_ID:-}
+GOOGLE_IOS_CLIENT_ID = ${GOOGLE_IOS_CLIENT_ID:-}
+GOOGLE_IOS_CLIENT_ID_REVERSED = $(reversed_client_id "${GOOGLE_IOS_CLIENT_ID:-}")
 EOF
   echo "✅ $(basename "$out") 생성"
+
+  if [[ -z "${GOOGLE_WEB_CLIENT_ID:-}" || -z "${GOOGLE_IOS_CLIENT_ID:-}" ]]; then
+    echo "   ⚠️  GOOGLE_WEB_CLIENT_ID / GOOGLE_IOS_CLIENT_ID 가 비어 있습니다 — 로그인은 실행 시점에 실패합니다"
+  fi
 }
 
 mkdir -p "$CONFIG_DIR"
