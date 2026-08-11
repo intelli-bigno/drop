@@ -84,8 +84,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 러너에 깔린 Xcode 버전은 이미지 업데이트마다 바뀐다.
+      # 특정 경로를 박아 두면 그때마다 CI가 깨지므로 가장 최신 것을 고른다.
       - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode_26.app
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "using $XCODE"
+          sudo xcode-select -switch "$XCODE"
+          xcodebuild -version
+          swift --version
 
       # 도메인 로직 테스트. 시뮬레이터가 필요 없어 가장 빠른 신호다.
       - name: DropCore tests
