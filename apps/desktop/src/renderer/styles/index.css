@@ -3070,6 +3070,137 @@ body {
 }
 
 /* ============================================
+   Shortcut Cheat Sheet (⌘/)
+   ============================================ */
+
+.cheatsheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-5);
+}
+
+.cheatsheet {
+  width: min(720px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: var(--space-5);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.cheatsheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.cheatsheet-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cheatsheet-close {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: background var(--transition-fast);
+}
+
+.cheatsheet-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cheatsheet-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-5);
+}
+
+.cheatsheet-group-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cheatsheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cheatsheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 5px 0;
+}
+
+.cheatsheet-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.cheatsheet-keys {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.cheatsheet-key-alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cheatsheet-or {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.cheatsheet-keys kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 6px;
+  text-align: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+.cheatsheet-footnote {
+  margin: var(--space-5) 0 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* ============================================
    Reduced Motion
    ============================================ */
 
