@@ -31,12 +31,13 @@ public struct SupabaseNotesRepository: NotesRepository {
     }
 
     public func createNote(content: String, parentID: String?) async throws -> Note {
-        // user_id는 클라이언트가 넣지 않는다 — RLS 정책과 DB 기본값이 정한다.
-        guard client.auth.currentUser != nil else { throw NotesRepositoryError.notAuthenticated }
+        // user_id를 반드시 실어 보낸다. INSERT 정책이 user_id = auth.uid()를 요구하는데
+        // 컬럼에 기본값이 없어서, 빠뜨리면 NULL이 들어가 RLS가 거부한다.
+        guard let user = client.auth.currentUser else { throw NotesRepositoryError.notAuthenticated }
 
         return try await run {
             try await client.from("notes")
-                .insert(NoteInsert(content: content, parentId: parentID, source: "mobile"))
+                .insert(NoteInsert(content: content, parentID: parentID, userID: user.id.uuidString))
                 .select()
                 .single()
                 .execute().value
@@ -143,10 +144,24 @@ public struct SupabaseNotesRepository: NotesRepository {
     }
 }
 
-private struct NoteInsert: Encodable {
+struct NoteInsert: Encodable {
     let content: String
-    let parentId: String?
-    let source: String
+    let parentID: String?
+    let userID: String
+    let source = "mobile"
+
+    private enum CodingKeys: String, CodingKey {
+        case content
+        case parentID = "parentId"
+        case userID = "userId"
+        case source
+    }
+
+    init(content: String, parentID: String?, userID: String) {
+        self.content = content
+        self.parentID = parentID
+        self.userID = userID
+    }
 }
 
 private struct NoteTagRow: Decodable {
