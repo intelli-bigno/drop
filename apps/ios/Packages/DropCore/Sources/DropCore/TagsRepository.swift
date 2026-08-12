@@ -45,6 +45,8 @@ public struct SupabaseTagsRepository: TagsRepository {
         // 공백뿐인 이름은 태그가 아니다. 대소문자·공백 차이로 같은 태그가
         // 둘로 갈라지지 않도록 정규화한 뒤 조회한다.
         guard let normalized = TagName.normalized(name) else { return }
+        // notes와 같은 이유로 user_id를 직접 넣어야 한다 (기본값 없음 + RLS WITH CHECK).
+        guard let user = client.auth.currentUser else { throw NotesRepositoryError.notAuthenticated }
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         let existing: Tag? = try await run {
@@ -64,7 +66,11 @@ public struct SupabaseTagsRepository: TagsRepository {
         } else {
             let created: Tag = try await run {
                 try await client.from("tags")
-                    .insert(["name": AnyJSON.string(normalized), "last_used_at": .string(timestamp)])
+                    .insert(TagInsert(
+                        name: normalized,
+                        userID: user.id.uuidString,
+                        lastUsedAt: Date()
+                    ))
                     .select()
                     .single()
                     .execute().value
@@ -116,6 +122,18 @@ public struct SupabaseTagsRepository: TagsRepository {
         } catch {
             throw NotesRepositoryError.network(error.localizedDescription)
         }
+    }
+}
+
+struct TagInsert: Encodable {
+    let name: String
+    let userID: String
+    let lastUsedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case userID = "userId"
+        case lastUsedAt
     }
 }
 
