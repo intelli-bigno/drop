@@ -396,6 +396,11 @@ jobs:
             echo "$NAME → $UUID"
           done
 
+      # Flutter 빌드와 같은 앱 레코드를 쓰므로 빌드 번호가 기존 것보다 커야 한다.
+      # (업로드 시점 기준 최신은 38이었다) 시간 기반이면 항상 증가하고 충돌하지 않는다.
+      - name: Compute build number
+        run: echo "BUILD_NUMBER=$(date -u +%y%m%d%H%M)" >> "$GITHUB_ENV"
+
       - name: Archive
         working-directory: apps/ios
         run: |
@@ -404,7 +409,10 @@ jobs:
             -configuration Release-remote \
             -archivePath $RUNNER_TEMP/Drop.xcarchive \
             -destination 'generic/platform=iOS' \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CURRENT_PROJECT_VERSION=$BUILD_NUMBER \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
             archive
 
       - name: Export IPA

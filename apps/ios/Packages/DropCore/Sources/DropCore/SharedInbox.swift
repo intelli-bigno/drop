@@ -20,7 +20,9 @@ public struct SharedItem: Codable, Equatable, Sendable {
 /// 확장은 메모리 한도(약 120MB)가 좁고, 세션이 없을 수도 있다.
 /// 그래서 **적어 두기만** 하고 앱이 켜질 때 비운다.
 public struct SharedInbox: Sendable {
-    public static let appGroupID = "group.com.intellieffect.drop"
+    /// Flutter 앱이 이미 쓰고 있는 그룹이다. 새로 만들면 App Group 연결에
+    /// 포털 수작업이 필요해진다(공개 API에 App Group 엔드포인트가 없다).
+    public static let appGroupID = "group.com.intellieffect.drop.shared"
 
     private let containerURL: URL
 
