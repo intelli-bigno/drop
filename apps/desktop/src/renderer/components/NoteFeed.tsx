@@ -19,6 +19,10 @@ import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../short
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
+import { computeFeedScrollTop } from '../lib/feed-scroll'
+
+// 피드 상단에서 헤더에 가려지는 높이. 이만큼 여유를 두고 카드를 맞춘다.
+const FEED_TOP_INSET = 60
 import { extractYouTubeUrls } from '../lib/youtube-url-utils'
 import { useDragAndDrop } from '../hooks'
 
@@ -309,17 +313,26 @@ export function NoteFeed() {
       const element = cardElementRefs.current.get(item.note.id)
       if (!element) return
 
-      // getBoundingClientRect 사용하여 뷰포트 내 위치 확인
-      const rect = element.getBoundingClientRect()
       const container = feedRef.current
       if (!container) return
 
+      const rect = element.getBoundingClientRect()
       const containerRect = container.getBoundingClientRect()
-      const isAbove = rect.top < containerRect.top + 60 // 헤더 고려
-      const isBelow = rect.bottom > containerRect.bottom
 
-      if (isAbove || isBelow) {
-        element.scrollIntoView({ behavior: 'auto', block: 'nearest' })
+      // 목표 scrollTop을 직접 계산한다 — scrollIntoView({ block: 'nearest' })는
+      // 헤더 오프셋을 적용하지 않아 카드가 헤더 아래에 걸린 채 멈춘다 (BRU-23)
+      const nextScrollTop = computeFeedScrollTop({
+        currentScrollTop: container.scrollTop,
+        elementOffsetTop: rect.top - containerRect.top + container.scrollTop,
+        elementHeight: rect.height,
+        viewportHeight: container.clientHeight,
+        topInset: FEED_TOP_INSET,
+      })
+
+      if (nextScrollTop !== container.scrollTop) {
+        // 키보드 이동은 즉시 반영한다 — 애니메이션이 붙으면 연타 시 위치가 밀린다.
+        // 움직임이 없으므로 prefers-reduced-motion과도 충돌하지 않는다.
+        container.scrollTop = nextScrollTop
       }
     })
 
