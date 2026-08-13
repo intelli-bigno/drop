@@ -29,8 +29,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        // Flutter 앱(com.intellieffect.drop.mobile)과 다른 ID를 쓴다 — 병렬 운영 기간 동안
-        // 한 기기에 둘 다 깔릴 수 있어야 한다. iOS 트랙의 `.next` 접미사와 같은 이유.
+        // 과거 Flutter 앱의 Play 등록 ID는 com.intellieffect.drop.mobile 이었다.
+        // 그 등록을 이어받을지는 BRU-42(배포)에서 정한다 — 스캐폴드 단계에서 선점하지 않는다.
         applicationId = "com.intellieffect.drop.android"
         minSdk = 26
         targetSdk = 35

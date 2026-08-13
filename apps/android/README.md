@@ -1,6 +1,8 @@
 # DROP Android (네이티브)
 
-Flutter 앱(`apps/mobile`)을 대체하는 Jetpack Compose 네이티브 트랙. 진행은 Linear 트랙 **BRU-36**(하위: BRU-38 ~ BRU-42).
+Jetpack Compose 네이티브 Android 앱. 진행은 Linear 트랙 **BRU-36**(하위: BRU-38 ~ BRU-42).
+
+Android 빌드는 Flutter 앱(`apps/mobile`)이 하던 일이었고, 그 앱은 BRU-22에서 제거됐다. 이 모듈이 그 자리를 네이티브로 다시 채운다.
 
 ## 구조
 
@@ -46,7 +48,7 @@ apps/android/
 
 우선순위는 **환경변수 > gradle 속성(`-P`, `gradle.properties`) > `local.properties`** 다. CI는 환경변수만 넣는다.
 
-환경변수 이름은 Flutter·iOS 타겟과 같다 (`SUPABASE_URL_LOCAL` / `SUPABASE_ANON_KEY_LOCAL` / `SUPABASE_URL_REMOTE` / `SUPABASE_ANON_KEY_REMOTE`) — 기존 `.env.local`을 그대로 재사용한다.
+환경변수 이름은 iOS 타겟과 같다 (`SUPABASE_URL_LOCAL` / `SUPABASE_ANON_KEY_LOCAL` / `SUPABASE_URL_REMOTE` / `SUPABASE_ANON_KEY_REMOTE`) — 기존 `.env.local`을 그대로 재사용한다.
 
 에뮬레이터에서 호스트의 로컬 Supabase는 `127.0.0.1`이 아니라 **`10.0.2.2`** 로 보인다. `android-config.sh`의 local 기본값이 그것이다.
 
@@ -54,7 +56,7 @@ apps/android/
 
 - **`core`에 Android 의존을 넣지 않는다.** 넣는 순간 `:core:test`가 에뮬레이터·SDK를 요구하게 되고, TDD 사이클이 느려진다.
 - **비밀값은 커밋하지 않는다.** `local.properties`는 gitignore 대상이고, 커밋되는 것은 `local.properties.example`뿐이다.
-- **`applicationId`는 병렬 운영 기간 동안 `com.intellieffect.drop.android`다.** Flutter 앱이 `com.intellieffect.drop.mobile`을 쓰고 있어, 같은 ID를 쓰면 한 기기에 두 앱을 동시에 설치할 수 없다.
+- **`applicationId`는 지금 `com.intellieffect.drop.android`다.** 과거 Flutter 앱의 Play 등록 ID는 `com.intellieffect.drop.mobile`이었다 — 그 등록을 이어받을지(= ID를 바꿀지) 새로 올릴지는 **BRU-42(배포)에서 정한다.** 스캐폴드 단계에서 기존 등록 ID를 선점하지 않으려고 다른 ID를 쓴다.
 - 최소 SDK **26** (`java.time`을 desugaring 없이 쓸 수 있는 하한).
 - Gradle toolchain을 고정하지 않는다 — 고정하면 해당 JDK가 없는 기계에서 다운로드부터 막힌다. 산출 바이트코드만 17에 맞춘다.
 

@@ -18,7 +18,7 @@ sealed class NotesRepositoryException(message: String) : Exception(message) {
 interface NotesRepository {
     /**
      * 목록 전체를 한 번에 가져온다. 보관·휴지통까지 포함해 받고 화면에서 거른다 —
-     * Flutter·iOS 앱과 같은 방식이라 세 앱의 목록이 어긋나지 않는다.
+     * iOS 앱과 같은 방식이라 두 앱의 목록이 어긋나지 않는다.
      */
     suspend fun loadNotes(): List<Note>
 

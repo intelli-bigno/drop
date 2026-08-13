@@ -8,7 +8,7 @@
 #     → app/build.gradle.kts 가 BuildConfig 로 굽는다
 #     → BuildConfig.SUPABASE_URL / SUPABASE_ANON_KEY
 #
-# 값 이름은 Flutter·iOS 타겟과 같다 — 기존 .env.local 을 그대로 재사용한다.
+# 값 이름은 iOS 타겟과 같다 — 기존 .env.local 을 그대로 재사용한다.
 #   SUPABASE_URL_LOCAL / SUPABASE_ANON_KEY_LOCAL
 #   SUPABASE_URL_REMOTE / SUPABASE_ANON_KEY_REMOTE
 #

@@ -4,8 +4,8 @@ package com.intellieffect.drop.core
  * 홈 화면이 보는 상태 전부. iOS `NotesStore`의 프로퍼티들을 한 덩어리로 모은 것 —
  * Compose가 하나의 StateFlow만 구독하면 되도록.
  *
- * 목록은 보관·휴지통까지 통째로 들고 있고 화면에서 거른다. Flutter·iOS와 같은 구조라
- * 세 앱의 목록이 어긋나지 않는다.
+ * 목록은 보관·휴지통까지 통째로 들고 있고 화면에서 거른다. iOS·데스크톱과 같은 구조라
+ * 앱마다 목록이 어긋나지 않는다.
  */
 data class NotesState(
     val allNotes: List<Note> = emptyList(),

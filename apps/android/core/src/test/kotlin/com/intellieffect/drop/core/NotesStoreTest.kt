@@ -13,7 +13,7 @@ import kotlinx.coroutines.test.runTest
 
 /**
  * iOS `NotesStoreTests`의 이식본.
- * Flutter Riverpod의 notesProvider + selection_provider + 필터 상태를 하나로 합친 것.
+ * 목록·선택·필터 상태를 하나로 합친 것 (iOS `NotesStore`와 같은 의미).
  */
 class NotesStoreTest {
     private fun store(notes: List<Note> = emptyList()): Pair<NotesStore, InMemoryNotesRepository> {
@@ -83,7 +83,7 @@ class NotesStoreTest {
         assertFalse(store.state.value.isLoading)
     }
 
-    /** 보관·휴지통 노트도 함께 받아 화면에서 거른다 (Flutter와 같은 구조). */
+    /** 보관·휴지통 노트도 함께 받아 화면에서 거른다 (iOS와 같은 구조). */
     @Test
     fun `뷰 모드가 목록을 가른다`() = runTest {
         val (store, _) = store(
