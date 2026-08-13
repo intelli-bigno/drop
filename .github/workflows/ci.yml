@@ -41,7 +41,39 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: test_key
 
-  # iOS 네이티브 (apps/ios) — 유일한 모바일 트랙
+  # Android 네이티브 (apps/android) — Jetpack Compose 트랙, BRU-36 (하위 BRU-38~42)
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # 도메인 로직 테스트. Android SDK도 에뮬레이터도 필요 없어 가장 빠른 신호다.
+      - name: core tests
+        working-directory: apps/android
+        run: ./gradlew :core:test
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 실제 값은 필요 없다 — 빌드가 통과하는지만 본다.
+      # 컴파일 시점에 BuildConfig로 굽는 값이라 자리표시자로 충분하다.
+      - name: Build debug APK
+        working-directory: apps/android
+        run: ./gradlew :app:assembleDebug
+        env:
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_ANON_KEY: test_key
+
+  # iOS 네이티브 (apps/ios)
   ios:
     runs-on: macos-15
     steps:
