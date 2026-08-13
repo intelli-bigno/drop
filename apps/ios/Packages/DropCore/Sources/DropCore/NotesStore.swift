@@ -49,6 +49,8 @@ public final class NotesStore {
         errorMessage = nil
         do {
             allNotes = try await repository.loadNotes()
+        } catch where error.isCancellation {
+            // 취소는 실패가 아니다. 보고 있던 목록을 그대로 둔다.
         } catch {
             allNotes = []
             errorMessage = Self.message(for: error)

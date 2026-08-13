@@ -54,6 +54,33 @@ struct NotesStoreTests {
         #expect(store.visibleNotes.isEmpty)
     }
 
+    /// 당겨서 새로고침은 손을 떼는 순간 취소된다. 취소는 장애가 아니므로
+    /// 오류창을 띄우지도, 이미 보고 있던 목록을 지우지도 않아야 한다.
+    @Test("취소된 로드는 오류가 아니다")
+    func cancelledLoadIsNotAFailure() async {
+        let (store, repository) = store([note("a"), note("b")])
+        await store.load()
+
+        repository.loadError = CancellationError()
+        await store.load()
+
+        #expect(store.errorMessage == nil)
+        #expect(store.visibleNotes.count == 2)
+    }
+
+    /// URLSession은 취소를 `URLError.cancelled`로 돌려준다 — 같은 취급을 받아야 한다.
+    @Test("URLError.cancelled도 취소로 본다")
+    func cancelledURLErrorIsNotAFailure() async {
+        let (store, repository) = store([note("a")])
+        await store.load()
+
+        repository.loadError = URLError(.cancelled)
+        await store.load()
+
+        #expect(store.errorMessage == nil)
+        #expect(store.visibleNotes.count == 1)
+    }
+
     /// 보관·휴지통 노트도 함께 받아 화면에서 거른다 (Flutter와 같은 구조).
     @Test("뷰 모드가 목록을 가른다")
     func viewModeFiltersList() async {

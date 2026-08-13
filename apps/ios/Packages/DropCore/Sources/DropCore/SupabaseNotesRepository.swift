@@ -134,6 +134,9 @@ public struct SupabaseNotesRepository: NotesRepository {
     private func run<T>(_ operation: () async throws -> T) async throws -> T {
         do {
             return try await operation()
+        } catch where error.isCancellation {
+            // 취소는 그대로 올려 보낸다 — 네트워크 장애로 둔갑하면 안 된다.
+            throw error
         } catch let error as PostgrestError {
             throw NotesRepositoryError.rejected(error.message)
         } catch let error as DecodingError {

@@ -115,6 +115,8 @@ public struct SupabaseTagsRepository: TagsRepository {
     private func run<T>(_ operation: () async throws -> T) async throws -> T {
         do {
             return try await operation()
+        } catch where error.isCancellation {
+            throw error
         } catch let error as PostgrestError {
             throw NotesRepositoryError.rejected(error.message)
         } catch let error as DecodingError {
