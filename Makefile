@@ -1,7 +1,8 @@
 .PHONY: help install setup test test-db clean \
         electron-rebuild electron-dev electron-dev-local electron-dev-remote \
         electron-build electron-build-local electron-build-remote \
-        ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean
+        ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
+        android-config android-config-remote android-test android-build android-install android-clean
 
 .DEFAULT_GOAL := help
 
@@ -37,6 +38,14 @@ help:
 	@echo "    make ios-dev-remote       - 시뮬레이터에서 실행 (리모트 Supabase)"
 	@echo "    make ios-open             - Xcode로 열기"
 	@echo "    make ios-clean            - 생성물 정리"
+	@echo ""
+	@echo "  Android (apps/android)"
+	@echo "    make android-config       - 환경변수 → apps/android/local.properties 생성"
+	@echo "    make android-config-remote - 같은 것, 리모트 Supabase 값으로"
+	@echo "    make android-test         - core 모듈 JVM 테스트 (에뮬레이터 불필요)"
+	@echo "    make android-build        - 디버그 APK 빌드"
+	@echo "    make android-install      - 연결된 기기·에뮬레이터에 설치"
+	@echo "    make android-clean        - 생성물 정리"
 
 # ============================================
 # 기본 설정
@@ -152,6 +161,34 @@ ios-open: ios-generate
 
 ios-clean:
 	rm -rf $(IOS_DIR)/Drop.xcodeproj $(IOS_DIR)/Packages/*/.build
+
+# ============================================
+# Android (apps/android) — Jetpack Compose 네이티브. 트랙 BRU-36 (하위 BRU-38~42)
+# ============================================
+
+ANDROID_DIR := apps/android
+
+# 환경변수 → apps/android/local.properties (커밋되지 않는다)
+# 필요한 값: SUPABASE_URL_LOCAL / SUPABASE_ANON_KEY_LOCAL (iOS 타겟과 같은 이름)
+android-config:
+	@bash scripts/android-config.sh local
+
+android-config-remote:
+	@bash scripts/android-config.sh remote
+
+# 도메인 로직 테스트 — Android SDK도 에뮬레이터도 필요 없다 (ios-test와 같은 자리)
+android-test:
+	cd $(ANDROID_DIR) && ./gradlew :core:test
+
+# 디버그 APK. Android SDK 경로는 ANDROID_HOME 또는 local.properties 의 sdk.dir 에서 온다.
+android-build:
+	cd $(ANDROID_DIR) && ./gradlew :app:assembleDebug
+
+android-install:
+	cd $(ANDROID_DIR) && ./gradlew :app:installDebug
+
+android-clean:
+	cd $(ANDROID_DIR) && ./gradlew clean
 
 # ============================================
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
