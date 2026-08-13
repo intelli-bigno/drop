@@ -53,10 +53,10 @@ targets:
         embed: true
     settings:
       base:
-        # Flutter 앱과 같은 번들 ID를 쓴다. 이미 App Group과 App Store Connect
+        # 과거 Flutter 앱이 쓰던 번들 ID를 이어받았다. 이미 App Group과 App Store Connect
         # 레코드가 붙어 있어 별도 등록이 필요 없다 — App Group 연결은 공개 API로는
         # 불가능해서, 새 ID를 쓰면 포털 수작업이 반드시 끼어든다.
-        # 대가: 한 기기에 Flutter 앱과 공존하지 못하고 서로를 덮어쓴다.
+        # (Flutter 앱과 공존하지 못한다는 제약이 있었으나, BRU-22에서 제거되어 무의미해졌다.)
         PRODUCT_BUNDLE_IDENTIFIER: com.intellieffect.drop.mobile
         INFOPLIST_FILE: Drop/Info.plist
         MARKETING_VERSION: "1.0"

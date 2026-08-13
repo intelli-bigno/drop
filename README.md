@@ -6,7 +6,7 @@ A fast, cross-platform note-taking app with voice recording and AI transcription
 
 - **Quick Capture**: Instantly save text, links, images, and files
 - **Voice Recording**: Record voice memos with OpenAI Whisper transcription
-- **Cross-Platform**: Mac (Electron) + iOS (Flutter)
+- **Cross-Platform**: Mac (Electron) + iOS (SwiftUI)
 - **Cloud Sync**: Real-time sync via Supabase
 - **MCP Server**: Claude integration for AI-powered note management
 
@@ -15,7 +15,7 @@ A fast, cross-platform note-taking app with voice recording and AI transcription
 | Platform | Technology | Location |
 |----------|------------|----------|
 | Desktop (Mac) | Electron + React + TypeScript | `apps/desktop` |
-| Mobile (iOS) | Flutter + Dart | `apps/mobile` |
+| Mobile (iOS) | SwiftUI + Swift | `apps/ios` |
 | MCP Server | Node.js + TypeScript | `packages/mcp-server` |
 
 ## Quick Start
@@ -24,8 +24,7 @@ A fast, cross-platform note-taking app with voice recording and AI transcription
 
 - Node.js 20+
 - pnpm 8+
-- Flutter 3.38+ (for mobile)
-- Xcode 15+ (for iOS)
+- Xcode 16+ and XcodeGen (`brew install xcodegen`) — for iOS
 
 ### Setup
 
@@ -76,20 +75,25 @@ make electron-build-local
 make electron-build-remote
 ```
 
-### Mobile (Flutter)
+### Mobile (iOS)
 
 ```bash
-# Setup
-make flutter-setup
+# Setup — env vars → Config-*.xcconfig (once)
+make ios-config
+
+# Test — domain logic, no simulator needed
+make ios-test
 
 # Development
-make flutter-dev           # Local Supabase
-make flutter-dev-remote    # Remote Supabase
+make ios-dev               # Local Supabase
+make ios-dev-remote        # Remote Supabase
 
 # Build
-make flutter-build         # iOS Simulator
-make flutter-build-ipa     # TestFlight
+make ios-build             # iOS Simulator
 ```
+
+TestFlight builds go through CI: `gh workflow run release.yml -f target=ios`.
+See [`apps/ios/README.md`](apps/ios/README.md) for structure and rules.
 
 ### MCP Server
 
@@ -107,7 +111,7 @@ pnpm start
 drop/
 ├── apps/
 │   ├── desktop/          # Electron + React app
-│   └── mobile/           # Flutter iOS app
+│   └── ios/              # SwiftUI iOS app (DropCore / DropUI packages)
 ├── packages/
 │   ├── mcp-server/       # MCP server for Claude
 │   └── shared/           # Shared types and utilities
