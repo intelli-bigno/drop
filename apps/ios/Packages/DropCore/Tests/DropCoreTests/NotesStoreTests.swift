@@ -3,6 +3,24 @@ import Testing
 
 @testable import DropCore
 
+/// 열어 줄 때까지 기다리게 하는 문. 겹친 로드를 결정적으로 재현하기 위한 것 —
+/// 시간(sleep)에 기대면 느린 기계에서 흔들린다.
+private actor Gate {
+    private var isOpen = false
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        if isOpen { return }
+        await withCheckedContinuation { waiting.append($0) }
+    }
+
+    func open() {
+        isOpen = true
+        for continuation in waiting { continuation.resume() }
+        waiting.removeAll()
+    }
+}
+
 /// Riverpod의 notesProvider + selection_provider + 필터 상태를 하나로 합친 것.
 @Suite("노트 목록 상태")
 @MainActor
@@ -79,6 +97,27 @@ struct NotesStoreTests {
 
         #expect(store.errorMessage == nil)
         #expect(store.visibleNotes.count == 1)
+    }
+
+    /// 화면에 들어오면서 도는 첫 로드와 당겨서 새로고침이 겹칠 수 있다.
+    /// 둘 다 서버까지 가면 늦게 끝난 쪽이 목록을 덮어써 방금 본 화면이 되돌아간다.
+    @Test("이미 로드 중이면 다시 로드하지 않는다")
+    func skipsOverlappingLoad() async {
+        let (store, repository) = store([note("a")])
+        let gate = Gate()
+        repository.beforeLoad = { await gate.wait() }
+
+        async let first: Void = store.load()
+        while !store.isLoading { await Task.yield() }
+
+        async let second: Void = store.load()
+        // 두 번째 호출이 리포지토리까지 갈 틈을 준다 — 막히지 않았다면 여기서 센다.
+        await Task.yield()
+        await Task.yield()
+        await gate.open()
+        _ = await (first, second)
+
+        #expect(repository.loadCallCount == 1)
     }
 
     /// 보관·휴지통 노트도 함께 받아 화면에서 거른다 (Flutter와 같은 구조).

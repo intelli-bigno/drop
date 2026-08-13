@@ -41,7 +41,6 @@ struct HomeView: View {
                 .toolbar { toolbar }
                 .safeAreaInset(edge: .top, spacing: 0) { filters }
                 .safeAreaInset(edge: .bottom) { bottomBar }
-                .refreshable { await notes.load() }
                 .task {
                     if attachmentURLs == nil, let container {
                         attachmentURLs = AttachmentURLCache(repository: container.makeAttachmentsRepository())
@@ -104,61 +103,71 @@ struct HomeView: View {
         notes.isSelecting ? "\(notes.selectedIDs.count)개 선택됨" : "DROP"
     }
 
-    @ViewBuilder
+    /// **스크롤 컨테이너는 항상 하나, 항상 여기 있다.**
+    /// 예전에는 로딩·빈 상태에서 ScrollView가 아예 없는 뷰(ProgressView / VStack)로
+    /// 갈라졌고, `.refreshable`은 그 바깥에 붙어 있었다 — 당길 대상이 없으니
+    /// 새로고침이 아예 걸리지 않았다. 갈림길은 스크롤뷰 **안쪽**으로 옮긴다.
     private var content: some View {
-        if notes.isLoading, notes.visibleNotes.isEmpty {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if notes.visibleNotes.isEmpty {
-            emptyState
-        } else {
-            list
+        ScrollView {
+            if notes.isLoading, notes.visibleNotes.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .containerRelativeFrame(.vertical)
+            } else if notes.visibleNotes.isEmpty {
+                emptyState
+                    .containerRelativeFrame(.vertical)
+            } else {
+                noteList
+            }
         }
+        // 내용이 화면보다 짧아도 당길 수 있어야 한다 — 새로고침이 가장 필요한 곳이
+        // 목록이 비어 보이는 순간이다. 기본값이면 짧은 내용에서 튐이 죽는다.
+        .scrollBounceBehavior(.always, axes: .vertical)
+        .refreshable { await notes.load() }
     }
 
-    private var list: some View {
-        ScrollView {
-            LazyVStack(spacing: DropTheme.Spacing.base) {
-                ForEach(notes.visibleNotes) { note in
-                    NoteCard(
-                        note: note,
-                        isSelected: notes.selectedIDs.contains(note.id),
-                        isSelecting: notes.isSelecting,
-                        attachmentURL: attachmentURL,
-                        onOpenAttachment: { attachment in
-                            viewingAttachments = AttachmentPresentation(
-                                attachments: note.attachments.filter { $0.isImage || $0.isVideo },
-                                current: attachment
-                            )
-                        }
-                    )
-                    .onTapGesture {
-                        if notes.isSelecting {
-                            notes.toggleSelection(id: note.id)
-                        } else {
-                            composer = .existing(note)
-                        }
+    private var noteList: some View {
+        LazyVStack(spacing: DropTheme.Spacing.base) {
+            ForEach(notes.visibleNotes) { note in
+                NoteCard(
+                    note: note,
+                    isSelected: notes.selectedIDs.contains(note.id),
+                    isSelecting: notes.isSelecting,
+                    attachmentURL: attachmentURL,
+                    onOpenAttachment: { attachment in
+                        viewingAttachments = AttachmentPresentation(
+                            attachments: note.attachments.filter { $0.isImage || $0.isVideo },
+                            current: attachment
+                        )
                     }
-                    .onLongPressGesture {
+                )
+                .onTapGesture {
+                    if notes.isSelecting {
                         notes.toggleSelection(id: note.id)
-                    }
-                    .swipeActionsCompat {
-                        Button(role: .destructive) {
-                            Task { await notes.moveToTrash(id: note.id) }
-                        } label: {
-                            Label("삭제", systemImage: "trash")
-                        }
-                        Button {
-                            Task { await notes.setPinned(id: note.id, isPinned: !note.isPinned) }
-                        } label: {
-                            Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
-                        }
-                        .tint(.orange)
+                    } else {
+                        composer = .existing(note)
                     }
                 }
+                .onLongPressGesture {
+                    notes.toggleSelection(id: note.id)
+                }
+                .swipeActionsCompat {
+                    Button(role: .destructive) {
+                        Task { await notes.moveToTrash(id: note.id) }
+                    } label: {
+                        Label("삭제", systemImage: "trash")
+                    }
+                    Button {
+                        Task { await notes.setPinned(id: note.id, isPinned: !note.isPinned) }
+                    } label: {
+                        Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
+                    }
+                    .tint(.orange)
+                }
             }
-            .padding(.horizontal, DropTheme.Spacing.comfortable)
-            .padding(.vertical, DropTheme.Spacing.base)
         }
+        .padding(.horizontal, DropTheme.Spacing.comfortable)
+        .padding(.vertical, DropTheme.Spacing.base)
     }
 
     private var emptyState: some View {

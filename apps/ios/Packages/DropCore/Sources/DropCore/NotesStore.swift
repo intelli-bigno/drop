@@ -45,6 +45,9 @@ public final class NotesStore {
     }
 
     public func load() async {
+        // 화면에 들어오면서 도는 첫 로드와 당겨서 새로고침은 쉽게 겹친다.
+        // 둘 다 서버까지 가면 늦게 끝난 쪽이 목록을 덮어써 방금 본 화면이 되돌아간다.
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         do {

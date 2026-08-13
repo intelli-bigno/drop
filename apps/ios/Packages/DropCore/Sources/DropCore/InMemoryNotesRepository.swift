@@ -10,11 +10,20 @@ public final class InMemoryNotesRepository: NotesRepository, @unchecked Sendable
     public var createError: Error?
     public var mutationError: Error?
 
+    /// `loadNotes`가 실제로 몇 번 불렸는지. 중복 로드를 세기 위한 것.
+    public private(set) var loadCallCount = 0
+
+    /// 로드를 원하는 시점까지 붙잡아 두기 위한 손잡이.
+    /// 겹친 로드를 재현하려면 첫 로드를 여기서 멈춰 세워야 한다.
+    public var beforeLoad: (@Sendable () async -> Void)?
+
     public init(notes: [Note] = []) {
         self.notes = notes
     }
 
     public func loadNotes() async throws -> [Note] {
+        withLock { loadCallCount += 1 }
+        await beforeLoad?()
         if let loadError { throw loadError }
         return withLock { NoteAssembler.sorted(notes) }
     }
