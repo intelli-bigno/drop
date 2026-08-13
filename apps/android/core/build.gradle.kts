@@ -2,12 +2,14 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    `java-library`
 }
 
 // 이 모듈에는 Android 의존이 하나도 없다. 에뮬레이터도 SDK도 없이
 // `./gradlew :core:test`가 도는 상태를 유지하는 것이 TDD 사이클의 전제다.
 dependencies {
-    implementation(libs.kotlinx.coroutines.core)
+    // StateFlow가 NotesStore의 공개 API에 나온다 — 쓰는 쪽도 봐야 하므로 api.
+    api(libs.kotlinx.coroutines.core)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
