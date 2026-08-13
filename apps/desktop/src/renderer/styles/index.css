@@ -344,6 +344,19 @@ body {
   flex: 1;
 }
 
+.note-card-header-tags {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.note-card-header-tags .tag-list {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
 .note-card-actions {
   display: flex;
   align-items: center;
@@ -454,17 +467,19 @@ body {
    ============================================ */
 
 .note-card.collapsed {
-  max-height: 260px;
+  /* 본문 2줄 + 헤더 + 첨부 프리뷰까지의 여유 (lib/note-truncation.ts와 짝) */
+  max-height: 190px;
   overflow: hidden;
 }
 
 .note-card.collapsed .note-editor {
-  max-height: 80px;
+  /* 본문 14px · line-height 1.5 → 2줄 ≈ 42px */
+  max-height: 44px;
   overflow: hidden;
   position: relative;
 }
 
-/* 컴팩트 프리뷰: attachment-list는 표시, 나머지는 숨김 */
+/* 컴팩트 프리뷰: attachment-list와 헤더 태그는 표시, 나머지는 숨김 */
 .note-card.collapsed .link-previews,
 .note-card.collapsed .note-tags-section {
   display: none !important;
