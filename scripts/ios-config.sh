@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 환경변수로부터 apps/ios/Config/Config-*.xcconfig 를 만든다.
 #
-# 값은 Flutter 타겟과 같은 이름을 쓴다 — 이미 .env.local에 있다면 그대로 재사용된다.
+# 값은 과거 Flutter 타겟과 같은 이름을 쓴다 — 이미 .env.local에 있다면 그대로 재사용된다.
 #   SUPABASE_URL_LOCAL   / SUPABASE_ANON_KEY_LOCAL
 #   SUPABASE_URL_REMOTE  / SUPABASE_ANON_KEY_REMOTE
 #
@@ -11,7 +11,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_DIR="$REPO_ROOT/apps/ios/Config"
 
-# 레포 루트의 .env.local 이 있으면 읽어들인다 (Flutter 쪽과 같은 파일).
+# 레포 루트의 .env.local 이 있으면 읽어들인다.
 if [[ -f "$REPO_ROOT/.env.local" ]]; then
   # shellcheck disable=SC1091
   set -a && source "$REPO_ROOT/.env.local" && set +a

@@ -3,7 +3,7 @@
 ## 개요
 
 - **Mac (Electron)**: Notarization을 통한 DMG 직접 배포
-- **iOS (Flutter)**: TestFlight를 통한 배포
+- **iOS (SwiftUI 네이티브)**: TestFlight를 통한 배포
 
 ---
 
@@ -32,12 +32,12 @@
 |--------|-----------|
 | Mac Desktop | `com.intellieffect.drop.desktop` |
 | iOS Mobile | `com.intellieffect.drop.mobile` |
-| iOS Widget | `com.intellieffect.drop.mobile.widget` |
+| iOS Share Extension | `com.intellieffect.drop.mobile.share` |
 
 ### App Groups
 
-- Group ID: `group.com.intellieffect.drop.widget`
-- 메인 앱과 위젯이 공유
+- Group ID: `group.com.intellieffect.drop.shared`
+- 메인 앱과 Share Extension이 공유 (세션 Keychain · 공유 자산 인계)
 
 ---
 
@@ -78,31 +78,35 @@ pnpm dist:remote
 
 ---
 
-## iOS (Flutter) 배포
+## iOS (SwiftUI 네이티브) 배포
 
-### 1. IPA 빌드
+**표준 경로는 CI다.** 서명 자산이 GitHub Secrets에만 있으므로 로컬 아카이브는 권장하지 않는다.
 
-```bash
-cd apps/mobile
-
-flutter build ipa \
-  --dart-define=SUPABASE_URL=$SUPABASE_URL_REMOTE \
-  --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY_REMOTE
-```
-
-### 2. TestFlight 업로드
+### 검증 빌드만 TestFlight로 (태그 없이)
 
 ```bash
-xcrun altool --upload-app --type ios \
-  -f build/ios/ipa/drop_mobile.ipa \
-  -u $APPLE_ID \
-  -p $APPLE_APP_SPECIFIC_PASSWORD
+gh workflow run release.yml -f target=ios
+gh run watch
 ```
+
+### 정식 릴리스 (데스크톱 DMG까지 함께)
+
+```bash
+make release   # 버전 범프 → 태그 push → mac + iOS 동시 배포
+```
+
+### CI가 하는 일 (`.github/workflows/release.yml` / `release-ios`)
+
+1. XcodeGen으로 `Drop.xcodeproj` 생성 (`.xcodeproj`는 커밋되지 않는다)
+2. 인증서 + 프로비저닝 프로파일 2종(app / share)을 임시 키체인에 주입
+3. 빌드 번호를 `date -u +%y%m%d%H%M`로 산출 — 과거 Flutter 빌드(최대 38)보다 항상 크다
+4. `Drop-remote` 스킴 / `Release-remote` 구성으로 archive → export → `altool` 업로드
 
 ### 출력물
 
-- IPA 파일: `apps/mobile/build/ios/ipa/drop_mobile.ipa`
-- Archive: `apps/mobile/build/ios/archive/Runner.xcarchive`
+- IPA: 워크플로우 아티팩트 `DROP-ios-ipa`
+
+> Android는 현재 배포 대상이 아니다. Flutter 앱 제거(BRU-22)와 함께 빌드 경로가 사라졌고, 재개 여부는 BRU-33에서 결정한다.
 
 ---
 
@@ -118,6 +122,7 @@ xcrun altool --upload-app --type ios \
 - [ ] Developer ID Application 인증서 (Mac)
 - [ ] Apple Distribution 인증서 (iOS)
 - [ ] App ID: `com.intellieffect.drop.mobile` (App Groups 활성화)
+- [ ] App ID: `com.intellieffect.drop.mobile.share` (Share Extension, 같은 App Group)
 - [ ] App ID: `com.intellieffect.drop.mobile.widget` (App Groups 활성화)
 - [ ] App Group: `group.com.intellieffect.drop.widget`
 

@@ -2,6 +2,10 @@
 
 > "생각을 떠올리는 즉시 어디서든 기록하고, 하나의 공간에서 관리"
 
+> **[2026-08-13 갱신 · BRU-22]** 아래 본문은 작성 시점(Flutter 기준) 원문을 그대로 둔다.
+> 현재 구현은 다르다 — 모바일은 **SwiftUI 네이티브(`apps/ios`)** 단일 트랙이고 Flutter 앱 `apps/mobile`은 제거됐다.
+> **Android 앱은 현재 없다** (재개 여부는 BRU-33). 실제 스택·명령은 `README.md`와 `apps/ios/README.md`가 정본이다.
+
 ---
 
 ## 1. Product Overview

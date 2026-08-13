@@ -41,44 +41,7 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: test_key
 
-  # Mobile (Flutter) 테스트
-  mobile:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.5'
-          channel: 'stable'
-
-      - name: Clean and install dependencies
-        working-directory: apps/mobile
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Setup secrets
-        working-directory: apps/mobile
-        run: cp lib/core/config/secrets.dart.example lib/core/config/secrets.dart
-
-      - name: Generate code
-        working-directory: apps/mobile
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Disable custom_lint for CI
-        working-directory: apps/mobile
-        run: |
-          # Remove custom_lint plugin from analysis_options.yaml for CI
-          # (custom_lint has cache issues in CI environment)
-          sed -i '/plugins:/d; /- custom_lint/d' analysis_options.yaml
-
-      - name: Analyze
-        working-directory: apps/mobile
-        run: flutter analyze
-
-  # iOS 네이티브 (apps/ios) — Flutter를 대체하는 트랙
+  # iOS 네이티브 (apps/ios) — 유일한 모바일 트랙
   ios:
     runs-on: macos-15
     steps:

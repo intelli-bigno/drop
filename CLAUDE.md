@@ -14,17 +14,22 @@
   - **실측하지 못한 것은 못 했다고 쓴다.** 상태명·라벨명의 정본은 INT 팀 문서 "이슈 컨벤션 — 라이프사이클 게이트"(slugId `fc050897a60d`) — 여기에 복제하지 않는다.
 - **팀 위키** wiki.intellieffect.com은 팀 열람실이다. 회의록·레퍼런스·결정 등 wiki-native 문서는 Supabase `wiki_pages`가 SoT — 읽기는 `wiki-read`, 쓰기는 `wiki-add` 스킬. 이 레포 문서를 위키로 옮기지 않는다.
 
-# MOBILE — 두 개의 앱이 병렬로 존재한다
+# MOBILE — iOS 네이티브 단일 트랙
 
-`apps/mobile`(Flutter, 현행)과 `apps/ios`(SwiftUI 네이티브, 전환 중)가 같은 Supabase를 본다. Flutter 제거는 TestFlight 실사용 패리티 확인 후(BRU-22)에만 한다. 네이티브 쪽 규칙·명령은 `apps/ios/README.md`.
+모바일 앱은 `apps/ios`(SwiftUI) 하나다. Flutter 앱 `apps/mobile`은 **BRU-22에서 제거됐다** — 코드는 삭제 커밋 이전 git 히스토리에 그대로 있어 복원 가능하다. 구조·명령·설계 규칙의 정본은 `apps/ios/README.md`.
 
-# MOBILE (Flutter) 주의사항
+**Android 앱은 현재 없다.** Android 빌드는 Flutter 잡이 하던 일이라 제거와 함께 사라졌다. 재개 여부·방식(KMP vs 네이티브 vs Flutter 부활)은 BRU-33에서 결정한다 — 그 전까지 DROP은 iOS + 데스크톱 전용이다.
 
-- 로컬 iOS 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다 (`xcode-select`가 CommandLineTools를 가리키고 있다).
-- CI는 Flutter **3.38.5**로 고정돼 있다. 로컬 최신 Flutter로 `flutter run`을 돌리면 iOS 프로젝트가 자동 마이그레이션(UIScene, SPM, `FlutterImplicitEngineDelegate`)되는데, **이 변경은 커밋하지 않는다** — `git checkout apps/mobile/ios`로 되돌린다. Flutter 버전 업은 로컬·CI를 함께 올리는 별도 PR로 다룬다.
-- 모바일 실행·빌드 시 `GOOGLE_WEB_CLIENT_ID`(= `serverClientId`)를 **반드시** 넘긴다. Supabase Google provider는 웹 클라이언트 하나만 audience로 신뢰하므로, 빼면 id_token의 audience가 플랫폼 클라이언트 ID가 되어 `Unacceptable audience`로 거부된다. Makefile의 `flutter-dev` / `flutter-build` / `flutter-build-ipa`가 이미 넘기고 있으니 그대로 쓰면 된다.
-- iOS·웹 OAuth 클라이언트는 같은 GCP 프로젝트(`bruce-clawdbot`)에 있어야 한다. 다르면 Google이 `invalid_audience: The audience client and the client need to be in the same project.`로 거부한다 (2026-08-11 실증, #17). Android는 아직 구 프로젝트에 남아 있다 — #19.
+# MOBILE (iOS) 주의사항
+
+- 로컬 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다 (`xcode-select`가 CommandLineTools를 가리키고 있다). `make ios-*` 타겟은 이미 넘긴다.
+- **`Drop.xcodeproj`는 커밋하지 않는다.** `apps/ios/project.yml`이 SoT이고 `make ios-generate`(XcodeGen)가 프로젝트를 만든다.
+- 빌드 구성값은 `.env.local` → `make ios-config` → `Config/Config-*.xcconfig` 경로로 흐른다. xcconfig 파일 자체는 커밋되지 않는다.
+- `GOOGLE_WEB_CLIENT_ID`(= `serverClientId`)를 **반드시** 넘긴다. Supabase Google provider는 웹 클라이언트 하나만 audience로 신뢰하므로, 빼면 id_token의 audience가 플랫폼 클라이언트 ID가 되어 `Unacceptable audience`로 거부된다. `scripts/ios-config.sh`가 이미 주입한다.
+- iOS·웹 OAuth 클라이언트는 같은 GCP 프로젝트(`bruce-clawdbot`)에 있어야 한다. 다르면 Google이 `invalid_audience: The audience client and the client need to be in the same project.`로 거부한다 (2026-08-11 실증, PR #17).
+- 번들 ID는 `com.intellieffect.drop.mobile` — 과거 Flutter 앱의 App Store Connect 레코드·App Group·TestFlight 테스터를 그대로 이어받았다. **빌드 번호는 그 시절보다 커야 하므로** CI가 시간 기반(`date -u +%y%m%d%H%M`)으로 만든다.
 - TestFlight에 검증용 빌드만 보낼 때는 태그를 만들지 말고 `gh workflow run release.yml -f target=ios`. 태그를 밀면 데스크톱 DMG 공증·GitHub Release·설치본 자동 업데이트까지 함께 나간다.
+- 도메인 로직은 `Packages/DropCore`에 둔다 — 시뮬레이터 없이 `make ios-test`로 도는 상태가 이 레포 TDD 사이클의 전제다.
 
 # ROLE AND EXPERTISE
 

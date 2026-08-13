@@ -3,7 +3,8 @@ import Testing
 
 @testable import DropCore
 
-/// `apps/mobile/lib/core/utils/time_utils.dart`의 동작을 그대로 옮긴 것.
+/// 구 Flutter 앱의 `lib/core/utils/time_utils.dart` 동작을 그대로 옮긴 것.
+/// (원본은 BRU-22 삭제 커밋 이전 git 히스토리에 있다.)
 /// 두 앱이 병렬 운영되는 동안 같은 노트가 같은 문구로 보여야 한다.
 @Suite("상대 시간 표기")
 struct RelativeTimeFormatterTests {

@@ -1,6 +1,6 @@
 # DROP iOS (네이티브)
 
-Flutter 앱(`apps/mobile`)을 대체하는 SwiftUI 네이티브 트랙. 진행은 Linear 프로젝트 **DROP iOS 네이티브 전환**(BRU-6 ~ BRU-22).
+DROP의 모바일 앱. SwiftUI 네이티브 단일 트랙 — Flutter 앱(`apps/mobile`)은 BRU-22에서 제거됐고, 코드는 그 삭제 커밋 이전 git 히스토리에 남아 있다. 전환 경위는 Linear 프로젝트 **DROP iOS 네이티브 전환**(BRU-6 ~ BRU-22).
 
 ## 구조
 
@@ -38,7 +38,7 @@ apps/ios/
   → DropConfiguration (검증) → DropEnvironmentContainer → SupabaseClient
 ```
 
-환경변수 이름은 Flutter 타겟과 같다 (`SUPABASE_URL_LOCAL` / `SUPABASE_ANON_KEY_LOCAL` / `SUPABASE_URL_REMOTE` / `SUPABASE_ANON_KEY_REMOTE`) — 기존 `.env.local`을 그대로 재사용한다.
+환경변수 이름은 과거 Flutter 타겟과 같다 (`SUPABASE_URL_LOCAL` / `SUPABASE_ANON_KEY_LOCAL` / `SUPABASE_URL_REMOTE` / `SUPABASE_ANON_KEY_REMOTE`) — 기존 `.env.local`을 그대로 재사용한다.
 
 **xcconfig는 `//`부터를 주석으로 잘라먹는다.** URL은 `https:/$()/host` 형태로 써야 스킴이 살아남는다(`$()`는 빌드 시 빈 문자열). 생성 스크립트가 자동으로 처리하고, 그래도 스킴이 잘린 값이 들어오면 `DropConfiguration`이 `malformedURL`로 즉시 실패시킨다 — 조용히 잘못 붙는 경우는 없다.
 
@@ -48,5 +48,5 @@ apps/ios/
 
 - **`Drop.xcodeproj`는 커밋하지 않는다.** `project.yml`이 SoT이고 `make ios-generate`가 프로젝트를 만든다 — pbxproj 머지 충돌을 없애기 위한 선택. Xcode에서 파일을 추가해도 디렉토리 구조만 맞으면 재생성 시 반영된다.
 - **로컬 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다** (`xcode-select`가 CommandLineTools를 가리키고 있다). Makefile 타겟은 이미 넘긴다.
-- **번들 ID는 병렬 운영 기간 동안 `com.intellieffect.drop.mobile.next`다.** Flutter 앱이 `com.intellieffect.drop.mobile`을 쓰고 있어, 같은 ID를 쓰면 한 기기에 두 앱을 동시에 설치할 수 없고 TestFlight 레코드가 겹친다. BRU-22(Flutter 제거) 시점에 `com.intellieffect.drop.mobile`로 교체한다.
+- **번들 ID는 `com.intellieffect.drop.mobile`이다.** 과거 Flutter 앱이 쓰던 것을 그대로 이어받았다(BRU-21/PR #36) — App Group·App Store Connect 레코드·TestFlight 테스터가 유지된다. 빌드 번호는 그 시절 것보다 커야 하므로 CI가 시간 기반으로 만든다.
 - 최소 배포 타겟 **iOS 17.0** (`@Observable` 사용 조건).

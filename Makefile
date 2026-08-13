@@ -1,8 +1,6 @@
 .PHONY: help install setup test test-db clean \
         electron-rebuild electron-dev electron-dev-local electron-dev-remote \
         electron-build electron-build-local electron-build-remote \
-        flutter-setup flutter-dev flutter-dev-remote flutter-build flutter-build-ipa flutter-testflight \
-        flutter-analyze flutter-test flutter-codegen flutter-clean \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean
 
 .DEFAULT_GOAL := help
@@ -29,19 +27,7 @@ help:
 	@echo "    make electron-build-local - 로컬 Supabase 설정으로 빌드"
 	@echo "    make electron-build-remote - 리모트 Supabase 설정으로 빌드"
 	@echo ""
-	@echo "  Flutter (Mobile)"
-	@echo "    make flutter-setup        - Flutter 의존성 설치 + 코드 생성"
-	@echo "    make flutter-dev          - 로컬 Supabase로 Flutter 실행"
-	@echo "    make flutter-dev-remote   - 리모트 Supabase로 Flutter 실행"
-	@echo "    make flutter-build        - iOS 시뮬레이터용 빌드"
-	@echo "    make flutter-build-ipa    - TestFlight용 IPA 빌드 (remote 자동)"
-	@echo "    make flutter-testflight   - TestFlight 빌드+배포 (remote 자동)"
-	@echo "    make flutter-analyze      - Flutter 코드 분석"
-	@echo "    make flutter-test         - Flutter 테스트"
-	@echo "    make flutter-codegen      - Flutter 코드 재생성"
-	@echo "    make flutter-clean        - Flutter 정리"
-	@echo ""
-	@echo "  iOS 네이티브 (Flutter 대체 트랙)"
+	@echo "  iOS (apps/ios)"
 	@echo "    make ios-config           - 환경변수 → Config-*.xcconfig 생성"
 	@echo "    make ios-generate         - project.yml → Drop.xcodeproj 생성"
 	@echo "    make ios-test             - DropCore 테스트 (시뮬레이터 불필요)"
@@ -114,101 +100,7 @@ electron-build-remote:
 	pnpm build:remote
 
 # ============================================
-# Flutter (Mobile)
-# ============================================
-
-# Flutter 의존성 설치 + 코드 생성
-flutter-setup:
-	cd apps/mobile && flutter pub get && dart run build_runner build --delete-conflicting-outputs
-
-# Flutter 개발 서버 (로컬 Supabase)
-# 환경변수: SUPABASE_URL_LOCAL, SUPABASE_ANON_KEY_LOCAL, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID
-flutter-dev:
-	@if [ -z "$(SUPABASE_URL_LOCAL)" ] || [ -z "$(SUPABASE_ANON_KEY_LOCAL)" ]; then \
-		echo "❌ Error: SUPABASE_URL_LOCAL and SUPABASE_ANON_KEY_LOCAL must be set"; \
-		echo "   Set them in .env.local or export them before running"; \
-		exit 1; \
-	fi
-	cd apps/mobile && flutter run \
-		--dart-define=SUPABASE_URL=$(SUPABASE_URL_LOCAL) \
-		--dart-define=SUPABASE_ANON_KEY=$(SUPABASE_ANON_KEY_LOCAL) \
-		--dart-define=GOOGLE_WEB_CLIENT_ID=$(GOOGLE_WEB_CLIENT_ID) \
-		--dart-define=GOOGLE_IOS_CLIENT_ID=$(GOOGLE_IOS_CLIENT_ID)
-
-# Flutter 개발 서버 (리모트 Supabase)
-# 환경변수: SUPABASE_URL_REMOTE, SUPABASE_ANON_KEY_REMOTE, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID
-flutter-dev-remote:
-	@if [ -z "$(SUPABASE_URL_REMOTE)" ] || [ -z "$(SUPABASE_ANON_KEY_REMOTE)" ]; then \
-		echo "❌ Error: SUPABASE_URL_REMOTE and SUPABASE_ANON_KEY_REMOTE must be set"; \
-		echo "   Set them in .env.local or export them before running"; \
-		exit 1; \
-	fi
-	cd apps/mobile && flutter run \
-		--dart-define=SUPABASE_URL=$(SUPABASE_URL_REMOTE) \
-		--dart-define=SUPABASE_ANON_KEY=$(SUPABASE_ANON_KEY_REMOTE) \
-		--dart-define=GOOGLE_WEB_CLIENT_ID=$(GOOGLE_WEB_CLIENT_ID) \
-		--dart-define=GOOGLE_IOS_CLIENT_ID=$(GOOGLE_IOS_CLIENT_ID)
-
-# Flutter 빌드 (iOS 시뮬레이터, 로컬)
-# 환경변수: SUPABASE_URL_LOCAL, SUPABASE_ANON_KEY_LOCAL, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID
-flutter-build:
-	@if [ -z "$(SUPABASE_URL_LOCAL)" ] || [ -z "$(SUPABASE_ANON_KEY_LOCAL)" ]; then \
-		echo "❌ Error: SUPABASE_URL_LOCAL and SUPABASE_ANON_KEY_LOCAL must be set"; \
-		exit 1; \
-	fi
-	cd apps/mobile && flutter build ios --simulator \
-		--dart-define=SUPABASE_URL=$(SUPABASE_URL_LOCAL) \
-		--dart-define=SUPABASE_ANON_KEY=$(SUPABASE_ANON_KEY_LOCAL) \
-		--dart-define=GOOGLE_WEB_CLIENT_ID=$(GOOGLE_WEB_CLIENT_ID) \
-		--dart-define=GOOGLE_IOS_CLIENT_ID=$(GOOGLE_IOS_CLIENT_ID)
-
-# Flutter IPA 빌드 (리모트 Supabase - TestFlight용)
-# NOTE: TestFlight 배포는 항상 remote 환경 사용 (로컬 빌드 옵션 없음)
-# 환경변수: SUPABASE_URL_REMOTE, SUPABASE_ANON_KEY_REMOTE, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID
-flutter-build-ipa:
-	@if [ -z "$(SUPABASE_URL_REMOTE)" ] || [ -z "$(SUPABASE_ANON_KEY_REMOTE)" ]; then \
-		echo "❌ Error: SUPABASE_URL_REMOTE and SUPABASE_ANON_KEY_REMOTE must be set"; \
-		exit 1; \
-	fi
-	@echo "🚀 Building IPA for TestFlight (remote Supabase environment)..."
-	cd apps/mobile && flutter build ipa \
-		--dart-define=SUPABASE_URL=$(SUPABASE_URL_REMOTE) \
-		--dart-define=SUPABASE_ANON_KEY=$(SUPABASE_ANON_KEY_REMOTE) \
-		--dart-define=GOOGLE_WEB_CLIENT_ID=$(GOOGLE_WEB_CLIENT_ID) \
-		--dart-define=GOOGLE_IOS_CLIENT_ID=$(GOOGLE_IOS_CLIENT_ID)
-	@echo "✅ IPA built successfully at: apps/mobile/build/ios/ipa/"
-
-# TestFlight 배포 (빌드 + 업로드 통합 명령)
-# 사용법: make flutter-testflight
-# NOTE: 항상 remote Supabase 환경 사용 (명시적 설정 불필요)
-# 환경변수: APPLE_ID, APPLE_APP_PASSWORD (from ~/.zshrc)
-flutter-testflight: flutter-build-ipa
-	@echo "📤 Uploading to TestFlight..."
-	xcrun altool --upload-app \
-		--type ios \
-		--file "apps/mobile/build/ios/ipa/drop_mobile.ipa" \
-		-u "$(APPLE_ID)" \
-		-p "$(APPLE_APP_PASSWORD)"
-	@echo "✅ Upload complete! Check App Store Connect for processing status."
-
-# Flutter 코드 분석
-flutter-analyze:
-	cd apps/mobile && flutter analyze
-
-# Flutter 테스트
-flutter-test:
-	cd apps/mobile && flutter test
-
-# Flutter 코드 재생성
-flutter-codegen:
-	cd apps/mobile && dart run build_runner build --delete-conflicting-outputs
-
-# Flutter 정리
-flutter-clean:
-	cd apps/mobile && flutter clean && rm -rf .dart_tool build
-
-# ============================================
-# iOS 네이티브 (apps/ios) — Flutter 앱을 대체하는 트랙, BRU-6~22
+# iOS (apps/ios) — SwiftUI 네이티브. Flutter 앱은 BRU-22에서 제거됐다.
 # ============================================
 
 # xcode-select가 CommandLineTools를 가리키고 있어 명시가 필요하다.
@@ -218,7 +110,7 @@ IOS_SIMULATOR ?= platform=iOS Simulator,name=iPhone 17
 
 # 환경변수 → Config-*.xcconfig 생성 (실제 값이 든 파일은 커밋되지 않는다)
 # 필요한 값: SUPABASE_URL_LOCAL / SUPABASE_ANON_KEY_LOCAL / SUPABASE_URL_REMOTE / SUPABASE_ANON_KEY_REMOTE
-# (Flutter 타겟과 같은 이름을 쓴다 — .env.local을 그대로 재사용할 수 있게)
+# (이름은 과거 Flutter 타겟과 같다 — 기존 .env.local을 그대로 재사용할 수 있게)
 ios-config:
 	@bash scripts/ios-config.sh
 
@@ -266,7 +158,7 @@ ios-clean:
 # ============================================
 
 # 표준 경로: patch 버전 범프 → 커밋 + 태그 + push → GitHub Actions가 서명·공증·발행.
-# mac/iOS/Android가 한 번에 나가고, 설치본은 latest-mac.yml을 보고 자동 업데이트한다.
+# mac과 iOS가 한 번에 나가고, 설치본은 latest-mac.yml을 보고 자동 업데이트한다.
 release:
 	@test "$$(git rev-parse --abbrev-ref HEAD)" = "main" || { echo "✗ main에서만 릴리스한다 (현재: $$(git rev-parse --abbrev-ref HEAD))"; exit 1; }
 	@test -z "$$(git status --porcelain)" || { echo "✗ 워킹트리가 깨끗해야 한다"; exit 1; }
