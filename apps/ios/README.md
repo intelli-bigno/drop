@@ -8,6 +8,8 @@ DROP의 모바일 앱. SwiftUI 네이티브 단일 트랙 — Flutter 앱(`apps/
 apps/ios/
   project.yml            # 프로젝트 정의의 SoT — .xcodeproj는 여기서 생성한다
   Drop/                  # 앱 타겟: @main, 화면 조립, Info.plist, 에셋
+  DropShare/             # 공유 시트 확장 — App Group에 적어 두고 앱이 비운다
+  DropWidget/            # 홈 화면 위젯 — 앱이 적어 둔 요약(WidgetSnapshot)만 읽는다
   Packages/
     DropCore/            # 도메인 로직 — UIKit/SwiftUI 의존 0, `swift test`로 검증
     DropUI/              # 공용 뷰 · 디자인 토큰 (SwiftUI 의존 허용)

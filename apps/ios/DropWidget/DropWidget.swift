@@ -1,0 +1,170 @@
+import DropCore
+import SwiftUI
+import WidgetKit
+
+/// 위젯이 그리는 한 시점.
+///
+/// 무엇을 보여줄지 고르고 자르는 규칙은 전부 `WidgetSnapshot`(DropCore)에 있다.
+/// 여기서는 이미 정해진 것을 배치만 한다 — 위젯 타깃은 `swift test`로 못 돌린다.
+struct RecentNotesEntry: TimelineEntry {
+    let date: Date
+    let snapshot: WidgetSnapshot
+
+    /// 갤러리 미리보기용. 실제 노트를 읽기 전에 보이는 화면이다.
+    static let placeholder = RecentNotesEntry(
+        date: Date(),
+        snapshot: WidgetSnapshot(
+            notes: [
+                WidgetNote(id: "1", excerpt: "장보기: 우유, 계란", createdAt: Date()),
+                WidgetNote(id: "2", excerpt: "회의 전에 지표 확인하기", createdAt: Date().addingTimeInterval(-3600)),
+            ],
+            generatedAt: Date()
+        )
+    )
+}
+
+struct RecentNotesProvider: TimelineProvider {
+    func placeholder(in _: Context) -> RecentNotesEntry {
+        .placeholder
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (RecentNotesEntry) -> Void) {
+        completion(context.isPreview ? .placeholder : currentEntry())
+    }
+
+    /// 앱이 노트를 불러올 때마다 `WidgetCenter`로 다시 부르므로 자동 갱신 주기는 거들기만 한다.
+    func getTimeline(in _: Context, completion: @escaping (Timeline<RecentNotesEntry>) -> Void) {
+        let entry = currentEntry()
+        completion(Timeline(entries: [entry], policy: .after(entry.date.addingTimeInterval(30 * 60))))
+    }
+
+    private func currentEntry() -> RecentNotesEntry {
+        RecentNotesEntry(date: Date(), snapshot: WidgetSnapshotStore()?.read() ?? .empty)
+    }
+}
+
+// MARK: - 최근 노트
+
+struct RecentNotesView: View {
+    let entry: RecentNotesEntry
+    @Environment(\.widgetFamily) private var family
+
+    private var visibleNotes: [WidgetNote] {
+        Array(entry.snapshot.notes.prefix(family == .systemSmall ? 2 : WidgetSnapshot.maximumNoteCount))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            header
+            if entry.snapshot.isEmpty {
+                emptyState
+            } else {
+                ForEach(visibleNotes) { note in
+                    Link(destination: DropLink.noteURL(id: note.id)) {
+                        row(note)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var header: some View {
+        HStack {
+            Text("DROP")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            // 위젯 어디를 눌러도 최소한 작성 화면으로는 가야 한다.
+            Link(destination: DropLink.quickComposeURL) {
+                Image(systemName: "square.and.pencil")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+        }
+    }
+
+    private func row(_ note: WidgetNote) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(note.excerpt)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(family == .systemSmall ? 2 : 1)
+                .multilineTextAlignment(.leading)
+            Text(RelativeTimeFormatter().string(for: note.createdAt))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("아직 노트가 없습니다")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("눌러서 첫 노트 쓰기")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct RecentNotesWidget: Widget {
+    let kind = "RecentNotesWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { entry in
+            RecentNotesView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+                // 노트 줄을 벗어난 곳을 눌렀을 때의 기본 행선지.
+                .widgetURL(DropLink.quickComposeURL)
+        }
+        .configurationDisplayName("최근 노트")
+        .description("최근에 적은 노트를 보고, 눌러서 바로 씁니다.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+// MARK: - 빠른 작성
+
+struct QuickComposeView: View {
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: "square.and.pencil").font(.title3)
+            }
+        default:
+            VStack(spacing: 6) {
+                Image(systemName: "square.and.pencil")
+                    .font(.largeTitle)
+                    .foregroundStyle(.tint)
+                Text("새 노트")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct QuickComposeWidget: Widget {
+    let kind = "QuickComposeWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
+            QuickComposeView()
+                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(DropLink.quickComposeURL)
+        }
+        .configurationDisplayName("새 노트")
+        .description("바로 작성 화면을 엽니다.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
+    }
+}

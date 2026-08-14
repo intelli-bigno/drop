@@ -51,6 +51,8 @@ targets:
         product: GoogleSignIn
       - target: DropShare
         embed: true
+      - target: DropWidget
+        embed: true
     settings:
       base:
         # 과거 Flutter 앱이 쓰던 번들 ID를 이어받았다. 이미 App Group과 App Store Connect
@@ -85,6 +87,26 @@ targets:
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_ENTITLEMENTS: DropShare/DropShare.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+
+  # 홈 화면 위젯. 이 타깃이 없어서 위젯이 갤러리에서 사라졌다 (BRU-35).
+  # Supabase에 접속하지 않으므로 Config-*.xcconfig를 붙이지 않는다 —
+  # 앱이 App Group에 적어 둔 요약(WidgetSnapshot)만 읽는다.
+  DropWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DropWidget
+    dependencies:
+      - package: DropCore
+        product: DropCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.intellieffect.drop.mobile.widget
+        INFOPLIST_FILE: DropWidget/Info.plist
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_ENTITLEMENTS: DropWidget/DropWidget.entitlements
         TARGETED_DEVICE_FAMILY: "1"
 
 schemes:

@@ -49,6 +49,11 @@ struct HomeView: View {
                     // 공유 시트로 들어온 항목을 여기서 비운다. 확장은 적어 두기만 한다.
                     await drainSharedInbox()
                 }
+                // 목록이 바뀌는 경로가 여럿이라(불러오기·작성·수정·삭제) 각 호출부에
+                // 끼워 넣지 않고, 결과인 목록 자체를 한 곳에서 본다.
+                .onChange(of: notes.allNotes, initial: true) { _, all in
+                    WidgetSnapshotPublisher.publish(notes: all)
+                }
                 .onChange(of: scenePhase) { _, phase in
                     // 앱이 살아 있는 채로 공유가 들어오면 복귀 시점에 비운다.
                     guard phase == .active else { return }

@@ -5,6 +5,15 @@ public enum DropLink: Equatable, Sendable {
     case note(id: String)
     case compose(text: String?)
 
+    /// 위젯이 여는 링크. 앱의 기존 작성 경로를 그대로 탄다 —
+    /// 위젯 전용 라우팅을 따로 만들면 두 경로가 어긋난다.
+    public static let quickComposeURL = URL(string: "drop://compose")!
+
+    /// 위젯에서 특정 노트를 여는 링크.
+    public static func noteURL(id: String) -> URL {
+        URL(string: "drop://note/\(id)") ?? quickComposeURL
+    }
+
     public init?(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
 
