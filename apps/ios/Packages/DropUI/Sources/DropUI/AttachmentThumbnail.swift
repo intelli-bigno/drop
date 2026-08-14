@@ -65,7 +65,9 @@ public struct AttachmentThumbnail: View {
                 Image(systemName: icon)
                     .font(.body)
                     .foregroundStyle(.secondary)
-                if !attachment.formattedSize.isEmpty {
+                // 한 줄 행에 들어가는 작은 칸에서는 크기 문구가 잘려 나온다 —
+                // 잘린 숫자 조각은 정보가 아니라 얼룩이다.
+                if size >= 44, !attachment.formattedSize.isEmpty {
                     Text(attachment.formattedSize)
                         .font(.system(size: 9))
                         .foregroundStyle(.tertiary)

@@ -53,13 +53,34 @@ enum PreviewLaunch {
                 content: "iOS 네이티브 전환 M3 — 홈 화면까지 올라왔다.",
                 tags: [tag("개발")],
                 createdAt: now.addingTimeInterval(-120), updatedAt: now, source: .mobile,
-                isPinned: true, pinnedAt: now
+                isPinned: true, pinnedAt: now, priority: 3
             ),
             Note(
                 id: "2", displayID: 11,
                 content: "장보기: 우유, 커피 원두, 사과",
                 tags: [tag("생활")],
-                createdAt: now.addingTimeInterval(-3600), updatedAt: now, source: .desktop
+                createdAt: now.addingTimeInterval(-3600), updatedAt: now, source: .desktop,
+                priority: 2
+            ),
+            // 한 줄로 줄인 뒤에도 긴 본문이 줄을 밀지 않는지 눈으로 보기 위한 표본.
+            Note(
+                id: "6", displayID: 14,
+                content: "긴 본문은 한 줄에서 잘려야 한다 — 목록은 훑는 자리이고 다 읽는 자리는 컴포저다. "
+                    + "이 문장이 두 줄로 내려가면 한 화면에 들어오는 노트 수가 다시 줄어든다.",
+                tags: [tag("설계"), tag("iOS"), tag("BRU-49")],
+                createdAt: now.addingTimeInterval(-5400), updatedAt: now, source: .desktop,
+                priority: 1
+            ),
+            Note(
+                id: "7", displayID: 15,
+                content: "어제 적어 둔 메모",
+                createdAt: now.addingTimeInterval(-100_000), updatedAt: now, source: .mobile
+            ),
+            Note(
+                id: "8", displayID: 16,
+                content: "사흘 전 링크",
+                createdAt: now.addingTimeInterval(-260_000), updatedAt: now, source: .web,
+                hasLink: true
             ),
             Note(
                 id: "5", displayID: 13,

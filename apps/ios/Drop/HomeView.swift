@@ -5,6 +5,10 @@ import SwiftUI
 
 /// `screens/home_screen.dart` 대응. 앱 사용 시간의 대부분이 여기다.
 struct HomeView: View {
+    /// 날짜 섹션 묶기는 DropCore의 순수 함수가 한다 — 자정·시간대 경계를
+    /// 화면 코드에 두면 검증할 방법이 없다.
+    private static let grouper = NoteDateGrouper()
+
     @Environment(AuthStore.self) private var auth
     @Environment(DropRouter.self) private var router
     @Environment(\.dropContainer) private var container
@@ -105,74 +109,120 @@ struct HomeView: View {
     }
 
     private var title: String {
-        notes.isSelecting ? "\(notes.selectedIDs.count)개 선택됨" : "DROP"
+        if notes.isSelecting { return "\(notes.selectedIDs.count)개 선택됨" }
+        // 보기 전환이 ⋯ 메뉴로 들어가 화면에 안 보이므로, 지금 어디를 보고 있는지는
+        // 제목이 알려 준다. 안 그러면 휴지통에서 "노트가 사라졌다"고 읽힌다.
+        return switch notes.viewMode {
+        case .active: "DROP"
+        case .archived: "보관"
+        case .trash: "휴지통"
+        }
+    }
+
+    private var viewMode: Binding<NoteViewMode> {
+        Binding(get: { notes.viewMode }, set: { notes.viewMode = $0 })
     }
 
     /// **스크롤 컨테이너는 항상 하나, 항상 여기 있다.**
-    /// 예전에는 로딩·빈 상태에서 ScrollView가 아예 없는 뷰(ProgressView / VStack)로
+    /// 예전에는 로딩·빈 상태에서 스크롤 컨테이너가 아예 없는 뷰(ProgressView / VStack)로
     /// 갈라졌고, `.refreshable`은 그 바깥에 붙어 있었다 — 당길 대상이 없으니
-    /// 새로고침이 아예 걸리지 않았다. 갈림길은 스크롤뷰 **안쪽**으로 옮긴다.
+    /// 새로고침이 아예 걸리지 않았다(PR #40). 갈림길은 컨테이너 **안쪽**에 둔다.
+    ///
+    /// 컨테이너가 ScrollView에서 List로 바뀌었을 뿐 그 불변식은 그대로다.
+    /// List로 옮긴 이유는 하나 — `.swipeActions`가 List 안에서만 동작하기 때문이다.
+    /// 예전에는 그래서 `contextMenu`로 흉내 냈고, 스와이프는 실제로 없었다.
     private var content: some View {
-        ScrollView {
+        List {
             if notes.isLoading, notes.visibleNotes.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .containerRelativeFrame(.vertical)
+                    .plainListRow()
             } else if notes.visibleNotes.isEmpty {
                 emptyState
                     .containerRelativeFrame(.vertical)
+                    .plainListRow()
             } else {
-                noteList
+                noteSections
             }
         }
+        .listStyle(.plain)
+        // 한 줄 행은 기본 최소 높이(44)보다 낮다. 기본값이면 행 사이가 벌어진다.
+        .environment(\.defaultMinListRowHeight, 0)
         // 내용이 화면보다 짧아도 당길 수 있어야 한다 — 새로고침이 가장 필요한 곳이
         // 목록이 비어 보이는 순간이다. 기본값이면 짧은 내용에서 튐이 죽는다.
         .scrollBounceBehavior(.always, axes: .vertical)
         .refreshable { await notes.load() }
     }
 
-    private var noteList: some View {
-        LazyVStack(spacing: DropTheme.Spacing.base) {
-            ForEach(notes.visibleNotes) { note in
-                NoteCard(
-                    note: note,
-                    isSelected: notes.selectedIDs.contains(note.id),
-                    isSelecting: notes.isSelecting,
-                    attachmentURL: attachmentURL,
-                    onOpenAttachment: { attachment in
-                        viewingAttachments = AttachmentPresentation(
-                            attachments: note.attachments.filter { $0.isImage || $0.isVideo },
-                            current: attachment
-                        )
-                    }
-                )
-                .onTapGesture {
-                    if notes.isSelecting {
-                        notes.toggleSelection(id: note.id)
-                    } else {
-                        composer = .existing(note)
-                    }
+    private var noteSections: some View {
+        ForEach(Self.grouper.sections(for: notes.visibleNotes)) { section in
+            Section {
+                ForEach(section.notes) { note in
+                    noteRow(for: note)
                 }
-                .onLongPressGesture {
-                    notes.toggleSelection(id: note.id)
-                }
-                .swipeActionsCompat {
-                    Button(role: .destructive) {
-                        Task { await notes.moveToTrash(id: note.id) }
-                    } label: {
-                        Label("삭제", systemImage: "trash")
-                    }
-                    Button {
-                        Task { await notes.setPinned(id: note.id, isPinned: !note.isPinned) }
-                    } label: {
-                        Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
-                    }
-                    .tint(.orange)
-                }
+            } header: {
+                Text(section.title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(nil)
+                    .listRowInsets(EdgeInsets(
+                        top: DropTheme.Spacing.base,
+                        leading: DropTheme.Spacing.comfortable,
+                        bottom: DropTheme.Spacing.tight,
+                        trailing: DropTheme.Spacing.comfortable
+                    ))
             }
         }
-        .padding(.horizontal, DropTheme.Spacing.comfortable)
-        .padding(.vertical, DropTheme.Spacing.base)
+    }
+
+    private func noteRow(for note: Note) -> some View {
+        NoteCard(
+            note: note,
+            isSelected: notes.selectedIDs.contains(note.id),
+            isSelecting: notes.isSelecting,
+            attachmentURL: attachmentURL,
+            onOpenAttachment: { attachment in
+                viewingAttachments = AttachmentPresentation(
+                    attachments: note.attachments.filter { $0.isImage || $0.isVideo },
+                    current: attachment
+                )
+            }
+        )
+        .onTapGesture {
+            if notes.isSelecting {
+                notes.toggleSelection(id: note.id)
+            } else {
+                composer = .existing(note)
+            }
+        }
+        // 롱프레스는 선택 모드 하나만 쓴다. 예전에는 같은 롱프레스를
+        // contextMenu(스와이프 대체)가 함께 노려 어느 쪽이 뜰지 들쭉날쭉했다.
+        .onLongPressGesture {
+            notes.toggleSelection(id: note.id)
+        }
+        // 실수로 지우는 일이 없게 전체 스와이프는 막는다 — 휴지통이라도 한 번 더 확인이 낫다.
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                Task { await notes.moveToTrash(id: note.id) }
+            } label: {
+                Label("삭제", systemImage: "trash")
+            }
+            Button {
+                Task { await notes.setPinned(id: note.id, isPinned: !note.isPinned) }
+            } label: {
+                Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
+            }
+            .tint(.orange)
+        }
+        .plainListRow(
+            insets: EdgeInsets(
+                top: DropTheme.Spacing.tight / 2,
+                leading: DropTheme.Spacing.comfortable,
+                bottom: DropTheme.Spacing.tight / 2,
+                trailing: DropTheme.Spacing.comfortable
+            )
+        )
     }
 
     private var emptyState: some View {
@@ -276,6 +326,15 @@ struct HomeView: View {
         } else {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    // 필터바에서 세그먼트를 걷어내고 여기로 옮겼다 — 보기 전환은
+                    // 하루에 몇 번 쓰지 않는데 목록 한 줄을 상시로 먹고 있었다.
+                    Picker("보기", selection: viewMode) {
+                        Label("노트", systemImage: "tray").tag(NoteViewMode.active)
+                        Label("보관", systemImage: "archivebox").tag(NoteViewMode.archived)
+                        Label("휴지통", systemImage: "trash").tag(NoteViewMode.trash)
+                    }
+                    .pickerStyle(.inline)
+
                     NavigationLink { TagsView(store: notes) } label: {
                         Label("태그", systemImage: "number")
                     }
@@ -377,11 +436,13 @@ struct AttachmentPresentation: Identifiable {
     var id: String { current.id }
 }
 
-/// iOS 17에서는 `swipeActions`가 `List` 안에서만 동작한다.
-/// 카드 레이아웃(LazyVStack)에서도 같은 동작을 주기 위해 컨텍스트 메뉴로 대체한다.
+/// List가 기본으로 그리는 구분선·행 배경·여백을 걷어낸다.
+/// 행의 둥근 배경은 `NoteCard`가 직접 그린다 — 둘이 겹치면 카드 밖에 회색 판이 하나 더 깔린다.
 private extension View {
-    func swipeActionsCompat<Content: View>(@ViewBuilder _ actions: () -> Content) -> some View {
-        contextMenu { actions() }
+    func plainListRow(insets: EdgeInsets = EdgeInsets()) -> some View {
+        listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(insets)
     }
 }
 
