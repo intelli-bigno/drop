@@ -3,7 +3,6 @@ import type { Note } from '@drop/shared'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { NoteCard, NoteCardHandle } from './NoteCard'
-import { TagDialog } from './TagDialog'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
 import { ViewModeSelector } from './ViewModeSelector'
@@ -63,7 +62,6 @@ export function NoteFeed() {
     selectNote,
   } = useNotesStore()
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
-  const [tagDialogNoteId, setTagDialogNoteId] = useState<string | null>(null)
   const [showTagManagement, setShowTagManagement] = useState(false)
   const [pinDialogNoteId, setPinDialogNoteId] = useState<string | null>(null)
   const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
@@ -397,7 +395,7 @@ export function NoteFeed() {
     return () => window.removeEventListener('keydown', handleSearchKeyDown)
   }, [])
 
-  // t 단축키로 노트별 태그 다이얼로그 열기 (텍스트 입력 중 제외)
+  // t 단축키로 카드 아래 태그 팝오버 열기 (텍스트 입력 중 제외)
   useEffect(() => {
     const handleTagListKeyDown = (e: KeyboardEvent) => {
       if (isTextInputTarget(e.target)) return
@@ -407,7 +405,7 @@ export function NoteFeed() {
       if (!noteId) return
       e.preventDefault()
       e.stopPropagation()
-      setTagDialogNoteId(noteId)
+      cardRefs.current.get(noteId)?.openTagPopover()
     }
 
     window.addEventListener('keydown', handleTagListKeyDown)
@@ -738,10 +736,6 @@ export function NoteFeed() {
     return () => document.removeEventListener('paste', handlePaste)
   }, [createNote, createNoteWithFile, createNoteWithInstagram, createNoteWithYouTube])
 
-  // 태그 다이얼로그에 전달할 현재 노트의 태그 목록 (필터링되지 않은 전체 notes에서 검색)
-  const tagDialogNote = tagDialogNoteId ? notes.find((n) => n.id === tagDialogNoteId) : null
-  const tagDialogExistingTags = tagDialogNote?.tags.map((t) => t.name) ?? []
-
   return (
     <div
       ref={feedRef}
@@ -752,13 +746,6 @@ export function NoteFeed() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {tagDialogNoteId && (
-        <TagDialog
-          noteId={tagDialogNoteId}
-          existingTagNames={tagDialogExistingTags}
-          onClose={() => setTagDialogNoteId(null)}
-        />
-      )}
       {showTagManagement && (
         <TagManagementDialog onClose={() => setShowTagManagement(false)} />
       )}

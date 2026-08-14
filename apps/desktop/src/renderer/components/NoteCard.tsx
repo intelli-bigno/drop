@@ -3,6 +3,8 @@ import { LexicalEditor, LexicalEditorHandle } from './LexicalEditor'
 import { AttachmentList } from './AttachmentList'
 import { LinkPreviews } from './LinkPreviews'
 import { TagList } from './TagList'
+import { TagPopover } from './TagPopover'
+import { TemplatePopover } from './TemplatePopover'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -14,6 +16,8 @@ import { formatRelativeTime } from '../lib/time-utils'
 import { nextPriority, priorityClassName } from '../lib/note-priority'
 import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
 import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
+import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
+import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
@@ -29,7 +33,8 @@ interface Props {
 
 export interface NoteCardHandle {
   focus: () => void
-  openTagList: () => void
+  /** 카드 아래 태그 팝오버를 연다 (t 단축키) */
+  openTagPopover: () => void
 }
 
 export const NoteCard = memo(
@@ -37,6 +42,13 @@ export const NoteCard = memo(
     ({ note, isFocused, depth = 0, viewMode = 'active', onEscapeFromNormal, onReply }, ref) => {
       const editorRef = useRef<LexicalEditorHandle>(null)
       const pendingFocusRef = useRef(false)
+      // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
+      const contentChangedRef = useRef(false)
+      const latestContentRef = useRef(note.content)
+      const [showTagPopover, setShowTagPopover] = useState(false)
+      const [showTemplatePopover, setShowTemplatePopover] = useState(false)
+      // 템플릿을 넣은 뒤 에디터를 새 본문으로 다시 세우기 위한 세대 번호
+      const [editorEpoch, setEditorEpoch] = useState(0)
       const [showPinDialog, setShowPinDialog] = useState(false)
       const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false)
       const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
@@ -105,10 +117,10 @@ export const NoteCard = memo(
           pendingFocusRef.current = true
           editorRef.current?.focus()
         },
-        // BRU-46에서 카드 안 태그 입력칸(TagInput)이 빠졌다. 태그 추가는 NoteFeed의
-        // t 단축키가 여는 TagDialog가 담당하므로 카드가 열 UI는 없다.
-        // 인터페이스는 호출부 호환을 위해 남긴다 — 태그 입력 재설계는 BRU-44.
-        openTagList: () => undefined,
+        openTagPopover: () => {
+          if (isLocked) return
+          setShowTagPopover(true)
+        },
       }))
 
       // 펼쳐진 뒤에 예약된 포커스를 소비한다
@@ -123,10 +135,82 @@ export const NoteCard = memo(
         (content: string) => {
           // 동일한 content면 업데이트 스킵 (초기 렌더링 시 불필요한 호출 방지)
           if (content === note.content) return
+          contentChangedRef.current = true
+          latestContentRef.current = content
           updateNote(note.id, content)
         },
         [note.id, note.content, updateNote]
       )
+
+      // 편집에서 빠져나오는 순간(Enter·Esc) 태그 팝오버를 연다.
+      // 카드를 열어보기만 하고 나온 경우에는 열지 않는다 — 넘기는 데 벌이 없어야 한다.
+      const handleEditorEscape = useCallback(() => {
+        const shouldOpen = shouldOpenTagPopoverOnEditEnd({
+          contentChanged: contentChangedRef.current,
+          content: latestContentRef.current,
+          isLocked,
+        })
+        contentChangedRef.current = false
+        if (shouldOpen) setShowTagPopover(true)
+        onEscapeFromNormal()
+      }, [isLocked, onEscapeFromNormal])
+
+      // 빈 노트에서 `/`를 치면 형식 목록이 뜬다. 내용이 있으면 그냥 글자다.
+      const handleEditorKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
+          if (e.nativeEvent.isComposing) return
+          if (
+            !shouldOpenTemplateMenu({
+              key: e.key,
+              content: latestContentRef.current,
+              isLocked,
+            })
+          ) {
+            return
+          }
+          e.preventDefault()
+          e.stopPropagation()
+          setShowTemplatePopover(true)
+        },
+        [isLocked]
+      )
+
+      const handleInsertTemplate = useCallback(
+        async (template: NoteTemplate) => {
+          setShowTemplatePopover(false)
+          contentChangedRef.current = true
+          latestContentRef.current = template.content
+          try {
+            await updateNote(note.id, template.content)
+          } catch (error) {
+            console.error('Failed to insert template:', error)
+            return
+          }
+          // 에디터는 initialContent를 마운트할 때 한 번만 읽는다 — 새로 세운다
+          setEditorEpoch((epoch) => epoch + 1)
+        },
+        [note.id, updateNote]
+      )
+
+      // 다른 노트로 넘어가면(다음 노트 쓰기 시작 포함) 그냥 닫힌다.
+      // 시간이 지나서 저절로 닫히는 길은 두지 않는다 — 놓치면 다시 부를 방법이 없어진다.
+      useEffect(() => {
+        if (!isFocused) {
+          setShowTagPopover(false)
+          setShowTemplatePopover(false)
+        }
+      }, [isFocused])
+
+      // 템플릿을 넣고 나면 이어서 쓸 수 있게 에디터로 돌아간다
+      useEffect(() => {
+        if (editorEpoch === 0) return
+        editorRef.current?.focus()
+      }, [editorEpoch])
+
+      // 바깥에서 본문이 바뀌어도(실시간 동기화 등) 최신값을 들고 있는다
+      useEffect(() => {
+        latestContentRef.current = note.content
+      }, [note.content])
 
       const handleRemoveAttachment = useCallback(
         (attachmentId: string) => {
@@ -361,13 +445,13 @@ export const NoteCard = memo(
                 />
               ) : (
                 <>
-                  <div className="note-editor">
+                  <div className="note-editor" onKeyDown={handleEditorKeyDown}>
                     <LexicalEditor
-                      key={note.id}
+                      key={`${note.id}:${editorEpoch}`}
                       ref={editorRef}
                       initialContent={note.content}
                       onChange={handleChange}
-                      onEscape={onEscapeFromNormal}
+                      onEscape={handleEditorEscape}
                       onAddFile={handleAddFile}
                     />
                   </div>
@@ -379,6 +463,27 @@ export const NoteCard = memo(
                 </>
               ))}
           </div>
+          {showTagPopover && !isLocked && (
+            // 카드 바깥에 둔다 — .note-card는 overflow:hidden이라 안에서는 잘린다
+            <div className="note-card-popover-anchor">
+              <TagPopover
+                noteId={note.id}
+                tags={note.tags}
+                onClose={() => setShowTagPopover(false)}
+              />
+            </div>
+          )}
+          {showTemplatePopover && !isLocked && (
+            <div className="note-card-popover-anchor">
+              <TemplatePopover
+                onInsert={handleInsertTemplate}
+                onClose={() => {
+                  setShowTemplatePopover(false)
+                  editorRef.current?.focus()
+                }}
+              />
+            </div>
+          )}
           {showPinDialog && (
             <PinDialog
               mode={pinDialogMode}

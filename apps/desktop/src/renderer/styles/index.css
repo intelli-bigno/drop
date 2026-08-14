@@ -1695,59 +1695,6 @@ body {
   color: var(--danger);
 }
 
-.tag-input-container {
-  position: relative;
-}
-
-.tag-input {
-  width: 90px;
-  padding: 5px 12px;
-  background: transparent;
-  border: 1px dashed var(--border-color);
-  border-radius: 20px;
-  color: var(--text-primary);
-  font-size: 12px;
-  transition: all var(--transition-normal);
-}
-
-.tag-input:focus {
-  border-style: solid;
-  border-color: var(--accent);
-  width: 140px;
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-glow);
-}
-
-.tag-input::placeholder {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.tag-suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 150px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  margin-top: 4px;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.tag-suggestion {
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--text-primary);
-}
-
-.tag-suggestion:hover,
-.tag-suggestion.selected {
-  background: var(--bg-secondary);
-}
-
 /* ============================================
    Filter Indicator - Compact Badge
    ============================================ */
@@ -1784,116 +1731,128 @@ body {
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* Tag Dialog */
-.tag-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 15vh;
-  z-index: 1000;
+/* ============================================
+   Card Popover — 카드 바로 아래 목록 (BRU-44)
+   배경을 막지 않는다: 백드롭 없음, 바깥은 그대로 살아 있다.
+   ============================================ */
+
+.note-card-popover-anchor {
+  position: relative;
+  height: 0;
+  z-index: 50;
 }
 
-.tag-dialog {
-  width: 320px;
-  max-height: 400px;
-  background: var(--bg-card);
+.card-popover {
+  position: absolute;
+  top: -8px;
+  left: var(--space-3);
+  width: 280px;
+  max-width: calc(100% - var(--space-5));
+  background: var(--bg-elevated);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.tag-dialog-input {
+.card-popover-input {
   width: 100%;
-  padding: 14px 16px;
+  padding: var(--space-2) var(--space-3);
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--text-base);
+  font-family: var(--font-sans);
 }
 
-.tag-dialog-input::placeholder {
-  color: var(--text-secondary);
+.card-popover-input:focus {
+  outline: none;
 }
 
-.tag-dialog-list {
-  flex: 1;
+.card-popover-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.card-popover-list {
+  max-height: 220px;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: var(--space-1) 0;
 }
 
-.tag-dialog-item {
+.card-popover-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  text-align: left;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-normal);
 }
 
-.tag-dialog-item:hover,
-.tag-dialog-item.selected {
-  background: var(--bg-secondary);
+.card-popover-item.selected {
+  background: var(--bg-hover);
 }
 
-.tag-dialog-hash {
+.card-popover-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.card-popover-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
   color: var(--accent);
-  font-weight: 500;
 }
 
-.tag-dialog-name {
-  color: var(--text-primary);
-  font-size: 14px;
+.card-popover-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tag-dialog-create {
-  border-top: 1px solid var(--border-color);
-  margin-top: 4px;
-  padding-top: 12px;
+.card-popover-item-hint {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
-.tag-dialog-create-icon {
-  color: var(--accent);
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.tag-dialog-create-text {
+.card-popover-item.create .card-popover-item-label {
   color: var(--text-secondary);
-  font-size: 13px;
 }
 
-.tag-dialog-create-text strong {
-  color: var(--text-primary);
+.card-popover-empty {
+  padding: var(--space-3);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
 }
 
-.tag-dialog-empty {
-  padding: 24px 16px;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.tag-dialog-added {
+.card-popover-help {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3) var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
-.tag-dialog-added-tag {
-  background: var(--accent-color);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.card-popover-help kbd {
+  padding: 1px 4px;
+  margin-right: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
 }
 
 /* Tag Management Dialog */

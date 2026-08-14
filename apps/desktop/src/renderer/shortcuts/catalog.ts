@@ -38,6 +38,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     scope: 'feed',
     modifier: 'shift',
   },
+  { keyId: 'insertTemplate', label: '템플릿 넣기 (빈 노트에서)', group: '노트 액션', scope: 'note' },
   { keyId: 'copyFocused', label: '내용 복사', group: '노트 액션', scope: 'feed' },
   { keyId: 'togglePin', label: '상단 고정 전환', group: '노트 액션', scope: 'feed' },
   { keyId: 'deleteFocused', label: '휴지통으로', group: '노트 액션', scope: 'feed' },

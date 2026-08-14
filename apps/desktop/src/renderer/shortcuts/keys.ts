@@ -33,6 +33,9 @@ export const KEYS = {
   openTagList: ['t', 'ㅅ'],
   openTagManagement: ['t', 'ㅅ'],
 
+  // 템플릿 (빈 노트를 쓰는 중에만)
+  insertTemplate: ['/'],
+
   // 잠금
   toggleLock: ['l', 'ㅣ'],
 
