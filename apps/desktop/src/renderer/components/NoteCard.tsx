@@ -1,9 +1,8 @@
-import { useRef, useCallback, forwardRef, useImperativeHandle, useState, memo, useMemo } from 'react'
+import { useRef, useCallback, forwardRef, useImperativeHandle, useState, memo, useMemo, useEffect } from 'react'
 import { LexicalEditor, LexicalEditorHandle } from './LexicalEditor'
 import { AttachmentList } from './AttachmentList'
 import { LinkPreviews } from './LinkPreviews'
 import { TagList } from './TagList'
-import { TagInput, TagInputHandle } from './TagInput'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -12,7 +11,9 @@ import { NoteHistoryDialog } from './NoteHistoryDialog'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
-import { shouldTruncateNote } from '../lib/note-truncation'
+import { nextPriority, priorityClassName } from '../lib/note-priority'
+import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
+import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
@@ -35,18 +36,11 @@ export const NoteCard = memo(
   forwardRef<NoteCardHandle, Props>(
     ({ note, isFocused, depth = 0, viewMode = 'active', onEscapeFromNormal, onReply }, ref) => {
       const editorRef = useRef<LexicalEditorHandle>(null)
-      const tagInputRef = useRef<TagInputHandle>(null)
+      const pendingFocusRef = useRef(false)
       const [showPinDialog, setShowPinDialog] = useState(false)
       const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false)
       const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
-      const [isExpanded, setIsExpanded] = useState(false)
-      const [isEditing, setIsEditing] = useState(false)
-
-      // 기본 노출은 2줄 — 판단 기준은 lib/note-truncation.ts (CSS 접힘 높이와 짝)
-      const isTruncatable = useMemo(() => shouldTruncateNote(note.content), [note.content])
-
-      // 축소 상태: truncatable이고, 확장되지 않았고, 편집 중이 아닐 때
-      const isCollapsed = isTruncatable && !isExpanded && !isEditing
+      const [isHovered, setIsHovered] = useState(false)
 
       const {
         updateNote,
@@ -72,6 +66,28 @@ export const NoteCard = memo(
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
       const isLocked = note.isLocked && !temporarilyUnlockedNoteIds.has(note.id)
 
+      // 상태는 둘뿐이다 — 한 줄(보기) / 펼침(편집).
+      // 카드를 클릭하면 NoteFeed가 focusedIndex를 옮기므로 클릭·키보드 이동이
+      // 모두 같은 한 가지 신호(isFocused)로 들어온다.
+      const isOpen = isFocused
+
+      // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
+      const previewText = useMemo(
+        () => (isLocked ? '' : toSingleLinePreview(note.content)),
+        [isLocked, note.content]
+      )
+      const linkCount = useMemo(
+        () => (isLocked ? 0 : countContentLinks(note.content)),
+        [isLocked, note.content]
+      )
+      const attachmentCount = isLocked ? 0 : note.attachments.length
+
+      const trailingSlot = resolveTrailingSlot({ isHovered, isFocused })
+      const showStatusIcons = shouldPinStatusStayVisible({
+        isPinned: note.isPinned,
+        isLocked: note.isLocked,
+      })
+
       const handleAddFile = useCallback(
         (file: File) => {
           addAttachment(note.id, file)
@@ -84,9 +100,24 @@ export const NoteCard = memo(
       })
 
       useImperativeHandle(ref, () => ({
-        focus: () => editorRef.current?.focus(),
-        openTagList: () => tagInputRef.current?.openList(),
+        focus: () => {
+          // 카드가 아직 접혀 있으면 에디터가 없다 — 펼쳐진 다음 잡도록 예약한다
+          pendingFocusRef.current = true
+          editorRef.current?.focus()
+        },
+        // BRU-46에서 카드 안 태그 입력칸(TagInput)이 빠졌다. 태그 추가는 NoteFeed의
+        // t 단축키가 여는 TagDialog가 담당하므로 카드가 열 UI는 없다.
+        // 인터페이스는 호출부 호환을 위해 남긴다 — 태그 입력 재설계는 BRU-44.
+        openTagList: () => undefined,
       }))
+
+      // 펼쳐진 뒤에 예약된 포커스를 소비한다
+      useEffect(() => {
+        if (!isOpen) return
+        if (!pendingFocusRef.current) return
+        pendingFocusRef.current = false
+        editorRef.current?.focus()
+      }, [isOpen])
 
       const handleChange = useCallback(
         (content: string) => {
@@ -151,38 +182,14 @@ export const NoteCard = memo(
         }
       }
 
-      const handlePriorityClick = () => {
-        const nextPriority = (note.priority + 1) % 4
-        updateNotePriority(note.id, nextPriority)
+      const handlePriorityClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        updateNotePriority(note.id, nextPriority(note.priority))
       }
 
-      const getPriorityLabel = (priority: number) => {
-        switch (priority) {
-          case 1:
-            return { symbol: '!', className: 'priority-low' }
-          case 2:
-            return { symbol: '!!', className: 'priority-medium' }
-          case 3:
-            return { symbol: '!!!', className: 'priority-high' }
-          default:
-            return { symbol: '·', className: 'priority-none' }
-        }
-      }
-
-      const priorityInfo = getPriorityLabel(note.priority)
-
-      const cardClassName = [
-          'note-card',
-          isFocused && 'focused',
-          isDragOver && 'drag-over',
-          depth > 0 && 'note-card-reply',
-          isLocked && 'locked',
-          isCollapsed && 'collapsed',
-          (isExpanded || isEditing) && 'expanded',
-          isTruncatable && 'truncatable',
-        ]
-          .filter(Boolean)
-          .join(' ')
+      const cardClassName = ['note-card', isFocused && 'focused', isDragOver && 'drag-over', depth > 0 && 'note-card-reply', isLocked && 'locked', isOpen ? 'open' : 'one-line']
+        .filter(Boolean)
+        .join(' ')
 
       return (
         <>
@@ -190,75 +197,129 @@ export const NoteCard = memo(
             className={cardClassName}
             style={indentStyle}
             data-note-id={note.id}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             onDragOver={isLocked ? undefined : handleDragOver}
             onDragLeave={isLocked ? undefined : handleDragLeave}
             onDrop={isLocked ? undefined : handleDrop}
           >
-            <div className="note-card-header">
-              <span className="note-id">#{note.displayId}</span>
-              <span className="note-time">{formatRelativeTime(note.createdAt)}</span>
+            <div className="note-line">
               {viewMode === 'active' && (
                 <button
-                  className={`priority-btn ${priorityInfo.className}`}
+                  className={`priority-dot ${priorityClassName(note.priority)}`}
                   onClick={handlePriorityClick}
-                  title={`Priority: ${note.priority}/3 (click to cycle)`}
-                >
-                  {priorityInfo.symbol}
-                </button>
+                  title={`긴급도 ${note.priority}/3 (클릭하면 순환)`}
+                  aria-label={`긴급도 ${note.priority}/3`}
+                />
               )}
-              <div className="note-card-header-tags">
+              <span className="note-id">#{note.displayId}</span>
+              <span className="note-line-content">
+                {isOpen ? null : isLocked ? (
+                  <span className="note-line-placeholder">잠긴 노트</span>
+                ) : previewText ? (
+                  previewText
+                ) : (
+                  <span className="note-line-placeholder">빈 노트</span>
+                )}
+              </span>
+              {!isOpen && (attachmentCount > 0 || linkCount > 0) && (
+                <span className="note-line-counts">
+                  {attachmentCount > 0 && (
+                    <span className="note-line-count" title={`첨부 ${attachmentCount}개`}>
+                      <Icon name="paperclip" size={11} />
+                      {attachmentCount}
+                    </span>
+                  )}
+                  {linkCount > 0 && (
+                    <span className="note-line-count" title={`링크 ${linkCount}개`}>
+                      <Icon name="link" size={11} />
+                      {linkCount}
+                    </span>
+                  )}
+                </span>
+              )}
+              <div className="note-line-tags">
                 <TagList noteId={note.id} tags={note.tags} />
               </div>
-              <div className="note-card-actions">
-                {viewMode === 'active' && (
-                  <>
-                    <button
-                      className={`pin-btn ${note.isPinned ? 'pinned' : ''}`}
-                      onClick={() => togglePinNote(note.id)}
-                      title={note.isPinned ? '고정 해제 (p)' : '상단 고정 (p)'}
-                      aria-label={note.isPinned ? '고정 해제' : '상단 고정'}
-                    >
-                      <Icon name="pin" />
-                    </button>
-                    <button
-                      className={`lock-btn ${note.isLocked ? 'locked' : ''}`}
-                      onClick={handleLockToggle}
-                      title={note.isLocked ? '잠금 해제' : '잠금'}
-                      aria-label={note.isLocked ? '잠금 해제' : '잠금'}
-                    >
-                      <Icon name={note.isLocked ? 'lock' : 'lock-open'} />
-                    </button>
-                    {onReply && !isLocked && (
+              <div className="note-card-trailing" data-slot={trailingSlot}>
+                {showStatusIcons && (
+                  <span className="note-line-status" aria-hidden="true">
+                    {note.isPinned && <Icon name="pin" size={12} />}
+                    {note.isLocked && <Icon name="lock" size={12} />}
+                  </span>
+                )}
+                <span className="note-time">{formatRelativeTime(note.createdAt)}</span>
+                <div className="note-card-actions" onClick={(e) => e.stopPropagation()}>
+                  {viewMode === 'active' && (
+                    <>
                       <button
-                        className="reply-btn"
-                        onClick={() => onReply(note.id)}
-                        title="답글"
-                        aria-label="답글"
+                        className={`pin-btn ${note.isPinned ? 'pinned' : ''}`}
+                        onClick={() => togglePinNote(note.id)}
+                        title={note.isPinned ? '고정 해제 (p)' : '상단 고정 (p)'}
+                        aria-label={note.isPinned ? '고정 해제' : '상단 고정'}
+                      >
+                        <Icon name="pin" />
+                      </button>
+                      <button
+                        className={`lock-btn ${note.isLocked ? 'locked' : ''}`}
+                        onClick={handleLockToggle}
+                        title={note.isLocked ? '잠금 해제' : '잠금'}
+                        aria-label={note.isLocked ? '잠금 해제' : '잠금'}
+                      >
+                        <Icon name={note.isLocked ? 'lock' : 'lock-open'} />
+                      </button>
+                      {onReply && !isLocked && (
+                        <button
+                          className="reply-btn"
+                          onClick={() => onReply(note.id)}
+                          title="답글"
+                          aria-label="답글"
+                        >
+                          <Icon name="corner-up-left" />
+                        </button>
+                      )}
+                      {!isLocked && (
+                        <button
+                          className="history-btn"
+                          onClick={() => openHistory(note.id)}
+                          title="편집 기록"
+                          aria-label="편집 기록"
+                        >
+                          <Icon name="history" />
+                        </button>
+                      )}
+                      {!isLocked && (
+                        <button
+                          className="archive-btn"
+                          onClick={() => archiveNote(note.id)}
+                          title="보관"
+                          aria-label="보관"
+                        >
+                          <Icon name="archive" />
+                        </button>
+                      )}
+                      {!isLocked && (
+                        <button
+                          className="delete-btn"
+                          title="삭제"
+                          aria-label="삭제"
+                          onClick={() => requestDeleteNote(note.id)}
+                        >
+                          <Icon name="x" />
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {viewMode === 'archived' && (
+                    <>
+                      <button
+                        className="unarchive-btn"
+                        onClick={() => unarchiveNote(note.id)}
+                        title="보관 해제"
+                        aria-label="보관 해제"
                       >
                         <Icon name="corner-up-left" />
                       </button>
-                    )}
-                    {!isLocked && (
-                      <button
-                        className="history-btn"
-                        onClick={() => openHistory(note.id)}
-                        title="편집 기록"
-                        aria-label="편집 기록"
-                      >
-                        <Icon name="history" />
-                      </button>
-                    )}
-                    {!isLocked && (
-                      <button
-                        className="archive-btn"
-                        onClick={() => archiveNote(note.id)}
-                        title="보관"
-                        aria-label="보관"
-                      >
-                        <Icon name="archive" />
-                      </button>
-                    )}
-                    {!isLocked && (
                       <button
                         className="delete-btn"
                         title="삭제"
@@ -267,99 +328,56 @@ export const NoteCard = memo(
                       >
                         <Icon name="x" />
                       </button>
-                    )}
-                  </>
-                )}
-                {viewMode === 'archived' && (
-                  <>
-                    <button
-                      className="unarchive-btn"
-                      onClick={() => unarchiveNote(note.id)}
-                      title="보관 해제"
-                      aria-label="보관 해제"
-                    >
-                      <Icon name="corner-up-left" />
-                    </button>
-                    <button
-                      className="delete-btn"
-                      title="삭제"
-                      aria-label="삭제"
-                      onClick={() => requestDeleteNote(note.id)}
-                    >
-                      <Icon name="x" />
-                    </button>
-                  </>
-                )}
-                {viewMode === 'trash' && (
-                  <>
-                    <button
-                      className="restore-btn"
-                      onClick={() => restoreNote(note.id)}
-                      title="복원"
-                      aria-label="복원"
-                    >
-                      <Icon name="corner-up-left" />
-                    </button>
-                    <button
-                      className="permanent-delete-btn"
-                      onClick={() => setShowPermanentDeleteConfirm(true)}
-                      title="영구 삭제"
-                      aria-label="영구 삭제"
-                    >
-                      <Icon name="trash" />
-                    </button>
-                  </>
-                )}
+                    </>
+                  )}
+                  {viewMode === 'trash' && (
+                    <>
+                      <button
+                        className="restore-btn"
+                        onClick={() => restoreNote(note.id)}
+                        title="복원"
+                        aria-label="복원"
+                      >
+                        <Icon name="corner-up-left" />
+                      </button>
+                      <button
+                        className="permanent-delete-btn"
+                        onClick={() => setShowPermanentDeleteConfirm(true)}
+                        title="영구 삭제"
+                        aria-label="영구 삭제"
+                      >
+                        <Icon name="trash" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            {isLocked ? (
-              <LockedNoteOverlay
-                onTemporaryUnlock={handleTemporaryUnlock}
-                onPermanentUnlock={handlePermanentUnlock}
-              />
-            ) : (
-              <>
-                <div className="note-editor">
-                  <LexicalEditor
-                    key={note.id}
-                    ref={editorRef}
-                    initialContent={note.content}
-                    onChange={handleChange}
-                    onEscape={onEscapeFromNormal}
-                    onAddFile={handleAddFile}
-                    onFocus={() => setIsEditing(true)}
-                    onBlur={() => setIsEditing(false)}
-                  />
-                </div>
-                <AttachmentList
-                  attachments={note.attachments}
-                  onRemove={handleRemoveAttachment}
-                  maxVisible={isCollapsed ? 3 : undefined}
-                  onShowMore={() => setIsExpanded(true)}
+            {isOpen &&
+              (isLocked ? (
+                <LockedNoteOverlay
+                  onTemporaryUnlock={handleTemporaryUnlock}
+                  onPermanentUnlock={handlePermanentUnlock}
                 />
-                <LinkPreviews
-                  content={note.content}
-                  attachments={note.attachments}
-                  maxVisible={isCollapsed ? 2 : undefined}
-                  onShowMore={() => setIsExpanded(true)}
-                />
-                <div className="note-tags-section">
-                  <TagInput
-                    ref={tagInputRef}
-                    noteId={note.id}
-                    existingTagNames={note.tags.map((t) => t.name)}
+              ) : (
+                <>
+                  <div className="note-editor">
+                    <LexicalEditor
+                      key={note.id}
+                      ref={editorRef}
+                      initialContent={note.content}
+                      onChange={handleChange}
+                      onEscape={onEscapeFromNormal}
+                      onAddFile={handleAddFile}
+                    />
+                  </div>
+                  <AttachmentList
+                    attachments={note.attachments}
+                    onRemove={handleRemoveAttachment}
                   />
-                </div>
-                {isTruncatable && (
-                  <button
-                    className="note-expand-btn"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                  >
-                    {isExpanded ? '접기 ▲' : '더보기 ▼'}
-                  </button>
-                )}
-              </>
-            )}
+                  <LinkPreviews content={note.content} attachments={note.attachments} />
+                </>
+              ))}
           </div>
           {showPinDialog && (
             <PinDialog
