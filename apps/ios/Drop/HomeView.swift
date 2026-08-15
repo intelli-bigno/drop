@@ -15,7 +15,6 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: NotesStore
     @State private var composer: ComposerTarget?
-    @State private var isRecording = false
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var viewingAttachments: AttachmentPresentation?
     /// 썸네일용 서명 URL 캐시. 스크롤할 때마다 다시 발급받지 않기 위해 화면 단위로 하나 둔다.
@@ -75,11 +74,6 @@ struct HomeView: View {
                         case let .existing(note):
                             await notes.update(id: note.id, content: content)
                         }
-                    }
-                }
-                .sheet(isPresented: $isRecording) {
-                    RecordingSheet { url, transcript in
-                        await addAudioNote(fileURL: url, transcript: transcript)
                     }
                 }
                 .sheet(item: $viewingAttachments) { presentation in
@@ -268,8 +262,8 @@ struct HomeView: View {
         if notes.isSelecting {
             SelectionActionBar(store: notes)
         } else {
-            // 세 버튼을 하나의 떠 있는 묶음으로 둔다.
-            // 크기가 제각각인 원 세 개가 흩어져 있으면 어느 것이 주 동작인지 읽히지 않는다.
+            // 두 버튼을 하나의 떠 있는 묶음으로 둔다.
+            // 크기가 제각각인 원이 흩어져 있으면 어느 것이 주 동작인지 읽히지 않는다.
             HStack(spacing: 0) {
                 Spacer()
 
@@ -280,16 +274,6 @@ struct HomeView: View {
                         matching: .any(of: [.images, .videos])
                     ) {
                         Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 20))
-                            .frame(width: 44, height: 44)
-                            .contentShape(Circle())
-                    }
-                    .foregroundStyle(.primary)
-
-                    Button {
-                        isRecording = true
-                    } label: {
-                        Image(systemName: "mic.fill")
                             .font(.system(size: 20))
                             .frame(width: 44, height: 44)
                             .contentShape(Circle())
@@ -350,29 +334,11 @@ struct HomeView: View {
 }
 
 private extension HomeView {
-    /// 녹음 노트: 전사 텍스트를 본문으로 넣고 오디오를 첨부한다.
-    /// 전사에 실패했으면 본문이 비지만, **녹음 자체는 남는다** — 여기서 막으면
-    /// 사용자가 방금 말한 내용을 통째로 잃는다.
-    func addAudioNote(fileURL: URL, transcript: String?) async {
-        await notes.create(content: transcript ?? "")
-        guard let container, let note = notes.visibleNotes.first else { return }
-
-        do {
-            let data = try Data(contentsOf: fileURL)
-            _ = try await container.makeAttachmentsRepository().upload(
-                data: data,
-                fileName: fileURL.lastPathComponent,
-                type: .audio,
-                toNote: note.id
-            )
-            try? FileManager.default.removeItem(at: fileURL)
-            await notes.load()
-        } catch {
-            notes.report(error: error)
-        }
-    }
-
     /// 공유 시트로 들어온 항목을 노트로 만든다.
+    ///
+    /// 앱 안에서 녹음하는 경로는 BRU-48에서 없앴지만, **오디오가 노트로 들어오는
+    /// 길은 여기 하나가 남아 있다** — 다른 앱에서 공유한 음성 파일은 그대로
+    /// `.audio` 첨부가 된다(`AttachmentType.forFileName`).
     ///
     /// 첨부 업로드가 실패해도 노트는 남긴다 — 사용자가 공유한 텍스트/링크까지
     /// 함께 잃는 것이 더 나쁘다.

@@ -1,11 +1,10 @@
 # DROP
 
-A fast, cross-platform note-taking app with voice recording and AI transcription.
+A fast, cross-platform note-taking app for quick capture.
 
 ## Features
 
 - **Quick Capture**: Instantly save text, links, images, and files
-- **Voice Recording**: Record voice memos with OpenAI Whisper transcription
 - **Cross-Platform**: Mac (Electron) + iOS (SwiftUI)
 - **Cloud Sync**: Real-time sync via Supabase
 - **MCP Server**: Claude integration for AI-powered note management
