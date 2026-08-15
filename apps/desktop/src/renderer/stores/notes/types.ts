@@ -96,6 +96,12 @@ export interface CategoryFilterSlice {
   setCategoryFilter: (filter: 'all' | 'link' | 'media' | 'files' | null) => void
 }
 
+// Inbox filter slice — 태그 없는 활성 노트만 (BRU-50)
+export interface InboxSlice {
+  inboxOnly: boolean
+  setInboxOnly: (inboxOnly: boolean) => void
+}
+
 // View mode for notes (active, archived, trash)
 export type NoteViewMode = 'active' | 'archived' | 'trash'
 
@@ -129,4 +135,5 @@ export interface NotesState
     RevisionsSlice,
     LockSlice,
     CategoryFilterSlice,
+    InboxSlice,
     TrashSlice {}

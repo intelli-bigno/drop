@@ -29,6 +29,11 @@ interface Props {
   viewMode?: NoteViewMode
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
+  /**
+   * 태그 팝오버가 열리고 닫힐 때 알린다 (BRU-50).
+   * Inbox 필터가 태그를 다는 동안 이 노트를 목록에 붙잡아 두는 데 쓴다.
+   */
+  onTagPopoverOpenChange?: (noteId: string, open: boolean) => void
 }
 
 export interface NoteCardHandle {
@@ -39,7 +44,18 @@ export interface NoteCardHandle {
 
 export const NoteCard = memo(
   forwardRef<NoteCardHandle, Props>(
-    ({ note, isFocused, depth = 0, viewMode = 'active', onEscapeFromNormal, onReply }, ref) => {
+    (
+      {
+        note,
+        isFocused,
+        depth = 0,
+        viewMode = 'active',
+        onEscapeFromNormal,
+        onReply,
+        onTagPopoverOpenChange,
+      },
+      ref
+    ) => {
       const editorRef = useRef<LexicalEditorHandle>(null)
       const pendingFocusRef = useRef(false)
       // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
@@ -111,6 +127,25 @@ export const NoteCard = memo(
         onDrop: (files) => files.forEach(handleAddFile),
       })
 
+      // 팝오버 상태는 항상 이 함수로 바꾼다 — 피드가 Inbox 이탈을 유예하려면
+      // 열림/닫힘을 하나도 놓치지 않고 알아야 한다 (BRU-50)
+      const setTagPopoverOpen = useCallback(
+        (open: boolean) => {
+          setShowTagPopover(open)
+          onTagPopoverOpenChange?.(note.id, open)
+        },
+        [note.id, onTagPopoverOpenChange]
+      )
+
+      // 카드가 통째로 사라질 때(삭제·보관 등) 피드에 남은 유예를 걷어낸다
+      const tagPopoverOpenRef = useRef(false)
+      tagPopoverOpenRef.current = showTagPopover
+      useEffect(() => {
+        return () => {
+          if (tagPopoverOpenRef.current) onTagPopoverOpenChange?.(note.id, false)
+        }
+      }, [note.id, onTagPopoverOpenChange])
+
       useImperativeHandle(ref, () => ({
         focus: () => {
           // 카드가 아직 접혀 있으면 에디터가 없다 — 펼쳐진 다음 잡도록 예약한다
@@ -119,7 +154,7 @@ export const NoteCard = memo(
         },
         openTagPopover: () => {
           if (isLocked) return
-          setShowTagPopover(true)
+          setTagPopoverOpen(true)
         },
       }))
 
@@ -151,9 +186,9 @@ export const NoteCard = memo(
           isLocked,
         })
         contentChangedRef.current = false
-        if (shouldOpen) setShowTagPopover(true)
+        if (shouldOpen) setTagPopoverOpen(true)
         onEscapeFromNormal()
-      }, [isLocked, onEscapeFromNormal])
+      }, [isLocked, onEscapeFromNormal, setTagPopoverOpen])
 
       // 빈 노트에서 `/`를 치면 형식 목록이 뜬다. 내용이 있으면 그냥 글자다.
       const handleEditorKeyDown = useCallback(
@@ -196,10 +231,10 @@ export const NoteCard = memo(
       // 시간이 지나서 저절로 닫히는 길은 두지 않는다 — 놓치면 다시 부를 방법이 없어진다.
       useEffect(() => {
         if (!isFocused) {
-          setShowTagPopover(false)
+          setTagPopoverOpen(false)
           setShowTemplatePopover(false)
         }
-      }, [isFocused])
+      }, [isFocused, setTagPopoverOpen])
 
       // 템플릿을 넣고 나면 이어서 쓸 수 있게 에디터로 돌아간다
       useEffect(() => {
@@ -469,7 +504,7 @@ export const NoteCard = memo(
               <TagPopover
                 noteId={note.id}
                 tags={note.tags}
-                onClose={() => setShowTagPopover(false)}
+                onClose={() => setTagPopoverOpen(false)}
               />
             </div>
           )}

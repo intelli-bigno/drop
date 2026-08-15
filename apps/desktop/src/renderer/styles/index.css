@@ -2514,6 +2514,61 @@ body {
 }
 
 /* ============================================
+   Inbox Filter — 태그 없는 노트만 (BRU-50)
+   숫자는 0이어도 숨기지 않는다. 줄어드는 게 보이는 것이 핵심이다.
+   ============================================ */
+
+.inbox-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-app-region: no-drag;
+}
+
+.inbox-filter-btn:hover {
+  color: var(--text-secondary);
+}
+
+.inbox-filter-btn.active {
+  color: var(--text-primary);
+}
+
+.inbox-filter-icon {
+  display: flex;
+  align-items: center;
+}
+
+.inbox-filter-label {
+  font-size: 12px;
+}
+
+.inbox-filter-count {
+  min-width: 16px;
+  padding: 1px 5px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  text-align: center;
+}
+
+.inbox-filter-btn.active .inbox-filter-count {
+  background: var(--accent);
+  color: white;
+}
+
+/* ============================================
    Category Filter - Compact Inline
    ============================================ */
 
@@ -3255,6 +3310,7 @@ body {
 
 .view-mode-icon .icon,
 .category-filter-icon .icon,
+.inbox-filter-icon .icon,
 .search-dialog-icon .icon,
 .attachment-text-icon .icon {
   vertical-align: middle;

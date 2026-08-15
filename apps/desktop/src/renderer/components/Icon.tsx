@@ -19,6 +19,7 @@ export type IconName =
   | 'file-text'
   | 'camera'
   | 'play'
+  | 'inbox'
 
 // Lucide-style 24x24 stroke icon paths (https://lucide.dev, ISC license)
 const ICON_PATHS: Record<IconName, React.ReactNode> = {
@@ -26,6 +27,12 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
       <path d="m15 5 4 4" />
+    </>
+  ),
+  inbox: (
+    <>
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </>
   ),
   archive: (

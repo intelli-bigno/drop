@@ -5,6 +5,7 @@ import { useProfileStore } from '../stores/profile'
 import { NoteCard, NoteCardHandle } from './NoteCard'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
+import { InboxFilter } from './InboxFilter'
 import { ViewModeSelector } from './ViewModeSelector'
 import { SearchDialog } from './SearchDialog'
 import { PinDialog, type PinDialogMode } from './PinDialog'
@@ -19,6 +20,7 @@ import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { computeFeedScrollTop } from '../lib/feed-scroll'
+import { applyNoteFilters } from '../lib/note-filters'
 
 // 피드 상단에서 헤더에 가려지는 높이. 이만큼 여유를 두고 카드를 맞춘다.
 const FEED_TOP_INSET = 60
@@ -45,6 +47,8 @@ export function NoteFeed() {
     filterTag,
     setFilterTag,
     categoryFilter,
+    inboxOnly,
+    setInboxOnly,
     lockNote,
     temporarilyUnlockNote,
     temporarilyUnlockAll,
@@ -68,6 +72,8 @@ export function NoteFeed() {
   const [showUnlockAllDialog, setShowUnlockAllDialog] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false)
+  // 지금 태그 팝오버가 열려 있는 노트 (Inbox에서 목록 이탈을 유예하는 데 쓴다)
+  const [tagPopoverNoteId, setTagPopoverNoteId] = useState<string | null>(null)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -118,23 +124,22 @@ export function NoteFeed() {
     [pendingDeleteNoteId, baseNotes]
   )
 
+  // Inbox에서 태그 팝오버가 열려 있는 노트. 태그를 다는 순간 목록에서 빠지면
+  // 팝오버가 허공에 뜨고 두 번째 태그를 달 길이 사라진다 — 닫힐 때까지 자리를 지킨다.
+  const retainedNoteIds = useMemo(
+    () => (tagPopoverNoteId ? new Set([tagPopoverNoteId]) : undefined),
+    [tagPopoverNoteId]
+  )
+
   const filteredNotes = useMemo(() => {
     if (viewMode !== 'active') return baseNotes
-
-    let result = filterTag
-      ? baseNotes.filter((note) => note.tags.some((t) => t.name === filterTag))
-      : baseNotes
-
-    if (categoryFilter === 'link') {
-      result = result.filter((note) => note.hasLink)
-    } else if (categoryFilter === 'media') {
-      result = result.filter((note) => note.hasMedia)
-    } else if (categoryFilter === 'files') {
-      result = result.filter((note) => note.hasFiles)
-    }
-
-    return result
-  }, [viewMode, baseNotes, filterTag, categoryFilter])
+    return applyNoteFilters(baseNotes, {
+      filterTag,
+      categoryFilter,
+      inboxOnly,
+      retainedNoteIds,
+    })
+  }, [viewMode, baseNotes, filterTag, categoryFilter, inboxOnly, retainedNoteIds])
 
   // flatNotes 계산 (메모이제이션)
   const flatNotes = useMemo(() => {
@@ -218,6 +223,11 @@ export function NoteFeed() {
   useEffect(() => {
     togglePinNoteRef.current = togglePinNote
   }, [togglePinNote])
+
+  // 카드가 태그 팝오버를 열고 닫을 때 알려온다 (BRU-50 — Inbox 이탈 유예)
+  const handleTagPopoverOpenChange = useCallback((noteId: string, open: boolean) => {
+    setTagPopoverNoteId((current) => (open ? noteId : current === noteId ? null : current))
+  }, [])
 
   const handleEscapeFromNormal = useCallback((index: number) => {
     setFocusedIndex(index)
@@ -814,6 +824,8 @@ export function NoteFeed() {
           {viewMode === 'active' && (
             <>
               <div className="feed-header-divider" />
+              <InboxFilter />
+              <div className="feed-header-divider" />
               <CategoryFilter />
               {filterTag && (
                 <div className="filter-indicator">
@@ -885,6 +897,13 @@ export function NoteFeed() {
                   필터 해제
                 </button>
               </>
+            ) : inboxOnly ? (
+              <>
+                <p>분류할 노트가 없습니다 — Inbox가 비었어요</p>
+                <button className="feed-empty-action" onClick={() => setInboxOnly(false)}>
+                  전체 노트 보기
+                </button>
+              </>
             ) : categoryFilter && categoryFilter !== 'all' ? (
               <p>이 카테고리에 해당하는 노트가 없습니다</p>
             ) : (
@@ -922,6 +941,7 @@ export function NoteFeed() {
                     isFocused={focusedIndex === globalIndex}
                     onEscapeFromNormal={() => handleEscapeFromNormal(globalIndex)}
                     onReply={viewMode === 'active' ? handleReply : undefined}
+                    onTagPopoverOpenChange={handleTagPopoverOpenChange}
                   />
                 </div>
               )
