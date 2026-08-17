@@ -15,6 +15,7 @@ import { isCreateNoteShortcut, isSearchShortcut } from '../shortcuts/noteGlobal'
 import { resolveNoteFeedShortcut } from '../shortcuts/noteFeed'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../shortcuts/tagList'
 import { isToggleLockShortcut } from '../shortcuts/noteLock'
+import { isOpenCommentsShortcut } from '../shortcuts/noteComments'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../shortcuts/noteTrash'
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
@@ -421,6 +422,31 @@ export function NoteFeed() {
     window.addEventListener('keydown', handleTagListKeyDown)
     return () => window.removeEventListener('keydown', handleTagListKeyDown)
   }, [flatNotes, focusedIndex])
+
+  // Shift+C 단축키로 포커스된 노트의 댓글 패널 열기 (BRU-63).
+  // 잠긴 노트는 열지 않는다 — 내용도 댓글도 흘리지 않는다.
+  useEffect(() => {
+    const handleCommentsKeyDown = (e: KeyboardEvent) => {
+      if (isTextInputTarget(e.target)) return
+      if (!isOpenCommentsShortcut(e)) return
+      const index = focusedIndexRef.current
+      const fallbackNoteId = index !== null ? orderedNotesRef.current[index]?.note.id : null
+      const noteId = getClosestNoteId(document.activeElement) ?? fallbackNoteId
+      if (!noteId) return
+
+      const state = useNotesStore.getState()
+      const note = orderedNotesRef.current.find((item) => item.note.id === noteId)?.note
+      if (!note) return
+      if (note.isLocked && !state.temporarilyUnlockedNoteIds.has(note.id)) return
+
+      e.preventDefault()
+      e.stopPropagation()
+      state.openComments(noteId)
+    }
+
+    window.addEventListener('keydown', handleCommentsKeyDown)
+    return () => window.removeEventListener('keydown', handleCommentsKeyDown)
+  }, [])
 
   // Cmd+T 단축키로 태그 관리 다이얼로그 열기
   useEffect(() => {

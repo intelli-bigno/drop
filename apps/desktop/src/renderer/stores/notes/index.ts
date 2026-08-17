@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createNotesSlice } from './notes-slice'
+import { createCommentsSlice } from './comments-slice'
 import { createTagsSlice } from './tags-slice'
 import { createAttachmentsSlice } from './attachments-slice'
 import { createInstagramSlice } from './instagram-slice'
@@ -13,6 +14,7 @@ export type { NotesState, NoteViewMode } from './types'
 
 export const useNotesStore = create<NotesState>()((...a) => ({
   ...createNotesSlice(...a),
+  ...createCommentsSlice(...a),
   ...createTagsSlice(...a),
   ...createAttachmentsSlice(...a),
   ...createInstagramSlice(...a),
