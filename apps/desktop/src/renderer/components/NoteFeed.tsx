@@ -23,6 +23,7 @@ import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { computeFeedScrollTop } from '../lib/feed-scroll'
 import { applyNoteFilters } from '../lib/note-filters'
+import { buildNoteRows } from '../lib/note-hierarchy'
 
 // 피드 상단에서 헤더에 가려지는 높이. 이만큼 여유를 두고 카드를 맞춘다.
 const FEED_TOP_INSET = 60
@@ -145,37 +146,13 @@ export function NoteFeed() {
     })
   }, [viewMode, baseNotes, filterTag, categoryFilter, inboxOnly, showExported, retainedNoteIds])
 
-  // flatNotes 계산 (메모이제이션)
-  const flatNotes = useMemo(() => {
-    const rootNotes = filteredNotes.filter((note) => note.parentId === null)
-
-    const childrenMap = new Map<string, typeof filteredNotes>()
-    for (const note of filteredNotes) {
-      if (note.parentId) {
-        const children = childrenMap.get(note.parentId) || []
-        children.push(note)
-        childrenMap.set(note.parentId, children)
-      }
-    }
-
-    const flattenWithDepth = (
-      noteList: typeof filteredNotes,
-      depth: number
-    ): Array<{ note: (typeof filteredNotes)[0]; depth: number }> => {
-      const result: Array<{ note: (typeof filteredNotes)[0]; depth: number }> = []
-      for (const note of noteList) {
-        result.push({ note, depth })
-        const children = childrenMap.get(note.id) || []
-        const sortedChildren = [...children].sort(
-          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-        )
-        result.push(...flattenWithDepth(sortedChildren, depth + 1))
-      }
-      return result
-    }
-
-    return flattenWithDepth(rootNotes, 0)
-  }, [filteredNotes])
+  // 부모-자식 묶음 (BRU-70). 로직은 lib/note-hierarchy.ts에 있다 — 화면 안에 두면
+  // 테스트할 수 없고, 실제로 그래서 "부모가 필터에서 빠지면 답글이 사라지는" 버그를
+  // 오래 못 잡았다. 맥락 후보로 baseNotes를 넘겨 부모를 끌어올 수 있게 한다.
+  const flatNotes = useMemo(
+    () => buildNoteRows(filteredNotes, baseNotes),
+    [filteredNotes, baseNotes]
+  )
 
   // 답글 생성
   const handleReply = useCallback(
