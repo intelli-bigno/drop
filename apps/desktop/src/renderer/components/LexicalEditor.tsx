@@ -26,6 +26,7 @@ import {
   $isRangeSelection,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_CRITICAL,
+  HISTORY_MERGE_TAG,
   PASTE_COMMAND,
   KEY_ENTER_COMMAND,
   createCommand,
@@ -174,10 +175,34 @@ function InitialContentPlugin({ content }: { content: string }) {
 
     if (!content) return
 
-    editor.update(() => {
-      $convertFromMarkdownString(content, TRANSFORMERS)
-    })
+    // HISTORY_MERGE_TAG를 달면 OnChangePlugin이 이 갱신을 흘려보낸다 —
+    // 원문을 화면에 세우는 일이 저장으로 이어지면 안 된다 (BRU-66)
+    editor.update(
+      () => {
+        $convertFromMarkdownString(content, TRANSFORMERS)
+      },
+      { tag: HISTORY_MERGE_TAG }
+    )
   }, [content, editor])
+
+  return null
+}
+
+const USER_INPUT_EVENTS = ['beforeinput', 'compositionstart', 'cut', 'paste', 'drop'] as const
+
+// 사용자가 실제로 입력하기 전에는 본문을 저장하지 않는다 (BRU-66).
+// 마운트·초기 파싱이 만드는 직렬화는 쓰기 경로에 절대 닿으면 안 된다.
+function UserInputPlugin({ onUserInput }: { onUserInput: () => void }) {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    return editor.registerRootListener((rootElement, prevRootElement) => {
+      USER_INPUT_EVENTS.forEach((type) => {
+        prevRootElement?.removeEventListener(type, onUserInput)
+        rootElement?.addEventListener(type, onUserInput)
+      })
+    })
+  }, [editor, onUserInput])
 
   return null
 }
@@ -242,7 +267,7 @@ function FilePastePlugin({ onAddFile }: { onAddFile: (file: File) => void }) {
 // 타임스탬프 삽입 명령
 const INSERT_TIMESTAMP_COMMAND: LexicalCommand<void> = createCommand('INSERT_TIMESTAMP_COMMAND')
 
-function TimestampPlugin() {
+function TimestampPlugin({ onUserInput }: { onUserInput: () => void }) {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
@@ -275,6 +300,8 @@ function TimestampPlugin() {
           hour12: false,
         })
 
+        // 프로그램이 넣는 텍스트지만 사용자가 시킨 편집이다 — 저장 게이트를 연다
+        onUserInput()
         editor.update(() => {
           const selection = $getSelection()
           if ($isRangeSelection(selection)) {
@@ -285,7 +312,7 @@ function TimestampPlugin() {
       },
       COMMAND_PRIORITY_HIGH
     )
-  }, [editor])
+  }, [editor, onUserInput])
 
   return null
 }
@@ -293,13 +320,23 @@ function TimestampPlugin() {
 export const LexicalEditor = forwardRef<LexicalEditorHandle, Props>(
   ({ initialContent, onChange, onEscape, onAddFile, onFocus, onBlur }, ref) => {
     const editorRef = { current: null as { focus: () => void } | null }
+    // 사용자가 이 에디터에 실제로 입력한 적이 있는가 (BRU-66)
+    const hasUserInputRef = useRef(false)
 
     useImperativeHandle(ref, () => ({
       focus: () => editorRef.current?.focus(),
     }))
 
+    const handleUserInput = useCallback(() => {
+      hasUserInputRef.current = true
+    }, [])
+
     const handleChange = useCallback(
       (editorState: EditorState) => {
+        // 마운트·초기 파싱이 만든 직렬화는 저장으로 이어지지 않는다.
+        // 열었다 닫기만 하면 원문은 손도 대지 않은 채로 남아야 한다.
+        if (!hasUserInputRef.current) return
+
         editorState.read(() => {
           const root = $getRoot()
           if (root.getTextContent().length === 0 && root.getChildrenSize() <= 1) {
@@ -336,10 +373,11 @@ export const LexicalEditor = forwardRef<LexicalEditorHandle, Props>(
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <OnChangePlugin onChange={handleChange} />
           <FilePastePlugin onAddFile={onAddFile} />
-          <TimestampPlugin />
+          <TimestampPlugin onUserInput={handleUserInput} />
           <EscapePlugin onEscape={onEscape} />
           <FocusPlugin editorRef={editorRef} />
           <InitialContentPlugin content={initialContent} />
+          <UserInputPlugin onUserInput={handleUserInput} />
         </div>
       </LexicalComposer>
     )
