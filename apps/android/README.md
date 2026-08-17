@@ -23,6 +23,11 @@ apps/android/
 | `NotesStore` (`@Observable`) | `NotesStore` + `NotesState` (`StateFlow`) |
 | `NotesRepository` 프로토콜 | `NotesRepository` 인터페이스 |
 | `InMemoryNotesRepository` | 같음 |
+| `SupabaseNotesRepository` (Supabase SDK) | 같음 (Ktor로 PostgREST 직접 호출) |
+| `AuthStore` / `AuthenticationGateway` | `AuthStore` / `AuthGateway` |
+| `NoteDateGrouper` / `RelativeTimeFormatter` | 같음 |
+
+Android에서 Supabase SDK를 쓰지 않는 이유: supabase-kt의 세션 영속화가 Android Context를 요구해서 `core`가 순수 JVM으로 남지 못한다. 그래서 인증·데이터 호출을 Ktor client로 직접 부르고, 테스트는 `MockEngine`으로 네트워크 없이 돈다 (BRU-39 판단).
 
 ## 명령
 
@@ -72,11 +77,29 @@ Google은 호출 앱을 `(패키지명, 서명 SHA-1)`로 매칭한다. `bruce-c
 - **`applicationId`는 `com.intellieffect.drop.mobile`이다** — 과거 Flutter 앱이 쓰던 ID를 그대로 이어받았다 (iOS가 번들 ID를 이어받은 것과 같은 판단, BRU-39에서 확정). 스캐폴드 단계(BRU-38)에서는 `…drop.android`였다. 바꾼 이유는 **Google 로그인**이다: Google은 호출 앱을 `(패키지명, 서명 SHA-1)`로만 매칭하므로, `bruce-clawdbot`에 이미 등록된 Android OAuth 클라이언트를 쓰려면 그 조합이어야 한다. Play 등록·테스터도 이 ID에 붙어 있다.
 - 최소 SDK **26** (`java.time`을 desugaring 없이 쓸 수 있는 하한).
 - Gradle toolchain을 고정하지 않는다 — 고정하면 해당 JDK가 없는 기계에서 다운로드부터 막힌다. 산출 바이트코드만 17에 맞춘다.
+- **목록은 하나의 스크롤 컨테이너로 유지한다.** 빈 목록을 스크롤되지 않는 `Box`로 바꾸면 당겨서 새로고침이 죽는다 — 노트가 하나도 없을 때가 정확히 새로고침이 가장 필요한 순간이다 (iOS #40에서 같은 사고, BRU-40에서 Android에서도 실측으로 잡았다).
+- **평문 HTTP는 디버그 빌드에서만** 열린다 (`app/src/debug`). 로컬 Supabase가 http로 뜨기 때문이고, 열어 주는 대상도 `10.0.2.2` · `127.0.0.1` · `localhost`로 한정한다.
+
+## 로컬 Supabase로 화면을 확인하는 법 (에뮬레이터)
+
+Google 로그인은 디버그 SHA-1 클라이언트가 없어 로컬에서 완주하지 않는다(위 표). 그래도 홈 화면과 CRUD는 세션을 직접 넣어 검증할 수 있다 — BRU-40에서 쓴 방법이다.
+
+```bash
+supabase start                                     # 로컬 스택 (API 58321)
+curl -s -X POST 'http://127.0.0.1:58321/auth/v1/signup' \
+  -H 'Content-Type: application/json' -H "apikey: $LOCAL_ANON_KEY" \
+  -d '{"email":"android-test@intellieffect.com","password":"..."}'   # 세션 토큰을 받는다
+make android-config && make android-build && make android-install
+# 받은 토큰을 SharedPreferences(drop.session)에 넣는다 — 디버그 빌드만 가능
+adb push drop.session.xml /data/local/tmp/
+adb shell run-as com.intellieffect.drop.mobile \
+  cp /data/local/tmp/drop.session.xml /data/data/com.intellieffect.drop.mobile/shared_prefs/
+adb shell am start -S -n com.intellieffect.drop.mobile/com.intellieffect.drop.android.MainActivity
+```
 
 ## 아직 없는 것
 
-로그인·세션(BRU-39)까지 왔다. 다음은 별도 이슈에서 붙인다.
+로그인·세션(BRU-39)과 노트 CRUD(BRU-40)까지 왔다. 다음은 별도 이슈에서 붙인다.
 
-- 실제 Supabase 노트 CRUD (BRU-40) — 지금 로그인 뒤 목록은 인메모리 표본이다.
-- 태그·첨부 (BRU-41)
+- 태그 편집·첨부 업로드·공유 인텐트·홈 위젯 (BRU-41) — 지금은 이미 붙어 있는 태그를 읽고 필터로 쓰는 것까지만 된다.
 - Play Console 배포 (BRU-42) — 서명 키와 Play 서비스 계정 자격증명이 필요하다.
