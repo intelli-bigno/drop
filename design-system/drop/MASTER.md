@@ -1,31 +1,45 @@
 # DROP — Design System (Master)
 
-> ui-ux-pro-max 생성안을 프로젝트 실정에 맞게 보정한 SoT (2026-08-11).
-> 보정 사유: 생성안의 라이트 배경(#F0FDFA)은 다크 전용 앱과 모순 → 기존 OLED 다크 유지,
-> 액센트만 블루 → 틸(teal) + CTA 오렌지로 전환. 페이지별 오버라이드는 `pages/`.
+> **기계가 읽는 정본은 `tokens.json`이다** (BRU-73). 이 문서는 사람이 읽는 설명이고,
+> 색값 표는 참고용이다 — 실제 값은 JSON을 보고, 바꿀 때도 JSON만 고친 뒤 `make tokens`를 돌린다.
+>
+> 2026-08-18 (BRU-72): 팔레트를 **웜 페이퍼 + 앰버**로 교체하고 **라이트·다크 두 모드**를 갖췄다.
+> 그전에는 OLED 다크 + teal 단일 모드였다.
 
 ## 방향
-- 스타일: **Dark Mode (OLED)** — 딥 블랙, 저발광, 고대비, 키보드 퍼스트
+- 스타일: **웜 페이퍼** — 종이에 가까운 웜 뉴트럴 바탕, 액센트는 앰버 하나. 라이트가 본체, 다크는 밤용.
 - 패턴: 단일 컬럼 피드, 밀도 7/10 (표준~조밀), 모션 3/10 (섬세한 마이크로 인터랙션만)
-- 피해야 할 것: 라이트 모드 기본값, 장식성 애니메이션, 이모지 아이콘
+- 피해야 할 것: 장식성 애니메이션, 이모지 아이콘, **화면에 색 리터럴 적기**(토큰만 쓴다)
+- 플랫폼 재질은 각자 따른다 — iOS는 Liquid Glass(기능 레이어에만), Android는 M3 표면. 같은 것은 색·간격·타이포다.
 
-## 토큰 (styles/index.css `:root` 와 1:1)
+## 토큰
 
-### 색
-| 토큰 | 값 | 용도 |
-|---|---|---|
-| --bg-primary | #09090b | 앱 배경 |
-| --bg-secondary | #101013 | 사이드바/헤더 |
-| --bg-card | #17171b | 노트 카드 |
-| --bg-elevated | #1e1e23 | 모달/토스트 |
-| --bg-hover | #26262c | hover 표면 |
-| --accent | #14b8a6 | 포커스·선택·핀 (teal) |
-| --accent-hover | #2dd4bf | |
-| --cta | #ea580c | 주요 행동 버튼 (orange) |
-| --text-primary | #fafafa | 본문 |
-| --text-secondary | #a6a6b0 | 보조 (대비 ≥4.5:1) |
-| --text-tertiary | #79797f | 메타 |
-| --danger | #ef4444 | 파괴적 액션 |
+값의 정본은 `design-system/drop/tokens.json`이다. 생성물:
+
+| 대상 | 파일 |
+| --- | --- |
+| 데스크톱 | `apps/desktop/src/renderer/styles/tokens.css` |
+| iOS | `apps/ios/Packages/DropUI/Sources/DropUI/DropTokens.swift` |
+| Android | `apps/android/app/src/main/kotlin/.../DropTokens.kt` |
+
+### 색 — 라이트 / 다크
+| 토큰 | Light | Dark | 용도 |
+|---|---|---|---|
+| --bg-primary | #f7f6f3 | #191919 | 앱 배경 |
+| --bg-secondary | #f1efea | #1c1c1c | 사이드바/헤더 |
+| --bg-card | #ffffff | #202020 | 노트 카드 |
+| --bg-elevated | #ffffff | #262626 | 모달/토스트 |
+| --bg-tertiary | #edeae3 | #2a2a2a | 입력 등 3차 표면 |
+| --bg-hover | #edeae3 | #2e2e2e | hover 표면 |
+| --accent | #d9730d | #e9a23b | 포커스·선택·핀 |
+| --cta | #c2410c | #f97316 | 주요 행동 버튼 |
+| --text-primary | #37352f | #d4d4d4 | 본문 |
+| --text-secondary | #6b6862 | #a8a6a1 | 보조 (≥4.5:1) |
+| --text-tertiary | #9b9a97 | #8c8c8c | 메타 — **본문 금지** |
+| --text-on-accent | #1a1a1a | #1a1a1a | 액센트·CTA 위 글자 |
+| --danger | #dc2626 | #ef4444 | 파괴적 액션 |
+
+**액센트 위에는 어두운 글자를 쓴다.** 두 모드 모두 액센트가 밝은 주황 계열이라 흰 글자는 대비가 3:1 아래로 떨어진다(라이트 3.3:1, 다크 2.2:1 — 실측).
 
 ### 간격 (4px 베이스)
 --space-1..8 = 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64

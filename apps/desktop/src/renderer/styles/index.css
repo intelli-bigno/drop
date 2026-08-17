@@ -182,7 +182,7 @@ body {
   transform: translate(-50%, -50%);
   padding: 16px 32px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -788,7 +788,7 @@ body {
   padding: 4px 10px;
   font-size: 11px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -1078,7 +1078,7 @@ body {
 }
 
 .attachment-file-content:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .attachment-file-icon {
@@ -1121,7 +1121,7 @@ body {
 }
 
 .attachment-text-content:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .attachment-text-header {
@@ -1208,7 +1208,7 @@ body {
 .attachment-instagram {
   width: 160px;
   max-width: 100%;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a1520 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
   border: 1px solid rgba(225, 48, 108, 0.2);
 }
 
@@ -1217,7 +1217,7 @@ body {
 }
 
 .attachment-instagram-content:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
 }
 
 .attachment-instagram-thumbnail {
@@ -1248,13 +1248,13 @@ body {
 .attachment-instagram-icon {
   display: flex;
   align-items: center;
-  color: #e1306c;
+  color: var(--brand-instagram);
 }
 
 .attachment-instagram-label {
   font-size: 12px;
   font-weight: 600;
-  color: #e1306c;
+  color: var(--brand-instagram);
 }
 
 .attachment-instagram-author {
@@ -1292,8 +1292,8 @@ body {
 .attachment-instagram-dialog {
   width: min(560px, 90vw);
   max-height: 80vh;
-  background: #0f0f12;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
@@ -1330,7 +1330,7 @@ body {
 .attachment-youtube {
   width: 200px;
   max-width: 100%;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a1215 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
   border: 1px solid rgba(255, 0, 0, 0.15);
 }
 
@@ -1339,7 +1339,7 @@ body {
 }
 
 .attachment-youtube-content:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
 }
 
 .attachment-youtube-thumbnail {
@@ -1395,13 +1395,13 @@ body {
 .attachment-youtube-icon {
   display: flex;
   align-items: center;
-  color: #ff0000;
+  color: var(--brand-youtube);
 }
 
 .attachment-youtube-label {
   font-size: 12px;
   font-weight: 600;
-  color: #ff0000;
+  color: var(--brand-youtube);
 }
 
 .attachment-youtube-title {
@@ -1490,7 +1490,7 @@ body {
 .link-preview-youtube {
   width: 280px;
   max-width: 100%;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a1215 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
   border: 1px solid rgba(255, 0, 0, 0.2);
 }
 
@@ -1542,13 +1542,13 @@ body {
 .link-preview-icon {
   display: flex;
   align-items: center;
-  color: #ff0000;
+  color: var(--brand-youtube);
 }
 
 .link-preview-label {
   font-size: 12px;
   font-weight: 600;
-  color: #ff0000;
+  color: var(--brand-youtube);
 }
 
 .link-preview-title {
@@ -1723,7 +1723,7 @@ body {
   gap: 6px;
   padding: 4px 10px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
@@ -1736,17 +1736,17 @@ body {
   justify-content: center;
   width: 14px;
   height: 14px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.15);
   border: none;
   border-radius: 50%;
-  color: white;
+  color: var(--text-on-accent);
   font-size: 10px;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .filter-indicator button:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.28);
 }
 
 /* ============================================
@@ -2038,7 +2038,7 @@ body {
 
 .tag-management-delete-btn:hover {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .tag-management-edit-row {
@@ -2092,13 +2092,13 @@ body {
 }
 
 .tag-management-delete-cancel:hover {
-  background: var(--bg-tertiary, #3a3a3a);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
 .tag-management-delete-confirm-btn {
   padding: 6px 12px;
-  background: #ef4444;
+  background: var(--danger);
   border: none;
   border-radius: 6px;
   color: white;
@@ -2108,7 +2108,7 @@ body {
 }
 
 .tag-management-delete-confirm-btn:hover {
-  background: #dc2626;
+  background: var(--danger-hover);
 }
 
 .tag-management-footer {
@@ -2234,15 +2234,15 @@ body {
 }
 
 .search-dialog-priority.priority-low {
-  color: #888;
+  color: var(--priority-low);
 }
 
 .search-dialog-priority.priority-medium {
-  color: #f5a623;
+  color: var(--priority-medium);
 }
 
 .search-dialog-priority.priority-high {
-  color: #ff4444;
+  color: var(--priority-high);
 }
 
 .search-dialog-time {
@@ -2288,11 +2288,11 @@ body {
 
 .pin-btn:hover {
   background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
+  color: var(--warning);
 }
 
 .pin-btn.pinned {
-  color: #ffc107;
+  color: var(--warning);
 }
 
 /* Lock Button */
@@ -2308,7 +2308,7 @@ body {
 }
 
 .lock-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
 }
 
 .lock-btn.locked {
@@ -2343,7 +2343,7 @@ body {
 .locked-note-btn {
   padding: 6px 16px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 12px;
@@ -2494,7 +2494,7 @@ body {
 }
 
 .pin-dialog-error {
-  color: #ff4444;
+  color: var(--danger);
   font-size: 12px;
   text-align: center;
   margin: 0 0 12px 0;
@@ -2523,7 +2523,7 @@ body {
 .pin-dialog-actions button[type='submit'] {
   background: var(--accent);
   border: none;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .pin-dialog-actions button:disabled {
@@ -2583,7 +2583,7 @@ body {
 
 .inbox-filter-btn.active .inbox-filter-count {
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 /* ============================================
@@ -2690,13 +2690,13 @@ body {
 
 .view-mode-btn.active .view-mode-count {
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 /* ===== Empty Trash Button ===== */
 .empty-trash-btn {
   padding: 6px 12px;
-  background: #dc3545;
+  background: var(--danger);
   border: none;
   border-radius: 6px;
   color: white;
@@ -2707,7 +2707,7 @@ body {
 }
 
 .empty-trash-btn:hover {
-  background: #c82333;
+  background: var(--danger-hover);
 }
 
 /* ===== Archive / Restore Buttons ===== */
@@ -2733,7 +2733,7 @@ body {
 .permanent-delete-btn {
   background: none;
   border: none;
-  color: #dc3545;
+  color: var(--danger);
   cursor: pointer;
   padding: 2px 6px;
   font-size: 14px;
@@ -2827,7 +2827,7 @@ body {
   margin-top: 8px;
   padding: 8px 16px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border: none;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -3018,7 +3018,7 @@ body {
 .confirm-dialog-actions button.confirm-dialog-primary {
   background: var(--accent);
   border: none;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .confirm-dialog-actions button.confirm-dialog-danger {

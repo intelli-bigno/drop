@@ -102,8 +102,8 @@ function App() {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          background: '#1a1a1a',
-          color: '#888',
+          background: 'var(--bg-primary)',
+          color: 'var(--text-tertiary)',
         }}
       >
         Loading...
@@ -127,8 +127,8 @@ function App() {
                 borderRadius: 4,
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#fff',
-                backgroundColor: isLocal ? '#10b981' : '#f59e0b',
+                color: 'var(--text-on-accent)',
+                backgroundColor: isLocal ? 'var(--success)' : 'var(--warning)',
                 opacity: 0.9,
               }}
             >

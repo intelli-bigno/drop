@@ -10,14 +10,14 @@ export function AuthScreen() {
         <svg className="auth-logo" viewBox="0 0 1024 1024" width="72" height="72" aria-hidden="true">
           <defs>
             <linearGradient id="auth-logo-bg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#2dd4bf" />
-              <stop offset="1" stopColor="#0d9488" />
+              <stop offset="0" stopColor="var(--accent)" />
+              <stop offset="1" stopColor="var(--accent-hover)" />
             </linearGradient>
           </defs>
           <rect width="1024" height="1024" rx="229" fill="url(#auth-logo-bg)" />
           <path
             d="M512 236C512 236 704 476 704 598A192 192 0 0 1 320 598C320 476 512 236 512 236Z"
-            fill="#fafafa"
+            fill="var(--bg-card)"
           />
         </svg>
         <h1 className="auth-title">DROP</h1>
@@ -95,7 +95,7 @@ export function AuthScreen() {
           padding: 12px 24px;
           font-size: 16px;
           font-weight: 500;
-          color: #1a1a1a;
+          color: var(--text-on-accent);
           background: #ffffff;
           border: none;
           border-radius: 8px;
