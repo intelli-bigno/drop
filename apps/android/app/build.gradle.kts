@@ -24,6 +24,20 @@ fun configValue(name: String): String =
         ?: localProperties.getProperty(name)
         ?: ""
 
+/**
+ * 서명 값. 비밀값이라 `local.properties`가 아니라 **`key.properties`** 를 본다 —
+ * 둘을 섞으면 Supabase 구성값과 키스토어 비밀번호가 한 파일에 살게 된다.
+ * 두 파일 모두 커밋되지 않는다.
+ */
+val keyProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun releaseValue(name: String): String? =
+    System.getenv(name)?.takeIf { it.isNotBlank() }
+        ?: keyProperties.getProperty(name)?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.intellieffect.drop.android"
     compileSdk = 35
@@ -36,8 +50,13 @@ android {
         applicationId = "com.intellieffect.drop.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI가 시간 기반 값을 넘긴다 (`-PversionCode=…`). 로컬 빌드는 1로 둔다.
+        //
+        // iOS처럼 `yyMMddHHmm`을 쓰면 안 된다 — Play의 versionCode 상한이
+        // 2,100,000,000이고 그 값(2608…)은 넘는다. release.yml이 "2025-01-01 이후 분"으로
+        // 만든다: 단조 증가하고, Flutter 시절 run_number 기반 값보다 항상 크다.
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
 
         buildConfigField("String", "SUPABASE_URL", "\"${configValue("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${configValue("SUPABASE_ANON_KEY")}\"")
@@ -55,8 +74,33 @@ android {
         buildConfig = true
     }
 
+    /**
+     * 릴리스 서명. 값은 환경변수 → `key.properties` 순으로 찾는다 (CI는 환경변수만 넣는다).
+     *
+     * 키스토어가 없으면 **디버그 키로** 서명한다. 서명 설정을 그냥 비워 두면 산출물이
+     * `app-release-unsigned.apk`가 되어 설치조차 되지 않는다(실측). 로컬에서 릴리스
+     * 빌드를 눌러 보는 길을 막지 않기 위한 폴백이고,
+     * CI에서는 `release.yml`이 apksigner로 지문을 대조해 디버그 키 서명을 실패로 끊는다
+     * (Google 로그인은 등록된 릴리스 SHA-1로만 통과하므로, 지문이 어긋난 빌드를
+     * 테스터에게 보내면 "로그인만 안 되는 빌드"가 나간다).
+     */
+    val keystorePath = releaseValue("ANDROID_KEYSTORE_FILE")
+    val hasReleaseKeystore = keystorePath != null && file(keystorePath).exists()
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = releaseValue("ANDROID_STORE_PASSWORD")
+                keyAlias = releaseValue("ANDROID_KEY_ALIAS")
+                keyPassword = releaseValue("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName(if (hasReleaseKeystore) "release" else "debug")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

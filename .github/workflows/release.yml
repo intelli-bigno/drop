@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-  # 태그 없이 iOS만 테스터에게 보낼 때 쓴다 (데스크톱 릴리스는 나가지 않는다)
+  # 태그 없이 모바일만 테스터에게 보낼 때 쓴다 (데스크톱 릴리스는 나가지 않는다)
   workflow_dispatch:
     inputs:
       target:
@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - ios
+          - android
         default: ios
 
 permissions:
@@ -268,3 +269,135 @@ jobs:
         with:
           name: DROP-ios-ipa
           path: ${{ runner.temp }}/ipa/*.ipa
+
+  # Android 네이티브(apps/android) 배포 — BRU-42.
+  #
+  # 두 경로로 나간다:
+  #   1. Firebase App Distribution — 자격증명이 이미 있어 지금 동작한다 (Flutter 시절 경로)
+  #   2. Play 내부 테스트 — PLAY_SERVICE_ACCOUNT_JSON 시크릿이 있을 때만. 없으면 큰 소리로 스킵
+  #
+  # 검증 빌드만 보낼 때는 태그 없이:
+  #   gh workflow run release.yml -f target=android
+  release-android:
+    if: >-
+      startsWith(github.ref, 'refs/tags/')
+      || inputs.target == 'android'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # 서명 키. 네 값이 모두 있어야 릴리스 서명이 된다 — 하나라도 비면 빌드가
+      # 디버그 키로 서명되고, 그러면 "로그인만 안 되는 빌드"가 테스터에게 나간다.
+      - name: Setup Android signing
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE ANDROID_KEY_ALIAS ANDROID_STORE_PASSWORD ANDROID_KEY_PASSWORD; do
+            [ -n "${!name}" ] || { echo "❌ 시크릿 $name 이 비어 있습니다"; exit 1; }
+          done
+          echo "$ANDROID_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/drop-release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/drop-release.keystore"
+            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+            echo "ANDROID_STORE_PASSWORD=$ANDROID_STORE_PASSWORD"
+            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      # versionCode는 단조 증가해야 하고 Play 상한(2,100,000,000)을 넘으면 안 된다.
+      # iOS가 쓰는 yyMMddHHmm(2608…)은 상한을 넘는다 — 2025-01-01 이후 "분"으로 만든다.
+      # Flutter 시절 값(run_number 기반, 수백)보다 훨씬 크므로 되돌아가지 않는다.
+      - name: Compute version
+        run: |
+          echo "VERSION_CODE=$(( ( $(date -u +%s) - 1735689600 ) / 60 ))" >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF#refs/tags/v}" != "$GITHUB_REF" ]; then
+            echo "VERSION_NAME=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION_NAME=0.1.0-$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK and AAB
+        working-directory: apps/android
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          for name in SUPABASE_URL SUPABASE_ANON_KEY GOOGLE_WEB_CLIENT_ID; do
+            [ -n "${!name}" ] || { echo "❌ 시크릿 $name 이 비어 있습니다"; exit 1; }
+          done
+          ./gradlew --no-daemon \
+            -PversionCode="$VERSION_CODE" -PversionName="$VERSION_NAME" \
+            :app:assembleRelease :app:bundleRelease
+
+      # 서명 지문을 대조한다. Google은 (패키지명, SHA-1)로 앱을 매칭하므로 지문이
+      # 어긋난 빌드는 로그인만 실패하는 빌드가 된다 — 그 상태로 배포되면 안 된다.
+      # (BRU-30에서 실기 검증에 쓴 것과 같은 확인)
+      - name: Verify release signature
+        working-directory: apps/android
+        env:
+          EXPECTED_SHA1: A8:D1:12:55:A3:31:4B:C8:A8:1D:59:13:D4:43:2A:4A:01:78:60:17
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          ACTUAL=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+                   | grep -i "SHA-1 digest" | head -1 | awk '{print $NF}')
+          WANT=$(echo "$EXPECTED_SHA1" | tr -d ':' | tr 'A-Z' 'a-z')
+          echo "expected=$WANT"
+          echo "actual  =$ACTUAL"
+          [ "$ACTUAL" = "$WANT" ] || {
+            echo "❌ 릴리스 서명 지문이 등록된 것과 다릅니다 — 이 빌드로는 Google 로그인이 안 됩니다"
+            exit 1
+          }
+          echo "✅ 릴리스 키로 서명됨 (bruce-clawdbot에 등록된 지문)"
+
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: testers
+          releaseNotes: "DROP Android 네이티브 (versionCode ${{ env.VERSION_CODE }})"
+          file: apps/android/app/build/outputs/apk/release/app-release.apk
+
+      # Play 내부 테스트. 시크릿이 없으면 멈추지는 않되, 무엇이 없어서 안 나갔는지
+      # 로그에 남긴다 — 조용히 넘어가면 "배포됐다"고 착각하게 된다.
+      - name: Check Play credentials
+        id: play
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PLAY_SERVICE_ACCOUNT_JSON 시크릿이 없어 Play 내부 테스트 업로드를 건너뜁니다 (BRU-42)"
+          fi
+
+      - name: Upload to Play internal track
+        if: steps.play.outputs.available == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.intellieffect.drop.mobile
+          releaseFiles: apps/android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DROP-android
+          path: |
+            apps/android/app/build/outputs/apk/release/app-release.apk
+            apps/android/app/build/outputs/bundle/release/app-release.aab

@@ -65,6 +65,23 @@ Google은 호출 앱을 `(패키지명, 서명 SHA-1)`로 매칭한다. `bruce-c
 
 디버그 클라이언트는 콘솔에서 사람이 만들어야 한다 (GCP에 OAuth 클라이언트 생성 API가 없다).
 
+## 배포 (BRU-42)
+
+```bash
+gh workflow run release.yml -f target=android    # 태그 없이 테스터 빌드만
+```
+
+태그(`v*`)를 밀면 데스크톱·iOS와 함께 나간다.
+
+| 경로 | 상태 |
+| --- | --- |
+| Firebase App Distribution (`testers` 그룹, APK) | **동작한다** — `FIREBASE_ANDROID_APP_ID` · `FIREBASE_SERVICE_ACCOUNT` 시크릿이 이미 있다 |
+| Play 내부 테스트 (AAB) | `PLAY_SERVICE_ACCOUNT_JSON` 시크릿이 들어오면 자동으로 함께 나간다. 없으면 경고를 남기고 건너뛴다 |
+
+- 서명 값은 **환경변수 → `key.properties`** 순으로 찾는다(`local.properties`와 분리 — 구성값과 키스토어 비밀번호를 한 파일에 두지 않는다). 둘 다 커밋되지 않는다.
+- 키스토어가 없는 기계에서는 릴리스 빌드가 **디버그 키로** 서명된다. 서명 설정을 비워 두면 `app-release-unsigned.apk`가 나와 설치조차 안 되기 때문이다. 대신 CI가 `apksigner`로 지문을 대조해, 릴리스 키가 아닌 빌드는 배포 전에 끊는다 — 지문이 어긋난 빌드는 **로그인만 실패하는 빌드**가 된다.
+- `versionCode`는 CI가 "2025-01-01 이후 분"으로 만든다. iOS와 같은 `yyMMddHHmm`은 **Play 상한(2,100,000,000)을 넘어서** 쓸 수 없다.
+
 ## 규칙
 
 - **`core`에 Android 의존을 넣지 않는다.** 넣는 순간 `:core:test`가 에뮬레이터·SDK를 요구하게 되고, TDD 사이클이 느려진다.
