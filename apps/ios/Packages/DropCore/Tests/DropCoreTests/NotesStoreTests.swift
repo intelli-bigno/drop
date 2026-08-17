@@ -21,6 +21,12 @@ private actor Gate {
     }
 }
 
+/// 어느 시점에 끝났는지 보기 위한 깃발. MainActor 위에서만 오간다.
+@MainActor
+private final class Flag {
+    var isOn = false
+}
+
 /// Riverpod의 notesProvider + selection_provider + 필터 상태를 하나로 합친 것.
 @Suite("노트 목록 상태")
 @MainActor
@@ -133,6 +139,35 @@ struct NotesStoreTests {
         _ = await (first, second)
 
         #expect(repository.loadCallCount == 1)
+    }
+
+    /// 겹친 호출이 요청을 한 번만 보내는 것과, 요청을 아예 건너뛰고 즉시 끝나는 것은
+    /// 다르다. 당겨서 새로고침(`.refreshable`)은 호출이 끝나는 순간 스피너를 접으므로,
+    /// 즉시 돌아오면 아무 일도 하지 않은 채 스피너만 튕기고 만다 — 진행 중인 로드가
+    /// 끝날 때까지 기다려야 한다 (BRU-51).
+    @Test("로드 중에 당긴 새로고침은 그 로드가 끝날 때까지 기다린다")
+    func overlappingLoadWaitsForTheOneInFlight() async {
+        let (store, repository) = store([note("a")])
+        let gate = Gate()
+        repository.beforeLoad = { await gate.wait() }
+
+        async let first: Void = store.load()
+        while !store.isLoading { await Task.yield() }
+
+        let finished = Flag()
+        let refresh = Task { await store.load(); finished.isOn = true }
+        for _ in 0 ..< 20 { await Task.yield() }
+
+        // 진행 중인 로드가 아직 서버에 매달려 있는데 새로고침이 끝나 있으면 안 된다.
+        #expect(!finished.isOn)
+
+        await gate.open()
+        await first
+        await refresh.value
+
+        #expect(finished.isOn)
+        #expect(repository.loadCallCount == 1)
+        #expect(store.visibleNotes.map(\.id) == ["a"])
     }
 
     /// 보관·휴지통 노트도 함께 받아 화면에서 거른다 (Flutter와 같은 구조).

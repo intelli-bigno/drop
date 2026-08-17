@@ -21,6 +21,8 @@ public final class NotesStore {
     public private(set) var selectedIDs: Set<String> = []
 
     private let repository: any NotesRepository
+    /// 지금 도는 로드. 겹친 호출은 새 요청을 보내지 않고 이것을 기다린다.
+    private var inFlight: Task<Void, Never>?
 
     public init(repository: any NotesRepository) {
         self.repository = repository
@@ -44,10 +46,30 @@ public final class NotesStore {
         return allNotes.flatMap(\.tags).filter { seen.insert($0.id).inserted }
     }
 
+    /// 목록을 다시 받아온다. 화면 진입(`.task`)과 당겨서 새로고침(`.refreshable`)이
+    /// 같은 입구를 쓴다.
+    ///
+    /// 겹친 호출은 요청을 한 번만 보내되, **먼저 도는 로드가 끝날 때까지 기다린다.**
+    /// 즉시 돌려보내면(예전 동작) 당겨서 새로고침은 스피너만 튕기고 아무 일도 하지
+    /// 않은 것처럼 보인다 — `.refreshable`은 호출이 끝나는 순간 스피너를 접기 때문이다.
+    ///
+    /// 로드를 떼어 낸 Task에 담아 두는 이유도 같다. 당김 제스처가 끝나면서 SwiftUI가
+    /// 새로고침 Task를 취소해도, 이미 시작한 로드는 끝까지 가서 목록을 갱신한다.
     public func load() async {
-        // 화면에 들어오면서 도는 첫 로드와 당겨서 새로고침은 쉽게 겹친다.
-        // 둘 다 서버까지 가면 늦게 끝난 쪽이 목록을 덮어써 방금 본 화면이 되돌아간다.
-        guard !isLoading else { return }
+        if let inFlight {
+            await inFlight.value
+            return
+        }
+
+        let task = Task { [self] in
+            await performLoad()
+            inFlight = nil
+        }
+        inFlight = task
+        await task.value
+    }
+
+    private func performLoad() async {
         isLoading = true
         errorMessage = nil
         do {
