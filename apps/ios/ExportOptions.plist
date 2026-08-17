@@ -16,6 +16,11 @@
 		<string>DROP Native App Store</string>
 		<key>com.intellieffect.drop.mobile.share</key>
 		<string>DROP Native Share App Store</string>
+		<!-- 위젯은 BRU-35에서 추가됐는데 이 매핑이 빠져 있었다. 그 결과 위젯 appex가
+		     entitlements 없이 서명되어 TestFlight 업로드가 409로 막혔다 (BRU-58).
+		     Flutter 시절 위젯과 번들 ID·App Group이 같아 그때 프로파일을 그대로 쓴다. -->
+		<key>com.intellieffect.drop.mobile.widget</key>
+		<string>DROP-Widget-Provisioning-Profile</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>
