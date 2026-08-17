@@ -271,7 +271,8 @@ body {
   flex-direction: column;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  margin-bottom: 12px;
+  /* 목록 밀도 (BRU-56) — 노트 사이 간격 */
+  margin-bottom: 6px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   /* 빠른 네비게이션을 위해 transition 최소화 */
@@ -326,7 +327,8 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  /* 목록 밀도 (BRU-56) — 카드 내부 상하 패딩 */
+  padding: var(--space-1) var(--space-4);
   min-width: 0;
   cursor: pointer;
 }
@@ -440,7 +442,8 @@ body {
   justify-content: flex-end;
   gap: var(--space-2);
   flex: 0 0 auto;
-  min-height: 28px;
+  /* 줄 높이의 바닥값 — 액션 버튼 크기와 맞춘다 (BRU-56) */
+  min-height: 24px;
 }
 
 /* 핀·잠금은 상태다 — 켜져 있으면 호버 없이도 보인다 */
@@ -491,8 +494,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  /* 줄 높이를 결정하는 값이다 — 밀도(BRU-56)에 맞춰 24px */
+  width: 24px;
+  height: 24px;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
