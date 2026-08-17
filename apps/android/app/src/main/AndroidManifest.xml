@@ -19,6 +19,34 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          다른 앱의 "공유"에 DROP을 띄운다 (iOS DropShare 대응).
+          화면 없이 담고 토스트만 띄우므로 테마를 투명하게 둔다 — 흰 화면이 깜빡이지 않게.
+        -->
+        <activity
+            android:name=".ShareReceiverActivity"
+            android:exported="true"
+            android:label="DROP에 담기"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

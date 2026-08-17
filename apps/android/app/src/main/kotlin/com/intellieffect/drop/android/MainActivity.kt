@@ -74,7 +74,12 @@ private fun RootScreen(viewModel: DropViewModel, modifier: Modifier = Modifier) 
             HomeScreen(
                 store = viewModel.notesStore,
                 userEmail = current.user.email,
-                onSignOut = { scope.launch { viewModel.authStore.signOut() } },
+                urlCache = viewModel.signedUrlCache,
+                onSignOut = { viewModel.signOut() },
+                onAddTag = viewModel::addTag,
+                onRemoveTag = viewModel::removeTag,
+                onAddAttachment = viewModel::addAttachment,
+                onRemoveAttachment = viewModel::removeAttachment,
                 modifier = modifier,
             )
         }
