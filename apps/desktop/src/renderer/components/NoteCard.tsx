@@ -19,6 +19,7 @@ import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
 import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
 import { isEditorOpen } from '../lib/note-edit-mode'
+import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
@@ -181,11 +182,13 @@ export const NoteCard = memo(
 
       const handleChange = useCallback(
         (content: string) => {
-          // 동일한 content면 업데이트 스킵 (초기 렌더링 시 불필요한 호출 방지)
-          if (content === note.content) return
+          // 마크다운 왕복이 만든 변형(이스케이프·줄 끝 공백·리스트 빈 줄)은 저장하지 않는다.
+          // 원문과 실질적으로 같으면 원문 바이트를 그대로 둔다 (BRU-66).
+          const next = reconcileSerializedMarkdown(note.content, content)
+          if (next === note.content) return
           contentChangedRef.current = true
-          latestContentRef.current = content
-          updateNote(note.id, content)
+          latestContentRef.current = next
+          updateNote(note.id, next)
         },
         [note.id, note.content, updateNote]
       )
