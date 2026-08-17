@@ -5,85 +5,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* 색·간격·타이포 토큰. 생성물이므로 여기서 고치지 말고 design-system/drop/tokens.json을 고친다.
+   같은 값이 iOS(DropTokens.swift)·Android(DropTokens.kt)로도 나간다 — `make tokens`. */
+@import './tokens.css';
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-:root {
-  /* Color Palette - OLED Dark */
-  --bg-primary: #09090b;
-  --bg-secondary: #101013;
-  --bg-card: #17171b;
-  --bg-elevated: #1e1e23;
-  --bg-hover: #26262c;
-
-  /* Accent - Teal primary, Orange for destructive-adjacent CTAs */
-  --accent: #14b8a6;
-  --accent-hover: #2dd4bf;
-  --accent-subtle: rgba(20, 184, 166, 0.12);
-  --cta: #ea580c;
-  --cta-hover: #f97316;
-
-  /* Text Colors */
-  --text-primary: #fafafa;
-  --text-secondary: #a6a6b0;
-  --text-tertiary: #79797f;
-  --text-muted: #55555c;
-
-  /* Spacing scale (4px base) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
-
-  /* Type scale */
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 14px;
-  --text-lg: 16px;
-  --text-xl: 20px;
-  --text-2xl: 28px;
-
-  /* Priority Colors */
-  --priority-low: #6b7280;
-  --priority-medium: #f59e0b;
-  --priority-high: #ef4444;
-
-  /* Status Colors */
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-
-  /* Border & Surface */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-focus: var(--accent);
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* Spacing */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-
-  /* Transitions */
-  --transition-fast: 0.1s ease;
-  --transition-normal: 0.15s ease;
-  --transition-slow: 0.25s ease;
 }
 
 body {

@@ -26,6 +26,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --ignore-scripts
 
+      # 토큰 생성물(CSS·Swift·Kotlin)은 커밋된다 — iOS·Android 빌드가 Node에
+      # 의존하지 않게 하려는 것이다. 정본(tokens.json)만 고치고 생성물을 빠뜨리면
+      # 세 앱의 색이 조용히 어긋나므로 여기서 끊는다.
+      - name: Check design tokens are generated
+        run: make tokens-check
+
       - name: TypeCheck Desktop
         run: pnpm --filter @drop/desktop typecheck
 
