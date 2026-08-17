@@ -42,6 +42,14 @@ case "$ENVIRONMENT" in
     ;;
 esac
 
+# Google 로그인의 serverClientId. **웹** 클라이언트 ID여야 한다 — Supabase Google
+# provider가 audience로 신뢰하는 것이 웹 클라이언트 하나뿐이라, Android 클라이언트 ID를
+# 넣으면 `Unacceptable audience`로 거부된다.
+#
+# 기본값을 박아 두는 이유: OAuth 클라이언트 ID는 비밀값이 아니다(APK 안에 그대로 실린다).
+# .env.local 이 없는 기계에서도 로그인 빌드가 되게 하려고 실제 값을 기본으로 둔다.
+GOOGLE_WEB_CLIENT_ID="${GOOGLE_WEB_CLIENT_ID:-627053596385-pn1ba7kvg7rcfhesr532qtdc19vnqf5m.apps.googleusercontent.com}"
+
 # SDK 경로. ANDROID_HOME 이 있으면 그것을, 없으면 macOS 기본 위치를 쓴다.
 SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
 
@@ -50,6 +58,7 @@ SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
   [[ -d "$SDK_DIR" ]] && echo "sdk.dir=$SDK_DIR"
   echo "SUPABASE_URL=$URL"
   echo "SUPABASE_ANON_KEY=$KEY"
+  echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
 } > "$OUT"
 
 echo "✅ apps/android/local.properties 생성 (환경: $ENVIRONMENT)"
