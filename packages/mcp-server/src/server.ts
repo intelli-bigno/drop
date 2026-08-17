@@ -3,6 +3,7 @@ import { registerNotesTools } from './tools/notes.js'
 import { registerSearchTools } from './tools/search.js'
 import { registerTagsTools } from './tools/tags.js'
 import { registerAttachmentsTools } from './tools/attachments.js'
+import { registerCommentsTools } from './tools/comments.js'
 
 /**
  * DROP Notes MCP 서버 생성
@@ -18,6 +19,7 @@ export function createServer(): McpServer {
   registerSearchTools(server)
   registerTagsTools(server)
   registerAttachmentsTools(server)
+  registerCommentsTools(server)
 
   return server
 }
