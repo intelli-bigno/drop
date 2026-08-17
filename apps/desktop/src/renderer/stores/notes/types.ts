@@ -125,6 +125,15 @@ export interface InboxSlice {
   setInboxOnly: (inboxOnly: boolean) => void
 }
 
+// Linear 반출 표시 (BRU-45) — 이슈 생성은 에이전트가 하고, 앱은 표시만 다룬다
+export interface ExportSlice {
+  /** 반출된 노트도 함께 보기. 기본은 숨김 */
+  showExported: boolean
+  setShowExported: (showExported: boolean) => void
+  /** 반출 표시 걷어내기 (잘못 반출했거나 이슈를 지운 경우) */
+  clearNoteExport: (noteId: string) => Promise<void>
+}
+
 // View mode for notes (active, archived, trash)
 export type NoteViewMode = 'active' | 'archived' | 'trash'
 
@@ -160,4 +169,5 @@ export interface NotesState
     LockSlice,
     CategoryFilterSlice,
     InboxSlice,
+    ExportSlice,
     TrashSlice {}

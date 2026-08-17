@@ -143,6 +143,9 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         priority: 0,
         isPinned: false,
         pinnedAt: null,
+        linearIssueUrl: null,
+        linearIssueKey: null,
+        linearExportedAt: null,
       }
     }
 
@@ -171,6 +174,10 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       priority: 0,
       isPinned: false,
       pinnedAt: null,
+      // 새 노트는 당연히 아직 반출되지 않았다 (BRU-45)
+      linearIssueUrl: null,
+      linearIssueKey: null,
+      linearExportedAt: null,
     }
 
     set((state) => ({

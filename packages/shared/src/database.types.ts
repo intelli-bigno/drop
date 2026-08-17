@@ -288,6 +288,9 @@ export type Database = {
           is_deleted: boolean | null
           is_locked: boolean
           is_pinned: boolean
+          linear_exported_at: string | null
+          linear_issue_key: string | null
+          linear_issue_url: string | null
           parent_id: string | null
           pinned_at: string | null
           priority: number
@@ -308,6 +311,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_locked?: boolean
           is_pinned?: boolean
+          linear_exported_at?: string | null
+          linear_issue_key?: string | null
+          linear_issue_url?: string | null
           parent_id?: string | null
           pinned_at?: string | null
           priority?: number
@@ -328,6 +334,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_locked?: boolean
           is_pinned?: boolean
+          linear_exported_at?: string | null
+          linear_issue_key?: string | null
+          linear_issue_url?: string | null
           parent_id?: string | null
           pinned_at?: string | null
           priority?: number
@@ -414,11 +423,19 @@ export type Database = {
       get_mcp_api_key: { Args: never; Returns: string }
       get_user_id_by_mcp_key: { Args: { api_key: string }; Returns: string }
       has_note_pin: { Args: never; Returns: boolean }
+      mcp_add_comment: {
+        Args: { api_key: string; p_body: string; p_note_id: string }
+        Returns: Json
+      }
       mcp_add_tags_to_note: {
         Args: { api_key: string; p_note_id: string; p_tag_names: string[] }
         Returns: Json
       }
       mcp_archive_note: {
+        Args: { api_key: string; p_note_id: string }
+        Returns: Json
+      }
+      mcp_clear_note_export: {
         Args: { api_key: string; p_note_id: string }
         Returns: Json
       }
@@ -447,6 +464,10 @@ export type Database = {
         Args: { api_key: string; p_attachment_id: string }
         Returns: Json
       }
+      mcp_delete_comment: {
+        Args: { api_key: string; p_comment_id: string }
+        Returns: Json
+      }
       mcp_delete_note: {
         Args: { api_key: string; p_note_id: string }
         Returns: Json
@@ -465,6 +486,10 @@ export type Database = {
       }
       mcp_list_attachments: {
         Args: { api_key: string; p_note_id: string }
+        Returns: Json
+      }
+      mcp_list_comments: {
+        Args: { api_key: string; p_limit?: number; p_note_id: string }
         Returns: Json
       }
       mcp_list_notes: {
@@ -501,6 +526,15 @@ export type Database = {
           p_limit?: number
           p_query: string
           p_tag_names?: string[]
+        }
+        Returns: Json
+      }
+      mcp_set_note_export: {
+        Args: {
+          api_key: string
+          p_issue_key?: string
+          p_issue_url: string
+          p_note_id: string
         }
         Returns: Json
       }

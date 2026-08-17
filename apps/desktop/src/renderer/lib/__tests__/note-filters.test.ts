@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   applyNoteFilters,
   countInboxNotes,
+  isExportedNote,
   isUntaggedNote,
   type FilterableNote,
 } from '../note-filters'
@@ -16,9 +17,14 @@ function note(id: string, overrides: Partial<TestNote> = {}): TestNote {
     hasLink: false,
     hasMedia: false,
     hasFiles: false,
+    linearIssueUrl: null,
     ...overrides,
   }
 }
+
+/** Linear로 반출된 노트 (BRU-45) */
+const exported = (id: string, overrides: Partial<TestNote> = {}) =>
+  note(id, { linearIssueUrl: 'https://linear.app/intellieffect/issue/BRU-96/x', ...overrides })
 
 const ids = (notes: TestNote[]) => notes.map((n) => n.id)
 
@@ -163,6 +169,75 @@ describe('applyNoteFilters', () => {
 
       expect(ids(result)).toEqual(['b'])
     })
+  })
+})
+
+describe('반출된 노트 (BRU-45)', () => {
+  it('기본 목록에서는 반출된 노트가 빠진다 — 처리가 끝난 것이 계속 보이면 두 번 처리한다', () => {
+    const notes = [note('a'), exported('b'), note('c')]
+
+    const result = applyNoteFilters(notes, { filterTag: null, categoryFilter: null })
+
+    expect(ids(result)).toEqual(['a', 'c'])
+  })
+
+  it('showExported를 켜면 반출된 노트도 보인다 — 되돌리려면 찾을 수 있어야 한다', () => {
+    const notes = [note('a'), exported('b')]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      showExported: true,
+    })
+
+    expect(ids(result)).toEqual(['a', 'b'])
+  })
+
+  it('반출된 노트를 태그로 찾을 때도 숨김 규칙은 그대로다', () => {
+    const notes = [exported('b', { tags: [{ name: 'work' }] })]
+
+    expect(ids(applyNoteFilters(notes, { filterTag: 'work', categoryFilter: null }))).toEqual([])
+    expect(
+      ids(applyNoteFilters(notes, { filterTag: 'work', categoryFilter: null, showExported: true }))
+    ).toEqual(['b'])
+  })
+
+  it('Inbox에는 반출된 노트가 뜨지 않는다 — 태그 없이 반출된 것도 처리가 끝난 것이다', () => {
+    const notes = [note('a'), exported('b')]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      inboxOnly: true,
+    })
+
+    expect(ids(result)).toEqual(['a'])
+  })
+
+  it('Inbox 수에도 반출된 노트는 세지 않는다', () => {
+    expect(countInboxNotes([note('a'), exported('b')])).toBe(1)
+  })
+
+  it('유예 목록에 있으면 반출돼도 자리를 지킨다 — 방금 반출한 줄이 눈앞에서 사라지지 않게', () => {
+    const notes = [exported('b')]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      retainedNoteIds: new Set(['b']),
+    })
+
+    expect(ids(result)).toEqual(['b'])
+  })
+})
+
+describe('isExportedNote', () => {
+  it('URL이 있으면 반출된 것이다', () => {
+    expect(isExportedNote({ linearIssueUrl: 'https://linear.app/x' })).toBe(true)
+  })
+
+  it('URL이 없으면 반출되지 않은 것이다', () => {
+    expect(isExportedNote({ linearIssueUrl: null })).toBe(false)
   })
 })
 

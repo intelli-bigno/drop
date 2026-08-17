@@ -52,6 +52,8 @@ Add to `.mcp.json`:
 - `update_note` - Update an existing note
 - `delete_note` - Soft-delete a note (move to trash)
 - `archive_note` - Archive a note
+- `set_note_export` - Mark a note as exported to a Linear issue (records the issue URL)
+- `clear_note_export` - Remove the export mark
 
 ### Search
 
@@ -102,6 +104,20 @@ Create a note with content "Remember to buy groceries" and add the tag "todo"
 ```
 Upload the file at /path/to/image.png to note <note-id>
 ```
+
+### Turn a note into a Linear issue (BRU-45)
+
+이 서버는 이슈를 **만들지 않는다.** Drop에 Linear 토큰을 두지 않기 위해서다.
+이슈 생성은 Linear MCP가 하고, 이 서버는 그 결과를 노트에 적기만 한다.
+
+```
+1. list_notes로 아직 반출되지 않은 노트를 고른다 (exportedTo가 null인 것)
+2. Linear MCP로 이슈를 만든다 — 본문에 `Drop #<displayId>` 역링크를 남긴다
+3. set_note_export로 이슈 URL과 식별자(BRU-96)를 노트에 적는다
+```
+
+적는 순간 그 노트는 Drop 기본 목록과 Inbox 수에서 빠지고, 카드에는 이슈 뱃지가
+붙는다. 잘못 반출했으면 `clear_note_export`(또는 데스크톱 카드의 뱃지 옆 ×)로 되돌린다.
 
 ## Development
 

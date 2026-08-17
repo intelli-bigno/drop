@@ -28,6 +28,10 @@ export interface NoteRow {
   // 상단 고정
   is_pinned: boolean
   pinned_at: string | null
+  // Linear 반출 (BRU-45)
+  linear_issue_url: string | null
+  linear_issue_key: string | null
+  linear_exported_at: string | null
 }
 
 export interface AttachmentRow {
@@ -99,6 +103,10 @@ export interface Note {
   // 상단 고정
   isPinned: boolean
   pinnedAt: Date | null
+  // Linear 반출 (BRU-45). URL이 있으면 반출된 노트다 — 세 값은 함께 채워진다.
+  linearIssueUrl: string | null
+  linearIssueKey: string | null
+  linearExportedAt: Date | null
 }
 
 export interface Attachment {
@@ -183,6 +191,9 @@ export function noteRowToNote(
     priority: row.priority ?? 0,
     isPinned: row.is_pinned ?? false,
     pinnedAt: row.pinned_at ? new Date(row.pinned_at) : null,
+    linearIssueUrl: row.linear_issue_url ?? null,
+    linearIssueKey: row.linear_issue_key ?? null,
+    linearExportedAt: row.linear_exported_at ? new Date(row.linear_exported_at) : null,
   }
 }
 

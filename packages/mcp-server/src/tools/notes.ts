@@ -16,6 +16,9 @@ interface Note {
   updated_at: string
   deleted_at: string | null
   archived_at: string | null
+  linear_issue_url?: string | null
+  linear_issue_key?: string | null
+  linear_exported_at?: string | null
   tags?: Array<{ id: string; name: string }>
   attachments?: Array<{
     id: string
@@ -70,6 +73,10 @@ export function registerNotesTools(server: McpServer) {
           updatedAt: note.updated_at,
           isDeleted: !!note.deleted_at,
           isArchived: !!note.archived_at,
+          // 이미 Linear로 나간 노트인지. 없으면 같은 노트를 두 번 반출하게 된다 (BRU-45).
+          exportedTo: note.linear_issue_url ?? null,
+          exportedKey: note.linear_issue_key ?? null,
+          exportedAt: note.linear_exported_at ?? null,
         }))
 
         return {
@@ -117,6 +124,9 @@ export function registerNotesTools(server: McpServer) {
           updatedAt: note.updated_at,
           isDeleted: !!note.deleted_at,
           isArchived: !!note.archived_at,
+          exportedTo: note.linear_issue_url ?? null,
+          exportedKey: note.linear_issue_key ?? null,
+          exportedAt: note.linear_exported_at ?? null,
           tags: note.tags || [],
           attachments:
             note.attachments?.map((a) => ({
@@ -244,6 +254,63 @@ export function registerNotesTools(server: McpServer) {
         await callMcpRpc<SuccessResult>('mcp_archive_note', { p_note_id: noteId })
         return {
           content: [{ type: 'text' as const, text: `Note ${noteId} archived` }],
+        }
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${(err as Error).message}` }],
+          isError: true,
+        }
+      }
+    }
+  )
+
+  // 이슈 생성 자체는 이 서버가 하지 않는다 — 에이전트가 Linear MCP로 만들고,
+  // 그 결과 URL만 여기에 적는다. Drop에 Linear 토큰을 두지 않기 위한 선택이다 (BRU-45).
+  server.tool(
+    'set_note_export',
+    'Mark a note as exported to a Linear issue. Create the issue with the Linear MCP first, then record its URL here so the note stops showing up as unprocessed.',
+    {
+      noteId: z.string().uuid().describe('The UUID of the note'),
+      issueUrl: z.string().url().describe('URL of the Linear issue the note became'),
+      issueKey: z
+        .string()
+        .optional()
+        .describe('Issue identifier such as BRU-96. Shown as the badge on the note card.'),
+    },
+    async ({ noteId, issueUrl, issueKey }) => {
+      try {
+        const result = await callMcpRpc<SuccessResult & { linear_issue_key: string | null }>(
+          'mcp_set_note_export',
+          { p_note_id: noteId, p_issue_url: issueUrl, p_issue_key: issueKey ?? null }
+        )
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Note ${noteId} marked as exported to ${result.linear_issue_key ?? issueUrl}`,
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${(err as Error).message}` }],
+          isError: true,
+        }
+      }
+    }
+  )
+
+  server.tool(
+    'clear_note_export',
+    'Remove the Linear export mark from a note (the issue was deleted, or it was marked by mistake)',
+    {
+      noteId: z.string().uuid().describe('The UUID of the note'),
+    },
+    async ({ noteId }) => {
+      try {
+        await callMcpRpc<SuccessResult>('mcp_clear_note_export', { p_note_id: noteId })
+        return {
+          content: [{ type: 'text' as const, text: `Export mark cleared on note ${noteId}` }],
         }
       } catch (err) {
         return {

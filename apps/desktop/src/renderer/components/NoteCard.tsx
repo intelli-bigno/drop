@@ -93,6 +93,7 @@ export const NoteCard = memo(
         openHistory,
         closeHistory,
         historyNoteId,
+        clearNoteExport,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
       // 댓글은 노트가 아니라 별도 슬라이스에 있다 — 카드에는 개수만 온다 (BRU-63)
@@ -384,6 +385,28 @@ export const NoteCard = memo(
               )}
               <div className="note-line-tags">
                 <TagList noteId={note.id} tags={note.tags} />
+                {note.linearIssueUrl && (
+                  // 반출 뱃지 (BRU-45). 기본 목록에서는 반출된 노트가 빠지므로
+                  // 이 뱃지는 "반출된 노트 보기"를 켠 목록에서 주로 보인다.
+                  <span className="note-export-badge" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="note-export-link"
+                      onClick={() => window.api.openExternal(note.linearIssueUrl!)}
+                      title={`Linear에서 열기 — ${note.linearIssueUrl}`}
+                    >
+                      <Icon name="link" size={11} />
+                      {note.linearIssueKey ?? 'Linear'}
+                    </button>
+                    <button
+                      className="note-export-clear"
+                      onClick={() => clearNoteExport(note.id)}
+                      title="반출 표시 지우기"
+                      aria-label="반출 표시 지우기"
+                    >
+                      <Icon name="x" size={11} />
+                    </button>
+                  </span>
+                )}
               </div>
               <div className="note-card-trailing" data-slot={trailingSlot}>
                 {showStatusIcons && (

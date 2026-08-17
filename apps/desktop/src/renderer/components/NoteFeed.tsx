@@ -6,6 +6,7 @@ import { NoteCard, NoteCardHandle } from './NoteCard'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
 import { InboxFilter } from './InboxFilter'
+import { ExportedFilter } from './ExportedFilter'
 import { ViewModeSelector } from './ViewModeSelector'
 import { SearchDialog } from './SearchDialog'
 import { PinDialog, type PinDialogMode } from './PinDialog'
@@ -50,6 +51,7 @@ export function NoteFeed() {
     categoryFilter,
     inboxOnly,
     setInboxOnly,
+    showExported,
     lockNote,
     temporarilyUnlockNote,
     temporarilyUnlockAll,
@@ -138,9 +140,10 @@ export function NoteFeed() {
       filterTag,
       categoryFilter,
       inboxOnly,
+      showExported,
       retainedNoteIds,
     })
-  }, [viewMode, baseNotes, filterTag, categoryFilter, inboxOnly, retainedNoteIds])
+  }, [viewMode, baseNotes, filterTag, categoryFilter, inboxOnly, showExported, retainedNoteIds])
 
   // flatNotes 계산 (메모이제이션)
   const flatNotes = useMemo(() => {
@@ -851,6 +854,7 @@ export function NoteFeed() {
             <>
               <div className="feed-header-divider" />
               <InboxFilter />
+              <ExportedFilter />
               <div className="feed-header-divider" />
               <CategoryFilter />
               {filterTag && (
