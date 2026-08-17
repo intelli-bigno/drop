@@ -1,4 +1,4 @@
-import type { Note, Attachment, Tag, NoteRevision } from '@drop/shared'
+import type { Note, Attachment, Tag, NoteRevision, NoteComment } from '@drop/shared'
 
 // Notes slice
 export interface NotesSlice {
@@ -32,6 +32,29 @@ export interface RevisionsSlice {
   closeHistory: () => void
   loadRevisions: (noteId: string) => Promise<void>
   restoreRevision: (noteId: string, content: string) => Promise<void>
+}
+
+// Comments slice — 노트 댓글 (BRU-63).
+// 댓글은 노트가 아니다: `notes` 배열과 절대 섞지 않고 여기서만 든다.
+// 목록 화면에는 개수만 있으면 되고(카드 뱃지), 본문은 패널을 열 때 읽는다.
+export interface CommentsSlice {
+  commentsByNote: Record<string, NoteComment[]>
+  commentCountByNote: Record<string, number>
+  isCommentsLoading: boolean
+  /** 댓글 패널이 열려 있는 노트 */
+  commentsNoteId: string | null
+  /** 삭제 확인 대기 중인 댓글 — 하드 삭제라 반드시 확인을 거친다 */
+  pendingDeleteCommentId: string | null
+
+  openComments: (noteId: string) => void
+  closeComments: () => void
+  loadCommentCounts: (noteIds: string[]) => Promise<void>
+  loadComments: (noteId: string) => Promise<void>
+  addComment: (noteId: string, body: string) => Promise<void>
+  updateComment: (noteId: string, commentId: string, body: string) => Promise<void>
+  requestDeleteComment: (commentId: string) => void
+  cancelDeleteComment: () => void
+  confirmDeleteComment: () => Promise<void>
 }
 
 // Tags slice
@@ -128,6 +151,7 @@ export interface TrashSlice {
 export interface NotesState
   extends
     NotesSlice,
+    CommentsSlice,
     TagsSlice,
     AttachmentsSlice,
     InstagramSlice,

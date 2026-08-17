@@ -20,6 +20,7 @@ export type IconName =
   | 'camera'
   | 'play'
   | 'inbox'
+  | 'message-square'
 
 // Lucide-style 24x24 stroke icon paths (https://lucide.dev, ISC license)
 const ICON_PATHS: Record<IconName, React.ReactNode> = {
@@ -133,6 +134,9 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   play: <polygon points="6 3 20 12 6 21 6 3" />,
+  'message-square': (
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  ),
 }
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

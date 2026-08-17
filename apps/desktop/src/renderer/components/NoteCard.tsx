@@ -10,6 +10,7 @@ import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
 import { NoteHistoryDialog } from './NoteHistoryDialog'
+import { CommentPanel } from './CommentPanel'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
@@ -93,6 +94,11 @@ export const NoteCard = memo(
         historyNoteId,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
+      // 댓글은 노트가 아니라 별도 슬라이스에 있다 — 카드에는 개수만 온다 (BRU-63)
+      const storedCommentCount = useNotesStore((s) => s.commentCountByNote[note.id] ?? 0)
+      const commentsNoteId = useNotesStore((s) => s.commentsNoteId)
+      const openComments = useNotesStore((s) => s.openComments)
+      const closeComments = useNotesStore((s) => s.closeComments)
 
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
       const isLocked = note.isLocked && !temporarilyUnlockedNoteIds.has(note.id)
@@ -112,6 +118,8 @@ export const NoteCard = memo(
         [isLocked, note.content]
       )
       const attachmentCount = isLocked ? 0 : note.attachments.length
+      // 잠긴 노트는 댓글이 몇 개인지도 흘리지 않는다 — 첨부·링크 개수와 같은 규칙
+      const commentCount = isLocked ? 0 : storedCommentCount
 
       const trailingSlot = resolveTrailingSlot({ isHovered, isFocused })
       const showStatusIcons = shouldPinStatusStayVisible({
@@ -349,8 +357,14 @@ export const NoteCard = memo(
                   <span className="note-line-placeholder">빈 노트</span>
                 )}
               </span>
-              {!isOpen && (attachmentCount > 0 || linkCount > 0) && (
+              {!isOpen && (attachmentCount > 0 || linkCount > 0 || commentCount > 0) && (
                 <span className="note-line-counts">
+                  {commentCount > 0 && (
+                    <span className="note-line-count" title={`댓글 ${commentCount}개`}>
+                      <Icon name="message-square" size={11} />
+                      {commentCount}
+                    </span>
+                  )}
                   {attachmentCount > 0 && (
                     <span className="note-line-count" title={`첨부 ${attachmentCount}개`}>
                       <Icon name="paperclip" size={11} />
@@ -403,6 +417,16 @@ export const NoteCard = memo(
                           aria-label="답글"
                         >
                           <Icon name="corner-up-left" />
+                        </button>
+                      )}
+                      {!isLocked && (
+                        <button
+                          className="comment-btn"
+                          onClick={() => openComments(note.id)}
+                          title="댓글 (⇧C)"
+                          aria-label="댓글"
+                        >
+                          <Icon name="message-square" />
                         </button>
                       )}
                       {!isLocked && (
@@ -549,6 +573,9 @@ export const NoteCard = memo(
           )}
           {historyNoteId === note.id && (
             <NoteHistoryDialog noteId={note.id} onClose={closeHistory} />
+          )}
+          {commentsNoteId === note.id && !isLocked && (
+            <CommentPanel noteId={note.id} onClose={closeComments} />
           )}
         </>
       )

@@ -100,6 +100,10 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       )
 
       set({ notes, isLoading: false })
+
+      // 카드 뱃지에 쓸 댓글 *개수*만 함께 읽는다 — 본문은 패널을 열 때 읽는다.
+      // 댓글은 노트가 아니므로 `notes` 배열에는 들어가지 않는다 (BRU-63).
+      void get().loadCommentCounts(noteIds)
     } catch (error) {
       console.error('Failed to load notes:', error)
       set({ isLoading: false })
