@@ -12,6 +12,7 @@ struct RootView: View {
         if PreviewLaunch.isActive {
             HomeView(
                 repository: PreviewLaunch.makeRepository(),
+                commentsRepository: PreviewLaunch.makeCommentsRepository(),
                 previewAttachmentURL: PreviewLaunch.attachmentURL
             )
         } else {
@@ -32,8 +33,11 @@ struct RootView: View {
         case .signedIn:
             if let container {
                 // 로그인한 사용자가 바뀌면 목록 상태를 처음부터 다시 만든다.
-                HomeView(repository: container.makeNotesRepository())
-                    .id(auth.user?.id)
+                HomeView(
+                    repository: container.makeNotesRepository(),
+                    commentsRepository: container.makeCommentsRepository()
+                )
+                .id(auth.user?.id)
             }
         case .signedOut, .failed, .working:
             AuthView()

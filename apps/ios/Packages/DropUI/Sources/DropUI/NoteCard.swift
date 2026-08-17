@@ -16,6 +16,7 @@ public struct NoteCard: View {
     private let note: Note
     private let isSelected: Bool
     private let isSelecting: Bool
+    private let commentCount: Int
     private let attachmentURL: (Attachment) async -> URL?
     private let onOpenAttachment: (Attachment) -> Void
 
@@ -23,12 +24,14 @@ public struct NoteCard: View {
         note: Note,
         isSelected: Bool = false,
         isSelecting: Bool = false,
+        commentCount: Int = 0,
         attachmentURL: @escaping (Attachment) async -> URL? = { _ in nil },
         onOpenAttachment: @escaping (Attachment) -> Void = { _ in }
     ) {
         self.note = note
         self.isSelected = isSelected
         self.isSelecting = isSelecting
+        self.commentCount = commentCount
         self.attachmentURL = attachmentURL
         self.onOpenAttachment = onOpenAttachment
     }
@@ -63,6 +66,8 @@ public struct NoteCard: View {
 
             Spacer(minLength: DropTheme.Spacing.tight)
 
+            comments
+
             attachments
 
             tags
@@ -95,6 +100,24 @@ public struct NoteCard: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 댓글 개수 표식. 첨부 개수 표식과 같은 자리·같은 크기로 붙는다 —
+    /// 한 줄 규칙(BRU-49)을 지키려면 새 줄이 아니라 이 줄에 들어가야 한다.
+    /// **0이면 아예 그리지 않는다.** 대부분의 노트에는 댓글이 없고,
+    /// 빈 말풍선이 줄마다 붙으면 있는 노트가 눈에 띄지 않는다.
+    @ViewBuilder
+    private var comments: some View {
+        if commentCount > 0 {
+            HStack(spacing: 2) {
+                Image(systemName: "bubble.left")
+                Text("\(commentCount)")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .fixedSize()
+            .accessibilityLabel("댓글 \(commentCount)개")
         }
     }
 

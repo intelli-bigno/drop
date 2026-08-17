@@ -14,7 +14,11 @@ struct HomeView: View {
     @Environment(\.dropContainer) private var container
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: NotesStore
+    /// 댓글은 노트가 아니므로 상태도 따로 둔다 — `NotesStore`에 섞을 길을 만들지 않는다.
+    @State private var comments: CommentsStore
     @State private var composer: ComposerTarget?
+    /// 댓글 시트를 띄울 노트.
+    @State private var commentTarget: Note?
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var viewingAttachments: AttachmentPresentation?
     /// 썸네일용 서명 URL 캐시. 스크롤할 때마다 다시 발급받지 않기 위해 화면 단위로 하나 둔다.
@@ -26,9 +30,11 @@ struct HomeView: View {
 
     init(
         repository: any NotesRepository,
+        commentsRepository: any CommentsRepository,
         previewAttachmentURL: ((Attachment) -> URL?)? = nil
     ) {
         _notes = State(wrappedValue: NotesStore(repository: repository))
+        _comments = State(wrappedValue: CommentsStore(repository: commentsRepository))
         self.previewAttachmentURL = previewAttachmentURL
     }
 
@@ -49,6 +55,9 @@ struct HomeView: View {
                         attachmentURLs = AttachmentURLCache(repository: container.makeAttachmentsRepository())
                     }
                     await notes.load()
+                    // 뱃지 숫자는 노트 목록과 별개의 왕복 한 번으로 받는다.
+                    // 실패해도 목록은 그대로 뜬다 — 뱃지가 없는 것이 목록이 없는 것보다 낫다.
+                    await comments.loadCounts()
                     // 공유 시트로 들어온 항목을 여기서 비운다. 확장은 적어 두기만 한다.
                     await drainSharedInbox()
                 }
@@ -75,6 +84,9 @@ struct HomeView: View {
                             await notes.update(id: note.id, content: content)
                         }
                     }
+                }
+                .sheet(item: $commentTarget) { note in
+                    CommentsSheet(note: note, store: comments)
                 }
                 .sheet(item: $viewingAttachments) { presentation in
                     MediaViewer(
@@ -175,6 +187,7 @@ struct HomeView: View {
             note: note,
             isSelected: notes.selectedIDs.contains(note.id),
             isSelecting: notes.isSelecting,
+            commentCount: comments.count(for: note.id),
             attachmentURL: attachmentURL,
             onOpenAttachment: { attachment in
                 viewingAttachments = AttachmentPresentation(
@@ -208,6 +221,16 @@ struct HomeView: View {
                 Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
             }
             .tint(.orange)
+        }
+        // 댓글은 왼쪽에서 연다 — 오른쪽(삭제·고정)은 노트 자체를 다루는 자리고,
+        // 댓글은 노트를 건드리지 않는 동작이라 방향을 갈라 놓는다.
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                commentTarget = note
+            } label: {
+                Label("댓글", systemImage: "bubble.left")
+            }
+            .tint(.blue)
         }
         .plainListRow(
             insets: EdgeInsets(
