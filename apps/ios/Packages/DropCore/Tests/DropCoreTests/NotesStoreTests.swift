@@ -21,6 +21,12 @@ private actor Gate {
     }
 }
 
+/// 어느 시점에 끝났는지 보기 위한 깃발. MainActor 위에서만 오간다.
+@MainActor
+private final class Flag {
+    var isOn = false
+}
+
 /// Riverpod의 notesProvider + selection_provider + 필터 상태를 하나로 합친 것.
 @Suite("노트 목록 상태")
 @MainActor
@@ -61,7 +67,7 @@ struct NotesStoreTests {
         #expect(!store.isLoading)
     }
 
-    @Test("실패하면 오류를 노출하고 목록은 비운다")
+    @Test("첫 로드가 실패하면 오류를 노출한다")
     func surfacesLoadFailure() async {
         let (store, repository) = store()
         repository.loadError = NotesRepositoryError.network("끊김")
@@ -70,6 +76,21 @@ struct NotesStoreTests {
 
         #expect(store.errorMessage != nil)
         #expect(store.visibleNotes.isEmpty)
+    }
+
+    /// 당겨서 새로고침이 실패했다고 보고 있던 노트까지 사라지면 안 된다.
+    /// 실패한 것은 "새 목록을 받아오는 일"이지, 이미 받아 둔 목록이 아니다.
+    /// (BRU-51 — 새로고침 한 번 실패에 화면이 통째로 비어 버리던 문제)
+    @Test("새로고침이 실패해도 보고 있던 목록은 남는다")
+    func failedRefreshKeepsVisibleNotes() async {
+        let (store, repository) = store([note("a"), note("b")])
+        await store.load()
+
+        repository.loadError = NotesRepositoryError.network("끊김")
+        await store.load()
+
+        #expect(store.errorMessage != nil)
+        #expect(store.visibleNotes.map(\.id) == ["a", "b"])
     }
 
     /// 당겨서 새로고침은 손을 떼는 순간 취소된다. 취소는 장애가 아니므로
@@ -118,6 +139,35 @@ struct NotesStoreTests {
         _ = await (first, second)
 
         #expect(repository.loadCallCount == 1)
+    }
+
+    /// 겹친 호출이 요청을 한 번만 보내는 것과, 요청을 아예 건너뛰고 즉시 끝나는 것은
+    /// 다르다. 당겨서 새로고침(`.refreshable`)은 호출이 끝나는 순간 스피너를 접으므로,
+    /// 즉시 돌아오면 아무 일도 하지 않은 채 스피너만 튕기고 만다 — 진행 중인 로드가
+    /// 끝날 때까지 기다려야 한다 (BRU-51).
+    @Test("로드 중에 당긴 새로고침은 그 로드가 끝날 때까지 기다린다")
+    func overlappingLoadWaitsForTheOneInFlight() async {
+        let (store, repository) = store([note("a")])
+        let gate = Gate()
+        repository.beforeLoad = { await gate.wait() }
+
+        async let first: Void = store.load()
+        while !store.isLoading { await Task.yield() }
+
+        let finished = Flag()
+        let refresh = Task { await store.load(); finished.isOn = true }
+        for _ in 0 ..< 20 { await Task.yield() }
+
+        // 진행 중인 로드가 아직 서버에 매달려 있는데 새로고침이 끝나 있으면 안 된다.
+        #expect(!finished.isOn)
+
+        await gate.open()
+        await first
+        await refresh.value
+
+        #expect(finished.isOn)
+        #expect(repository.loadCallCount == 1)
+        #expect(store.visibleNotes.map(\.id) == ["a"])
     }
 
     /// 보관·휴지통 노트도 함께 받아 화면에서 거른다 (Flutter와 같은 구조).
