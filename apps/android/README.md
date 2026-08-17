@@ -43,7 +43,7 @@ apps/android/
   → scripts/android-config.sh
   → apps/android/local.properties        (gitignore)
   → app/build.gradle.kts
-  → BuildConfig.SUPABASE_URL / BuildConfig.SUPABASE_ANON_KEY
+  → BuildConfig.SUPABASE_URL / BuildConfig.SUPABASE_ANON_KEY / BuildConfig.GOOGLE_WEB_CLIENT_ID
 ```
 
 우선순위는 **환경변수 > gradle 속성(`-P`, `gradle.properties`) > `local.properties`** 다. CI는 환경변수만 넣는다.
@@ -52,19 +52,31 @@ apps/android/
 
 에뮬레이터에서 호스트의 로컬 Supabase는 `127.0.0.1`이 아니라 **`10.0.2.2`** 로 보인다. `android-config.sh`의 local 기본값이 그것이다.
 
+`GOOGLE_WEB_CLIENT_ID`는 Google 로그인의 `serverClientId`이고 **웹** 클라이언트 ID여야 한다 — Supabase Google provider가 audience로 신뢰하는 것이 웹 클라이언트 하나뿐이라, Android 클라이언트 ID를 넣으면 `Unacceptable audience`로 거부된다. OAuth 클라이언트 ID는 비밀값이 아니라(APK에 그대로 실린다) `android-config.sh`가 실제 값을 기본값으로 들고 있다.
+
+## Google 로그인이 되려면 (GCP 쪽 선행 조건)
+
+Google은 호출 앱을 `(패키지명, 서명 SHA-1)`로 매칭한다. `bruce-clawdbot` 프로젝트에 그 조합의 Android OAuth 클라이언트가 **등록돼 있어야** 로그인 창이 id_token을 돌려준다. `google-services.json`은 이 매칭에 관여하지 않는다 (BRU-30에서 실측 확인).
+
+| 빌드 | 서명 SHA-1 | 클라이언트 등록 |
+| --- | --- | --- |
+| release | `A8:D1:12:55:A3:31:4B:C8:A8:1D:59:13:D4:43:2A:4A:01:78:60:17` | 등록됨 (`627053596385-m1ooh…`) |
+| debug (`~/.android/debug.keystore`) | `6B:45:06:0A:EA:62:47:E6:88:82:3A:4E:14:FA:24:1E:93:96:96:82` | **미등록 — 로컬 디버그 빌드는 로그인이 막힌다** (BRU-30) |
+
+디버그 클라이언트는 콘솔에서 사람이 만들어야 한다 (GCP에 OAuth 클라이언트 생성 API가 없다).
+
 ## 규칙
 
 - **`core`에 Android 의존을 넣지 않는다.** 넣는 순간 `:core:test`가 에뮬레이터·SDK를 요구하게 되고, TDD 사이클이 느려진다.
 - **비밀값은 커밋하지 않는다.** `local.properties`는 gitignore 대상이고, 커밋되는 것은 `local.properties.example`뿐이다.
-- **`applicationId`는 지금 `com.intellieffect.drop.android`다.** 과거 Flutter 앱의 Play 등록 ID는 `com.intellieffect.drop.mobile`이었다 — 그 등록을 이어받을지(= ID를 바꿀지) 새로 올릴지는 **BRU-42(배포)에서 정한다.** 스캐폴드 단계에서 기존 등록 ID를 선점하지 않으려고 다른 ID를 쓴다.
+- **`applicationId`는 `com.intellieffect.drop.mobile`이다** — 과거 Flutter 앱이 쓰던 ID를 그대로 이어받았다 (iOS가 번들 ID를 이어받은 것과 같은 판단, BRU-39에서 확정). 스캐폴드 단계(BRU-38)에서는 `…drop.android`였다. 바꾼 이유는 **Google 로그인**이다: Google은 호출 앱을 `(패키지명, 서명 SHA-1)`로만 매칭하므로, `bruce-clawdbot`에 이미 등록된 Android OAuth 클라이언트를 쓰려면 그 조합이어야 한다. Play 등록·테스터도 이 ID에 붙어 있다.
 - 최소 SDK **26** (`java.time`을 desugaring 없이 쓸 수 있는 하한).
 - Gradle toolchain을 고정하지 않는다 — 고정하면 해당 JDK가 없는 기계에서 다운로드부터 막힌다. 산출 바이트코드만 17에 맞춘다.
 
 ## 아직 없는 것
 
-BRU-38은 **스캐폴드까지**다. 다음은 별도 이슈에서 붙인다.
+로그인·세션(BRU-39)까지 왔다. 다음은 별도 이슈에서 붙인다.
 
-- 로그인 / 세션 (BRU-39) — Android OAuth 클라이언트를 `bruce-clawdbot` GCP 프로젝트로 옮기는 것이 선행 조건이다.
-- 실제 Supabase 노트 CRUD (BRU-40)
+- 실제 Supabase 노트 CRUD (BRU-40) — 지금 로그인 뒤 목록은 인메모리 표본이다.
 - 태그·첨부 (BRU-41)
 - Play Console 배포 (BRU-42) — 서명 키와 Play 서비스 계정 자격증명이 필요하다.

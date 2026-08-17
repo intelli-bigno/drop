@@ -29,9 +29,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        // 과거 Flutter 앱의 Play 등록 ID는 com.intellieffect.drop.mobile 이었다.
-        // 그 등록을 이어받을지는 BRU-42(배포)에서 정한다 — 스캐폴드 단계에서 선점하지 않는다.
-        applicationId = "com.intellieffect.drop.android"
+        // 과거 Flutter 앱이 쓰던 ID를 그대로 이어받는다 (iOS가 번들 ID를 이어받은 것과 같은 판단).
+        // Google은 호출 앱을 (패키지명, 서명 SHA-1)로만 매칭하므로, 이 ID여야
+        // bruce-clawdbot에 이미 등록된 Android OAuth 클라이언트로 로그인이 통과한다.
+        // Play 등록·테스터도 이 ID에 붙어 있다. (BRU-39 판단, 배포는 BRU-42)
+        applicationId = "com.intellieffect.drop.mobile"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -39,6 +41,13 @@ android {
 
         buildConfigField("String", "SUPABASE_URL", "\"${configValue("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${configValue("SUPABASE_ANON_KEY")}\"")
+        // Google 로그인의 serverClientId. **웹** 클라이언트 ID여야 한다 —
+        // Supabase가 audience로 신뢰하는 것이 웹 클라이언트 하나뿐이다.
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${configValue("GOOGLE_WEB_CLIENT_ID")}\"",
+        )
     }
 
     buildFeatures {
@@ -76,6 +85,14 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // 실제 소켓을 쓰는 엔진은 앱에서만 물린다 — core는 엔진을 인자로 받는다.
+    implementation(libs.ktor.client.okhttp)
+
+    // Google 계정 선택 창. 화면을 띄우는 일이라 app 모듈의 몫이다.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.id)
 
     debugImplementation(libs.compose.ui.tooling)
 }
