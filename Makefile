@@ -134,6 +134,15 @@ ios-generate:
 ios-test:
 	cd $(IOS_DIR)/Packages/DropCore && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) swift test
 
+# 화면을 실제로 조작하는 검증 (BRU-78) — 시뮬레이터가 필요하고 느리다.
+# ios-test와 일부러 갈라 둔다: 시뮬레이터 없이 도는 빠른 피드백이 TDD 사이클의 전제다.
+IOS_UITEST_SIMULATOR ?= platform=iOS Simulator,name=iPhone 17
+
+ios-uitest: ios-generate
+	cd $(IOS_DIR) && DEVELOPER_DIR=$(IOS_DEVELOPER_DIR) xcodebuild \
+		-project Drop.xcodeproj -scheme Drop-localdev \
+		-destination '$(IOS_UITEST_SIMULATOR)' test
+
 # 시뮬레이터용 빌드 (기본: 로컬 Supabase)
 IOS_SCHEME ?= Drop-localdev
 

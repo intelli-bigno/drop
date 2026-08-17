@@ -109,15 +109,39 @@ targets:
         CODE_SIGN_ENTITLEMENTS: DropWidget/DropWidget.entitlements
         TARGETED_DEVICE_FAMILY: "1"
 
+  # 화면을 실제로 조작해 보는 검증 (BRU-78). 도메인 로직은 DropCore 테스트가
+  # 시뮬레이터 없이 덮는다 — 여기서는 "스와이프가 뜨는지 / 시트가 열리는지"만 본다.
+  #
+  # 앱을 -dropPreview로 띄우므로 자격증명이 필요 없다. 느리므로 `make ios-test`와
+  # 섞지 않는다: 빠른 피드백(0.03초)이 이 레포 TDD 사이클의 전제다.
+  DropUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: DropUITests
+    dependencies:
+      - target: Drop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.intellieffect.drop.mobile.uitests
+        TEST_TARGET_NAME: Drop
+        TARGETED_DEVICE_FAMILY: "1"
+        # 앱·확장은 Info.plist를 손으로 들고 있지만 테스트 번들은 내용이 없다.
+        # 파일을 만들어 두는 대신 빌드가 생성하게 한다 — 없으면 코드 서명에서 막힌다.
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Drop-localdev:
     build:
       targets:
         Drop: all
+        DropUITests: [test]
     run:
       config: Debug-localdev
     test:
       config: Debug-localdev
+      targets:
+        - DropUITests
     archive:
       config: Release-remote
 
