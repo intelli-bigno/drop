@@ -43,6 +43,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   { keyId: 'togglePin', label: '상단 고정 전환', group: '노트 액션', scope: 'feed' },
   { keyId: 'deleteFocused', label: '휴지통으로', group: '노트 액션', scope: 'feed' },
   { keyId: 'toggleLock', label: '잠금 전환', group: '노트 액션', scope: 'note', modifier: 'primary' },
+  { keyId: 'openComments', label: '댓글 열기', group: '노트 액션', scope: 'note', modifier: 'shift' },
 
   // 우선순위
   { keyId: 'setPriority0', label: '우선순위 없음', group: '우선순위', scope: 'feed' },

@@ -45,6 +45,11 @@ export function resolveNoteFeedShortcut(event: KeyEventLike): NoteFeedShortcutAc
     return 'openFocused'
   }
 
+  // Shift가 눌린 글쇠는 피드 액션이 아니다 (BRU-63).
+  // 한글 입력 상태에서 Shift+ㅊ(댓글 열기)는 `ㅊ` 그대로 찍혀 `c`(복사)와 구분이 안 된다 —
+  // Shift를 걸러야 댓글을 열 때마다 클립보드가 덮이는 일이 없다.
+  if (event.shiftKey) return null
+
   for (const action of KEY_LOOKUP) {
     if ((KEYS[action] as readonly string[]).includes(event.key)) return action
   }
