@@ -1,8 +1,9 @@
-.PHONY: help install setup test test-db clean \
+.PHONY: help install setup test test-db clean tokens tokens-check \
         electron-rebuild electron-dev electron-dev-local electron-dev-remote \
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
-        android-config android-config-remote android-test android-build android-install android-clean
+        android-config android-config-remote android-test android-build android-install android-clean \
+        ios-uitest
 
 .DEFAULT_GOAL := help
 
@@ -18,6 +19,10 @@ help:
 	@echo "    make test                 - 테스트 실행"
 	@echo "    make test-db              - database 패키지 테스트"
 	@echo "    make clean                - 빌드 산출물 및 node_modules 정리"
+	@echo ""
+	@echo "  디자인 토큰"
+	@echo "    make tokens               - tokens.json → 데스크톱 CSS · iOS Swift · Android Kotlin 생성"
+	@echo "    make tokens-check         - 생성물이 정본과 맞는지 검사 (CI용)"
 	@echo ""
 	@echo "  Electron (Desktop)"
 	@echo "    make electron-rebuild     - better-sqlite3 Electron용 재빌드"
@@ -170,6 +175,22 @@ ios-open: ios-generate
 
 ios-clean:
 	rm -rf $(IOS_DIR)/Drop.xcodeproj $(IOS_DIR)/Packages/*/.build
+
+# ============================================
+# 디자인 토큰 (design-system/drop/tokens.json)
+# ============================================
+# 색·간격·타이포의 정본은 JSON 하나다. 여기서 세 앱의 토큰 파일이 생성된다:
+#   apps/desktop/.../styles/tokens.css · DropUI/DropTokens.swift · android/.../DropTokens.kt
+#
+# 생성물은 커밋한다 — iOS·Android 빌드가 Node에 의존하면 안 되기 때문이다.
+# CI는 tokens-check로 "재생성하면 diff가 없는지"만 본다.
+
+tokens:
+	@node scripts/build-tokens.mjs
+
+# 생성물이 정본과 어긋난 채 머지되는 것을 막는다 (CI용)
+tokens-check:
+	@node scripts/build-tokens.mjs --check
 
 # ============================================
 # Android (apps/android) — Jetpack Compose 네이티브. 트랙 BRU-36 (하위 BRU-38~42)
