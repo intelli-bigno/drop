@@ -61,7 +61,7 @@ struct NotesStoreTests {
         #expect(!store.isLoading)
     }
 
-    @Test("실패하면 오류를 노출하고 목록은 비운다")
+    @Test("첫 로드가 실패하면 오류를 노출한다")
     func surfacesLoadFailure() async {
         let (store, repository) = store()
         repository.loadError = NotesRepositoryError.network("끊김")
@@ -70,6 +70,21 @@ struct NotesStoreTests {
 
         #expect(store.errorMessage != nil)
         #expect(store.visibleNotes.isEmpty)
+    }
+
+    /// 당겨서 새로고침이 실패했다고 보고 있던 노트까지 사라지면 안 된다.
+    /// 실패한 것은 "새 목록을 받아오는 일"이지, 이미 받아 둔 목록이 아니다.
+    /// (BRU-51 — 새로고침 한 번 실패에 화면이 통째로 비어 버리던 문제)
+    @Test("새로고침이 실패해도 보고 있던 목록은 남는다")
+    func failedRefreshKeepsVisibleNotes() async {
+        let (store, repository) = store([note("a"), note("b")])
+        await store.load()
+
+        repository.loadError = NotesRepositoryError.network("끊김")
+        await store.load()
+
+        #expect(store.errorMessage != nil)
+        #expect(store.visibleNotes.map(\.id) == ["a", "b"])
     }
 
     /// 당겨서 새로고침은 손을 떼는 순간 취소된다. 취소는 장애가 아니므로

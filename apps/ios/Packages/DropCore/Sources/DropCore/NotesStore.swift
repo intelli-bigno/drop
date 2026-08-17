@@ -55,7 +55,9 @@ public final class NotesStore {
         } catch where error.isCancellation {
             // 취소는 실패가 아니다. 보고 있던 목록을 그대로 둔다.
         } catch {
-            allNotes = []
+            // 실패한 것은 "새 목록을 받아오는 일"이지 이미 받아 둔 목록이 아니다.
+            // 여기서 목록을 비우면 당겨서 새로고침이 한 번 실패할 때마다 화면이
+            // 통째로 사라진다 (BRU-51). 첫 로드라면 어차피 비어 있으니 잃을 것도 없다.
             errorMessage = Self.message(for: error)
         }
         isLoading = false
