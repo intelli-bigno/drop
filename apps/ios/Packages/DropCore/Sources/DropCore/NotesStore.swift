@@ -98,13 +98,18 @@ public final class NotesStore {
         isLoading = false
     }
 
-    public func create(content: String) async {
+    /// - Parameter parentID: 답글이면 부모 노트 id. 넘기지 않으면 최상위 노트가 된다 (BRU-69).
+    public func create(content: String, parentID: String? = nil) async {
         // 저장을 기다리지 않고 먼저 끼워 넣는다. 실패하면 걷어낸다 —
         // 남겨 두면 저장되지도 않은 노트가 목록에 남는다.
+        //
+        // parentID를 placeholder에도 실어야 한다. 빠뜨리면 답글이 최상위에 잠깐
+        // 떴다가 저장이 끝나는 순간 부모 아래로 점프한다.
         let placeholder = Note(
             id: "임시-\(UUID().uuidString)",
             displayID: 0,
             content: content,
+            parentID: parentID,
             createdAt: Date(),
             updatedAt: Date(),
             source: .mobile
@@ -112,7 +117,7 @@ public final class NotesStore {
         allNotes.insert(placeholder, at: 0)
 
         do {
-            let created = try await repository.createNote(content: content, parentID: nil)
+            let created = try await repository.createNote(content: content, parentID: parentID)
             replace(id: placeholder.id, with: created)
         } catch {
             allNotes.removeAll { $0.id == placeholder.id }

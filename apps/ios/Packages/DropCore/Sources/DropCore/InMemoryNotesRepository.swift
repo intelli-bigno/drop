@@ -17,6 +17,10 @@ public final class InMemoryNotesRepository: NotesRepository, @unchecked Sendable
     /// 겹친 로드를 재현하려면 첫 로드를 여기서 멈춰 세워야 한다.
     public var beforeLoad: (@Sendable () async -> Void)?
 
+    /// 생성을 붙잡아 두기 위한 손잡이. 저장이 끝나기 **전** 화면 상태
+    /// (낙관적으로 끼워 넣은 노트)를 보려면 여기서 멈춰 세워야 한다.
+    public var beforeCreate: (@Sendable () async -> Void)?
+
     public init(notes: [Note] = []) {
         self.notes = notes
     }
@@ -29,6 +33,7 @@ public final class InMemoryNotesRepository: NotesRepository, @unchecked Sendable
     }
 
     public func createNote(content: String, parentID: String?) async throws -> Note {
+        await beforeCreate?()
         if let createError { throw createError }
         let note = Note(
             id: UUID().uuidString,

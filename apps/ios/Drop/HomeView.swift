@@ -82,6 +82,8 @@ struct HomeView: View {
                             await notes.create(content: content)
                         case let .existing(note):
                             await notes.update(id: note.id, content: content)
+                        case let .reply(parent):
+                            await notes.create(content: content, parentID: parent.id)
                         }
                     }
                 }
@@ -223,8 +225,9 @@ struct HomeView: View {
             }
             .tint(.orange)
         }
-        // 댓글은 왼쪽에서 연다 — 오른쪽(삭제·고정)은 노트 자체를 다루는 자리고,
-        // 댓글은 노트를 건드리지 않는 동작이라 방향을 갈라 놓는다.
+        // 댓글·답글은 왼쪽에서 연다 — 오른쪽(삭제·고정)은 노트 자체를 다루는 자리고,
+        // 이 둘은 노트를 건드리지 않고 옆에 덧붙이는 동작이라 방향을 갈라 놓는다.
+        // 전체 스와이프는 첫 버튼(댓글)에 걸린다 — 더 자주 쓰는 쪽이다.
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
                 commentTarget = note
@@ -232,6 +235,12 @@ struct HomeView: View {
                 Label("댓글", systemImage: "bubble.left")
             }
             .tint(.blue)
+            Button {
+                composer = .reply(parent: note)
+            } label: {
+                Label("답글", systemImage: "arrowshape.turn.up.left")
+            }
+            .tint(.indigo)
         }
         .plainListRow(
             insets: EdgeInsets(
@@ -441,12 +450,15 @@ enum ComposerTarget: Identifiable {
     /// 딥링크로 들어온 초안 — 본문이 미리 채워진 채로 열린다.
     case newWithText(String)
     case existing(Note)
+    /// 어느 노트에 딸린 새 노트를 쓴다 (BRU-69).
+    case reply(parent: Note)
 
     var id: String {
         switch self {
         case .new: "새-노트"
         case let .newWithText(text): "새-노트-\(text.hashValue)"
         case let .existing(note): note.id
+        case let .reply(parent): "답글-\(parent.id)"
         }
     }
 }

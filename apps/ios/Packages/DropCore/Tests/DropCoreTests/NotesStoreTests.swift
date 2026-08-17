@@ -66,6 +66,62 @@ struct NotesStoreTests {
         )
     }
 
+    // MARK: - 답글 작성 (BRU-69)
+
+    @Test("답글을 만들면 부모 아래에 붙는다")
+    func createsReplyUnderParent() async {
+        let (store, _) = store([note("부모", created: 10)])
+        await store.load()
+
+        await store.create(content: "답글 본문", parentID: "부모")
+
+        #expect(store.visibleRows.map(\.note.content) == ["", "답글 본문"])
+        #expect(store.visibleRows.map(\.depth) == [0, 1])
+    }
+
+    /// 저장을 기다리기 전에 끼워 넣는 placeholder에 parentID가 없으면
+    /// 답글이 최상위에 잠깐 떴다가 저장 후 부모 아래로 점프한다.
+    @Test("저장 전 낙관적으로 끼워 넣은 답글도 곧장 부모 아래에 붙는다")
+    func optimisticReplyIsNestedImmediately() async {
+        let (store, repository) = store([note("부모", created: 10)])
+        await store.load()
+
+        // 저장이 끝나기 전 상태를 보기 위해 리포지토리를 막아 둔다.
+        let gate = Gate()
+        repository.beforeCreate = { await gate.wait() }
+
+        let creating = Task { await store.create(content: "답글", parentID: "부모") }
+        await Task.yield()
+
+        #expect(store.visibleRows.map(\.depth) == [0, 1])
+
+        await gate.open()
+        await creating.value
+    }
+
+    @Test("답글 저장이 실패하면 끼워 넣었던 답글을 걷어낸다")
+    func failedReplyIsRemoved() async {
+        let (store, repository) = store([note("부모", created: 10)])
+        await store.load()
+        repository.createError = NotesRepositoryError.network("끊김")
+
+        await store.create(content: "답글", parentID: "부모")
+
+        #expect(store.visibleRows.map(\.depth) == [0])
+        #expect(store.errorMessage != nil)
+    }
+
+    @Test("부모를 넘기지 않으면 종전처럼 최상위 노트가 된다")
+    func createWithoutParentStaysRoot() async {
+        let (store, _) = store()
+        await store.load()
+
+        await store.create(content: "혼자 쓰는 노트")
+
+        #expect(store.visibleRows.map(\.depth) == [0])
+        #expect(store.visibleRows.first?.note.parentID == nil)
+    }
+
     // MARK: - 계층 (BRU-60)
 
     @Test("답글은 부모 아래 한 단 들여쓴 행으로 나온다")

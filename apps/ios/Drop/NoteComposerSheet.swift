@@ -18,7 +18,7 @@ struct NoteComposerSheet: View {
         switch target {
         case let .existing(note): _text = State(initialValue: note.content)
         case let .newWithText(text): _text = State(initialValue: text)
-        case .new: _text = State(initialValue: "")
+        case .new, .reply: _text = State(initialValue: "")
         }
     }
 
@@ -28,7 +28,7 @@ struct NoteComposerSheet: View {
                 .focused($isFocused)
                 .font(.body)
                 .padding(.horizontal, DropTheme.Spacing.comfortable)
-                .navigationTitle(isNew ? "새 노트" : "노트 편집")
+                .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -51,6 +51,16 @@ struct NoteComposerSheet: View {
     private var isNew: Bool {
         if case .existing = target { return false }
         return true
+    }
+
+    /// 어느 노트에 딸리는 글인지 제목으로 알려 준다 — 답글 시트는 새 노트 시트와
+    /// 생김새가 같아서, 표시가 없으면 무엇을 쓰는 중인지 알 수 없다 (BRU-69).
+    private var title: String {
+        switch target {
+        case .existing: "노트 편집"
+        case let .reply(parent): "답글 — \(parent.displayID > 0 ? "#\(parent.displayID)" : "노트")"
+        case .new, .newWithText: "새 노트"
+        }
     }
 
     private var trimmed: String {
