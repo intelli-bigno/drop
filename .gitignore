@@ -8,10 +8,15 @@ release
 .env.local
 .env.production
 .env.*
+# 값이 없는 견본은 커밋한다 — 어떤 키가 필요한지 아는 유일한 곳이다 (BRU-71)
+!.env.*.example
 supabase/.env
 
 # MCP config (contains tokens)
 .mcp.json
+
+# Playwright MCP가 남기는 스크린샷·스냅샷 (BRU-71 검증용, 산출물이다)
+.playwright-mcp
 
 # Serena MCP plugin
 .serena/

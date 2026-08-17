@@ -43,6 +43,21 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set)
 
   initializeAuth: async () => {
     try {
+      // 개발 전용 — 로그인 없이 화면을 띄우는 경로 (BRU-71).
+      //
+      // **동적 import여야 한다.** 정적 import로 두면 가드가 죽은 코드가 되어도
+      // 모듈은 번들에 남아 시드 계정 문자열이 프로덕션 산출물에 실린다
+      // (2026-08-18 실측: grep으로 preview@drop.local 1건 발견 → 이 방식으로 0건).
+      if (import.meta.env.DEV) {
+        const { isPreviewRequested, dropPreviewSignIn } = await import(
+          '../../lib/preview-session'
+        )
+        if (isPreviewRequested()) {
+          const { data } = await supabase.auth.getSession()
+          if (!data.session) await dropPreviewSignIn()
+        }
+      }
+
       // Get current session
       const {
         data: { session },
