@@ -224,12 +224,6 @@ public final class NotesStore {
     }
 
     static func message(for error: Error) -> String {
-        switch error {
-        case NotesRepositoryError.notAuthenticated: "로그인이 필요합니다."
-        case let NotesRepositoryError.rejected(reason): "서버가 요청을 거절했습니다: \(reason)"
-        case NotesRepositoryError.network: "네트워크에 연결하지 못했습니다."
-        case NotesRepositoryError.decoding: "응답을 이해하지 못했습니다."
-        default: error.localizedDescription
-        }
+        RepositoryErrorMessage.text(for: error)
     }
 }

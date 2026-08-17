@@ -17,6 +17,13 @@ enum PreviewLaunch {
         InMemoryNotesRepository(notes: sampleNotes)
     }
 
+    /// 댓글 표본. 뱃지가 붙는 노트(1·2)와 하나도 없는 노트를 함께 둔다 —
+    /// 0이면 뱃지를 그리지 않는다는 규칙을 눈으로 확인하기 위한 것이다.
+    @MainActor
+    static func makeCommentsRepository() -> any CommentsRepository {
+        InMemoryCommentsRepository(comments: sampleComments)
+    }
+
     /// 썸네일 렌더링 경로를 자격증명 없이도 확인하기 위해 임시 파일 URL을 준다.
     @MainActor
     static func attachmentURL(for attachment: Attachment) -> URL? {
@@ -39,6 +46,21 @@ enum PreviewLaunch {
             context.fill(CGRect(origin: .zero, size: size))
         }
         return image.pngData() ?? Data()
+    }
+
+    private static var sampleComments: [NoteComment] {
+        let now = Date()
+        func comment(_ id: String, note: String, _ body: String, minutesAgo: Double) -> NoteComment {
+            let at = now.addingTimeInterval(-60 * minutesAgo)
+            return NoteComment(id: id, noteID: note, body: body, createdAt: at, updatedAt: at)
+        }
+
+        return [
+            comment("c1", note: "1", "M3까지는 왔는데 위젯이 아직 남았다.", minutesAgo: 90),
+            comment("c2", note: "1", "위젯은 BRU-35에서 따로 본다.", minutesAgo: 40),
+            comment("c3", note: "1", "확인.", minutesAgo: 5),
+            comment("c4", note: "2", "원두는 지난번 것으로.", minutesAgo: 30),
+        ]
     }
 
     private static var sampleNotes: [Note] {
