@@ -57,6 +57,72 @@ struct NotesStoreTests {
         )
     }
 
+    private func reply(_ id: String, to parentID: String, created: TimeInterval = 0, archived: Bool = false) -> Note {
+        Note(
+            id: id, displayID: 1, content: id, parentID: parentID,
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000 + created),
+            updatedAt: .distantPast, source: .mobile,
+            archivedAt: archived ? .distantPast : nil
+        )
+    }
+
+    // MARK: - 계층 (BRU-60)
+
+    @Test("답글은 부모 아래 한 단 들여쓴 행으로 나온다")
+    func repliesNestUnderParent() async {
+        let (store, _) = store([note("부모", created: 10), reply("답글", to: "부모", created: 20)])
+
+        await store.load()
+
+        #expect(store.visibleRows.map(\.note.id) == ["부모", "답글"])
+        #expect(store.visibleRows.map(\.depth) == [0, 1])
+    }
+
+    @Test("검색이 답글에만 걸려도 부모를 맥락으로 끌어와 계층을 지킨다")
+    func searchKeepsParentAsContext() async {
+        let (store, _) = store([
+            note("부모", content: "장보기", created: 10),
+            reply("답글", to: "부모", created: 20),
+        ])
+
+        await store.load()
+        store.searchText = "답글"
+
+        #expect(store.visibleNotes.map(\.id) == ["답글"])
+        #expect(store.visibleRows.map(\.note.id) == ["부모", "답글"])
+        #expect(store.visibleRows.map(\.isContextOnly) == [true, false])
+    }
+
+    /// 보관함에 있는 부모를 활성 목록으로 끌어오면 치운 노트가 되살아난다.
+    /// 답글은 버리지 않되 최상위로 올리고, 화면이 알아볼 수 있게 표시한다.
+    @Test("부모가 보관함에 있으면 끌어오지 않고 답글만 최상위로 올린다")
+    func archivedParentIsNotPulledIntoActiveList() async {
+        let (store, _) = store([
+            note("부모", created: 10, archived: true),
+            reply("답글", to: "부모", created: 20),
+        ])
+
+        await store.load()
+
+        #expect(store.visibleRows.map(\.note.id) == ["답글"])
+        #expect(store.visibleRows.map(\.depth) == [0])
+        #expect(store.visibleRows.map(\.isOrphanedReply) == [true])
+    }
+
+    @Test("보관 탭에서도 부모-자식이 묶인다")
+    func hierarchyHoldsInArchivedTab() async {
+        let (store, _) = store([
+            note("부모", created: 10, archived: true),
+            reply("답글", to: "부모", created: 20, archived: true),
+        ])
+
+        await store.load()
+        store.viewMode = .archived
+
+        #expect(store.visibleRows.map(\.note.id) == ["부모", "답글"])
+        #expect(store.visibleRows.map(\.depth) == [0, 1])
+    }
+
     @Test("불러오면 목록이 채워진다")
     func loadsNotes() async {
         let (store, _) = store([note("a"), note("b")])

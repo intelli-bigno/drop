@@ -17,6 +17,10 @@ public struct NoteCard: View {
     private let isSelected: Bool
     private let isSelecting: Bool
     private let commentCount: Int
+    /// 들여쓰기 단수. 0이면 최상위 노트다 (BRU-60).
+    private let depth: Int
+    /// 부모가 이 목록에 없어 최상위로 올라온 답글. 독립 노트처럼 보이면 맥락이 사라진다.
+    private let isOrphanedReply: Bool
     private let attachmentURL: (Attachment) async -> URL?
     private let onOpenAttachment: (Attachment) -> Void
 
@@ -25,6 +29,8 @@ public struct NoteCard: View {
         isSelected: Bool = false,
         isSelecting: Bool = false,
         commentCount: Int = 0,
+        depth: Int = 0,
+        isOrphanedReply: Bool = false,
         attachmentURL: @escaping (Attachment) async -> URL? = { _ in nil },
         onOpenAttachment: @escaping (Attachment) -> Void = { _ in }
     ) {
@@ -32,11 +38,44 @@ public struct NoteCard: View {
         self.isSelected = isSelected
         self.isSelecting = isSelecting
         self.commentCount = commentCount
+        self.depth = depth
+        self.isOrphanedReply = isOrphanedReply
         self.attachmentURL = attachmentURL
         self.onOpenAttachment = onOpenAttachment
     }
 
+    public init(row: NoteRow, isSelected: Bool = false, isSelecting: Bool = false, commentCount: Int = 0,
+                attachmentURL: @escaping (Attachment) async -> URL? = { _ in nil },
+                onOpenAttachment: @escaping (Attachment) -> Void = { _ in }) {
+        self.init(
+            note: row.note,
+            isSelected: isSelected,
+            isSelecting: isSelecting,
+            commentCount: commentCount,
+            depth: row.depth,
+            isOrphanedReply: row.isOrphanedReply,
+            attachmentURL: attachmentURL,
+            onOpenAttachment: onOpenAttachment
+        )
+    }
+
     public var body: some View {
+        HStack(spacing: 0) {
+            // 답글 왼쪽의 세로 선. 들여쓴 만큼 자리를 내주고, 그 끝에 선을 세운다.
+            if depth > 0 {
+                Color.clear
+                    .frame(width: DropTheme.Hierarchy.indent * CGFloat(depth))
+                Capsule()
+                    .fill(Color.secondary.opacity(0.25))
+                    .frame(width: DropTheme.Hierarchy.railWidth)
+                    .padding(.trailing, DropTheme.Spacing.base)
+            }
+
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: DropTheme.Spacing.base) {
             if isSelecting {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -58,6 +97,14 @@ public struct NoteCard: View {
                 Image(systemName: "lock.fill")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+
+            // 부모가 이 목록에 없어 최상위로 올라온 답글. 표시가 없으면 독립 노트로 읽힌다.
+            if isOrphanedReply {
+                Image(systemName: "arrow.turn.up.left")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("답글")
             }
 
             contentText

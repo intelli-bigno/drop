@@ -41,7 +41,62 @@ struct NoteDateGrouperTests {
 
     @Test("빈 목록은 섹션도 없다")
     func emptyProducesNoSections() {
-        #expect(grouper.sections(for: [], now: now).isEmpty)
+        #expect(grouper.sections(for: [] as [Note], now: now).isEmpty)
+        #expect(grouper.sections(for: [] as [NoteRow], now: now).isEmpty)
+    }
+
+    // MARK: - 스레드(BRU-60)
+
+    /// 자식은 자기 날짜가 아니라 **부모가 속한 섹션**에 붙는다. 자기 날짜로 나누면
+    /// 스레드가 날짜 경계에서 쪼개져 애초 문제(맥락 끊김)가 그대로 남는다.
+    @Test("답글은 자기 날짜가 아니라 부모의 섹션에 붙는다")
+    func replyFollowsItsParentSection() {
+        let parent = note("부모", createdAt: date(year: 2026, month: 8, day: 9, hour: 10))
+        let reply = Note(
+            id: "답글",
+            displayID: 0,
+            content: "답글",
+            parentID: "부모",
+            createdAt: date(year: 2026, month: 8, day: 12, hour: 10),
+            updatedAt: date(year: 2026, month: 8, day: 12, hour: 10),
+            source: .mobile
+        )
+
+        let sections = grouper.sections(
+            for: NoteHierarchy.rows(visible: [parent, reply], context: [parent, reply]),
+            now: now
+        )
+
+        // 답글은 오늘 쓴 것이지만 부모가 있는 "3일 전"에 함께 있어야 한다.
+        #expect(sections.map(\.title) == ["3일 전"])
+        #expect(sections[0].rows.map(\.note.id) == ["부모", "답글"])
+        #expect(sections[0].rows.map(\.depth) == [0, 1])
+    }
+
+    @Test("고정한 노트의 답글은 고정 섹션까지 따라간다")
+    func replyFollowsPinnedParent() {
+        let parent = note(
+            "고정부모",
+            createdAt: date(year: 2026, month: 1, day: 2),
+            isPinned: true
+        )
+        let reply = Note(
+            id: "답글",
+            displayID: 0,
+            content: "답글",
+            parentID: "고정부모",
+            createdAt: date(year: 2026, month: 8, day: 12, hour: 10),
+            updatedAt: date(year: 2026, month: 8, day: 12, hour: 10),
+            source: .mobile
+        )
+
+        let sections = grouper.sections(
+            for: NoteHierarchy.rows(visible: [parent, reply], context: [parent, reply]),
+            now: now
+        )
+
+        #expect(sections.map(\.title) == ["고정"])
+        #expect(sections[0].rows.map(\.note.id) == ["고정부모", "답글"])
     }
 
     @Test("오늘·어제·N일 전으로 제목을 붙인다")

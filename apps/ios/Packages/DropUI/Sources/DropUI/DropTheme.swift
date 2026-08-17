@@ -9,6 +9,15 @@ public enum DropTheme {
         public static let loose: CGFloat = 24
     }
 
+    /// 답글 계층 표현 (BRU-60).
+    public enum Hierarchy {
+        /// 한 단 들여쓰기 폭. 데스크톱은 24pt인데 iOS는 화면이 좁아 절반만 쓴다 —
+        /// 24pt로 두면 2단에서 본문이 반으로 접힌다.
+        public static let indent: CGFloat = 12
+        /// 답글 왼쪽의 세로 선. 어느 노트에 딸린 줄인지 눈으로 잇는다.
+        public static let railWidth: CGFloat = 2
+    }
+
     public enum Radius {
         public static let card: CGFloat = 12
         /// 목록 한 줄 행. 카드보다 조금 작게 잡아 행이 겹겹이 쌓여도 답답하지 않게.

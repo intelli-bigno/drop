@@ -84,6 +84,27 @@ enum PreviewLaunch {
                 createdAt: now.addingTimeInterval(-3600), updatedAt: now, source: .desktop,
                 priority: 2
             ),
+            // 계층 표본 (BRU-60). 답글은 자기 시각이 아니라 부모의 섹션에 붙어야 한다 —
+            // 아래 두 답글은 부모("장보기", 1시간 전)보다 나중에 쓰였다.
+            Note(
+                id: "2-1", displayID: 17,
+                content: "원두는 지난번 것으로",
+                parentID: "2",
+                createdAt: now.addingTimeInterval(-1800), updatedAt: now, source: .desktop
+            ),
+            Note(
+                id: "2-1-1", displayID: 18,
+                content: "품절이면 다른 것도 괜찮다",
+                parentID: "2-1",
+                createdAt: now.addingTimeInterval(-900), updatedAt: now, source: .desktop
+            ),
+            // 부모가 보관함에 있어 최상위로 올라오는 답글. 화살표 표시가 붙어야 한다.
+            Note(
+                id: "4-1", displayID: 19,
+                content: "회고에서 나온 후속 — 부모는 보관함에 있다",
+                parentID: "4",
+                createdAt: now.addingTimeInterval(-7200), updatedAt: now, source: .desktop
+            ),
             // 한 줄로 줄인 뒤에도 긴 본문이 줄을 밀지 않는지 눈으로 보기 위한 표본.
             Note(
                 id: "6", displayID: 14,

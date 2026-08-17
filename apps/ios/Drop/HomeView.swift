@@ -162,10 +162,10 @@ struct HomeView: View {
     }
 
     private var noteSections: some View {
-        ForEach(Self.grouper.sections(for: notes.visibleNotes)) { section in
+        ForEach(Self.grouper.sections(for: notes.visibleRows)) { section in
             Section {
-                ForEach(section.notes) { note in
-                    noteRow(for: note)
+                ForEach(section.rows) { row in
+                    noteRow(for: row)
                 }
             } header: {
                 Text(section.title)
@@ -182,9 +182,10 @@ struct HomeView: View {
         }
     }
 
-    private func noteRow(for note: Note) -> some View {
-        NoteCard(
-            note: note,
+    private func noteRow(for row: NoteRow) -> some View {
+        let note = row.note
+        return NoteCard(
+            row: row,
             isSelected: notes.selectedIDs.contains(note.id),
             isSelecting: notes.isSelecting,
             commentCount: comments.count(for: note.id),

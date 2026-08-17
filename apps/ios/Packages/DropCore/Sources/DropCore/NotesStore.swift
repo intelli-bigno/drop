@@ -30,14 +30,27 @@ public final class NotesStore {
 
     public var isSelecting: Bool { !selectedIDs.isEmpty }
 
+    /// 지금 탭(활성·보관·휴지통)과 카테고리에 속하는 노트 전부.
+    /// 태그·검색으로 걸러지기 **전**이라, 답글의 부모를 맥락으로 끌어올 후보가 된다.
+    public var scopedNotes: [Note] {
+        allNotes.filter { $0.matches(viewMode: viewMode) && $0.matches(category: category) }
+    }
+
     public var visibleNotes: [Note] {
-        allNotes.filter { note in
-            guard note.matches(viewMode: viewMode), note.matches(category: category) else { return false }
+        scopedNotes.filter { note in
             if let selectedTagID, !note.tags.contains(where: { $0.id == selectedTagID }) { return false }
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             if !query.isEmpty, !note.content.localizedCaseInsensitiveContains(query) { return false }
             return true
         }
+    }
+
+    /// 화면이 그리는 것. 답글이 부모 아래로 묶이고 들여쓰기 단수까지 정해져 있다.
+    ///
+    /// 부모는 **같은 탭 안에서만** 끌어온다 — 보관함에 있는 부모를 활성 목록에
+    /// 끌어오면 지운 셈 친 노트가 되살아난다.
+    public var visibleRows: [NoteRow] {
+        NoteHierarchy.rows(visible: visibleNotes, context: scopedNotes)
     }
 
     /// 지금 화면에 보이는 태그 목록 (필터 칩용).
