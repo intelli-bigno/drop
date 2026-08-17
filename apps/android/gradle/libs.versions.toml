@@ -10,6 +10,7 @@ serialization = "1.8.1"
 credentials = "1.5.0"
 googleid = "1.1.1"
 coil = "3.1.0"
+glance = "1.1.1"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -32,6 +33,10 @@ google-id = { module = "com.google.android.libraries.identity.googleid:googleid"
 # 첨부 썸네일. 비공개 버킷의 서명 URL을 그대로 불러온다.
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+
+# 홈 화면 위젯 (Compose 문법으로 RemoteViews를 만든다)
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }

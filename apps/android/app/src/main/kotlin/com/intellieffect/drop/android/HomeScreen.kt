@@ -58,6 +58,8 @@ fun HomeScreen(
     onRemoveTag: (noteId: String, tagId: String) -> Unit,
     onAddAttachment: (noteId: String, uri: android.net.Uri, type: AttachmentType) -> Unit,
     onRemoveAttachment: (Attachment) -> Unit,
+    /** 위젯의 ＋ 로 들어왔으면 목록보다 작성 시트를 먼저 띄운다. */
+    startComposer: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val state by store.state.collectAsStateWithLifecycle()
@@ -66,7 +68,9 @@ fun HomeScreen(
     val grouper = remember { NoteDateGrouper() }
 
     var isSearching by remember { mutableStateOf(false) }
-    var composing by remember { mutableStateOf<ComposerTarget?>(null) }
+    var composing by remember {
+        mutableStateOf<ComposerTarget?>(if (startComposer) ComposerTarget.New else null)
+    }
 
     // 오류는 한 번 띄우고 지운다. 남겨 두면 다음 동작마다 같은 스낵바가 다시 뜬다.
     LaunchedEffect(state.errorMessage) {

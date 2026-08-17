@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DROP</string>
+    <!-- 위젯 갤러리에 뜨는 설명 -->
+    <string name="widget_description">최근 노트와 빠른 작성</string>
+    <!-- 갤러리 미리보기용 표본 문구 (실제 노트가 아니다) -->
+    <string name="widget_preview_first_note">장보기: 우유, 계란</string>
+    <string name="widget_preview_second_note">회의 전에 지표 확인하기</string>
+</resources>

@@ -11,6 +11,8 @@ import com.intellieffect.drop.core.AuthStore
 import com.intellieffect.drop.core.GoogleIdentity
 import com.intellieffect.drop.core.GoogleIdentityProvider
 import com.intellieffect.drop.core.NotesStore
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -42,6 +44,18 @@ class DropViewModel(application: Application) : AndroidViewModel(application) {
     val notesStore = NotesStore(container.notesRepository)
     val signedUrlCache = container.signedUrlCache
 
+    private val widgets = WidgetSnapshotPublisher(application)
+
+    init {
+        // 목록이 바뀔 때마다 위젯 스냅샷을 적는다. 위젯은 이 파일만 읽으므로,
+        // 여기서 밀어 주지 않으면 홈 화면에 옛 노트가 계속 남는다.
+        viewModelScope.launch {
+            notesStore.state.map { it.allNotes }.distinctUntilChanged().collect { notes ->
+                widgets.publish(notes)
+            }
+        }
+    }
+
     fun attach(activity: Activity) {
         identityProvider.host = activity
     }
@@ -52,6 +66,8 @@ class DropViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut() = viewModelScope.launch {
         authStore.signOut()
+        // 로그아웃 뒤에도 위젯에 앞 사용자의 노트가 남아 있으면 안 된다.
+        widgets.clear()
         // 서명 URL은 사용자마다 다르다 — 비우지 않으면 다음 사용자가 앞 사용자의
         // 파일 URL을 그대로 쓰게 된다.
         signedUrlCache.clear()
