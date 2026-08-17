@@ -3,7 +3,9 @@ package com.intellieffect.drop.android
 import android.app.Application
 import android.content.Context
 import com.intellieffect.drop.core.DropConfiguration
+import com.intellieffect.drop.core.NotesRepository
 import com.intellieffect.drop.core.SupabaseAuthGateway
+import com.intellieffect.drop.core.SupabaseNotesRepository
 import com.intellieffect.drop.core.supabaseHttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 
@@ -28,6 +30,13 @@ class DropContainer(context: Context) {
         config = configuration,
         client = httpClient,
         storage = SharedPreferencesSessionStorage(context),
+    )
+
+    /** 게이트웨이가 토큰 공급자를 겸한다 — 만료가 가까우면 알아서 갱신한다. */
+    val notesRepository: NotesRepository = SupabaseNotesRepository(
+        config = configuration,
+        client = httpClient,
+        tokens = authGateway,
     )
 }
 

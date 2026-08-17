@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  디버그 빌드만 평문 HTTP를 허용한다. 로컬 Supabase(`supabase start`)는 http로 뜨고,
+  에뮬레이터에서 호스트는 10.0.2.2로 보인다. 릴리스 빌드는 이 설정을 받지 않으므로
+  평문 통신이 계속 막혀 있다.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:networkSecurityConfig" />
+
+</manifest>
