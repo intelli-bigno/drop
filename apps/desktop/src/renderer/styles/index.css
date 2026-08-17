@@ -375,9 +375,11 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* 본문은 한 줄 — 넘치면 말줄임 */
+/* 본문은 한 줄 — 넘치면 말줄임.
+   flex-basis는 반드시 0이다: auto면 "줄바꿈 없는 본문 전체 폭"이 basis가 되어
+   줄 전체의 shrink가 태그 쪽으로 몰리고, 태그 칩이 중간에서 잘린다 (BRU-55). */
 .note-line-content {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   font-size: var(--text-base);
   line-height: 1.5;
@@ -413,11 +415,14 @@ body {
   gap: 2px;
 }
 
+/* 태그 영역은 줄이지 않는다 — 대신 줄 폭의 40%를 상한으로 두고,
+   넘치는 태그는 TagList가 `+N` 배지로 접는다 (lib/tag-overflow.ts). */
 .note-line-tags {
   display: flex;
   align-items: center;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  max-width: 40%;
   overflow: hidden;
 }
 
@@ -1642,9 +1647,44 @@ body {
    ============================================ */
 
 .tag-list {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* 폭만 재는 그림자 줄 — 접힌 태그의 폭도 알아야 창이 넓어질 때 다시 펼 수 있다.
+   absolute + visibility:hidden이라 레이아웃에도, 화면에도, 마우스에도 잡히지 않는다. */
+.tag-list-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: max-content;
+  white-space: nowrap;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tag-list-measure .tag-chip {
+  flex: 0 0 auto;
+}
+
+/* 접힌 태그 개수 배지 */
+.tag-overflow {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  background: var(--bg-hover);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .tag-chip {
