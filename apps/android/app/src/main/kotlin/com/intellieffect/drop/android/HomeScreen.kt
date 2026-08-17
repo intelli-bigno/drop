@@ -32,10 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.intellieffect.drop.core.Attachment
+import com.intellieffect.drop.core.AttachmentType
 import com.intellieffect.drop.core.Note
 import com.intellieffect.drop.core.NoteDateGrouper
 import com.intellieffect.drop.core.NoteViewMode
 import com.intellieffect.drop.core.NotesStore
+import com.intellieffect.drop.core.SignedUrlCache
 import kotlinx.coroutines.launch
 
 /**
@@ -49,7 +52,12 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     store: NotesStore,
     userEmail: String?,
+    urlCache: SignedUrlCache,
     onSignOut: () -> Unit,
+    onAddTag: (noteId: String, name: String) -> Unit,
+    onRemoveTag: (noteId: String, tagId: String) -> Unit,
+    onAddAttachment: (noteId: String, uri: android.net.Uri, type: AttachmentType) -> Unit,
+    onRemoveAttachment: (Attachment) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by store.state.collectAsStateWithLifecycle()
@@ -185,14 +193,28 @@ fun HomeScreen(
             },
         )
 
-        is ComposerTarget.Edit -> NoteComposerSheet(
-            initialContent = target.note.content,
-            onDismiss = { composing = null },
-            onSubmit = { content ->
+        is ComposerTarget.Edit -> {
+            // 목록의 최신 노트를 다시 찾아 쓴다. 태그·첨부를 고치면 목록이 다시 불려 오는데,
+            // 열 때 복사해 둔 값을 그대로 쓰면 시트만 옛 상태로 남는다.
+            val live = state.allNotes.firstOrNull { it.id == target.note.id }
+            if (live == null) {
                 composing = null
-                scope.launch { store.update(target.note.id, content) }
-            },
-        )
+            } else {
+                NoteEditorSheet(
+                    note = live,
+                    urlCache = urlCache,
+                    onDismiss = { composing = null },
+                    onSave = { content ->
+                        composing = null
+                        scope.launch { store.update(live.id, content) }
+                    },
+                    onAddTag = { name -> onAddTag(live.id, name) },
+                    onRemoveTag = { tagId -> onRemoveTag(live.id, tagId) },
+                    onAddAttachment = { uri, type -> onAddAttachment(live.id, uri, type) },
+                    onRemoveAttachment = onRemoveAttachment,
+                )
+            }
+        }
     }
 }
 

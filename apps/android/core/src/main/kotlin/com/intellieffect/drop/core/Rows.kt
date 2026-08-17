@@ -94,6 +94,30 @@ internal data class TagRow(
     fun toTag(): Tag = Tag(id = id, name = name, createdAt = createdAt)
 }
 
+/**
+ * `tags?select=*,note_tags(count)` 의 한 행.
+ *
+ * PostgREST의 집계 임베딩은 `[{"count": 3}]` 모양으로 온다. 태그마다 따로 세면
+ * 태그 수만큼 요청이 나가므로 한 번에 받는다.
+ */
+@Serializable
+internal data class TagCountRow(
+    val id: String,
+    val name: String,
+    @Serializable(with = InstantSerializer::class) @SerialName("created_at") val createdAt: Instant,
+    @Serializable(with = InstantSerializer::class) @SerialName("last_used_at") val lastUsedAt: Instant? = null,
+    @SerialName("note_tags") val noteTags: List<CountRow> = emptyList(),
+) {
+    @Serializable
+    internal data class CountRow(val count: Int = 0)
+
+    fun toTagWithCount(): TagWithCount = TagWithCount(
+        tag = Tag(id = id, name = name, createdAt = createdAt),
+        noteCount = noteTags.firstOrNull()?.count ?: 0,
+        lastUsedAt = lastUsedAt,
+    )
+}
+
 /** `note_tags?select=note_id,tags(*)` 의 한 행. */
 @Serializable
 internal data class NoteTagRow(

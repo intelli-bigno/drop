@@ -26,6 +26,9 @@ apps/android/
 | `SupabaseNotesRepository` (Supabase SDK) | 같음 (Ktor로 PostgREST 직접 호출) |
 | `AuthStore` / `AuthenticationGateway` | `AuthStore` / `AuthGateway` |
 | `NoteDateGrouper` / `RelativeTimeFormatter` | 같음 |
+| `SupabaseTagsRepository` | 같음 |
+| `SupabaseAttachmentsRepository` / `AttachmentURLCache` | `SupabaseAttachmentsRepository` / `SignedUrlCache` |
+| `SharedInbox` (공유 인텐트 처리) | `SharedCapture` |
 
 Android에서 Supabase SDK를 쓰지 않는 이유: supabase-kt의 세션 영속화가 Android Context를 요구해서 `core`가 순수 JVM으로 남지 못한다. 그래서 인증·데이터 호출을 Ktor client로 직접 부르고, 테스트는 `MockEngine`으로 네트워크 없이 돈다 (BRU-39 판단).
 
@@ -96,6 +99,8 @@ gh workflow run release.yml -f target=android    # 태그 없이 테스터 빌�
 - Gradle toolchain을 고정하지 않는다 — 고정하면 해당 JDK가 없는 기계에서 다운로드부터 막힌다. 산출 바이트코드만 17에 맞춘다.
 - **목록은 하나의 스크롤 컨테이너로 유지한다.** 빈 목록을 스크롤되지 않는 `Box`로 바꾸면 당겨서 새로고침이 죽는다 — 노트가 하나도 없을 때가 정확히 새로고침이 가장 필요한 순간이다 (iOS #40에서 같은 사고, BRU-40에서 Android에서도 실측으로 잡았다).
 - **평문 HTTP는 디버그 빌드에서만** 열린다 (`app/src/debug`). 로컬 Supabase가 http로 뜨기 때문이고, 열어 주는 대상도 `10.0.2.2` · `127.0.0.1` · `localhost`로 한정한다.
+- **첨부 바이트는 노트를 만들기 전에 다 읽는다.** 공유로 들어온 파일을 읽지 못했을 때 조용히 건너뛰면 "담았습니다"라고 알리면서 첨부 없는 노트만 남는다 (BRU-41에서 실기로 겪었다). 읽기 실패는 그 자리에서 실패시키고, 업로드가 실패하면 `SharedCapture`가 만든 노트를 되돌린다.
+- **서명 URL은 `SignedUrlCache`로만 얻는다.** 비공개 버킷이라 이미지마다 서명 URL이 필요한데, 화면마다 새로 발급하면 목록을 스크롤할 때 요청이 폭주한다.
 
 ## 로컬 Supabase로 화면을 확인하는 법 (에뮬레이터)
 
@@ -116,7 +121,8 @@ adb shell am start -S -n com.intellieffect.drop.mobile/com.intellieffect.drop.an
 
 ## 아직 없는 것
 
-로그인·세션(BRU-39)과 노트 CRUD(BRU-40)까지 왔다. 다음은 별도 이슈에서 붙인다.
+로그인·세션(BRU-39), 노트 CRUD(BRU-40), 태그·첨부·공유 인텐트(BRU-41)까지 왔다. 다음은 별도 이슈에서 붙인다.
 
-- 태그 편집·첨부 업로드·공유 인텐트·홈 위젯 (BRU-41) — 지금은 이미 붙어 있는 태그를 읽고 필터로 쓰는 것까지만 된다.
-- Play Console 배포 (BRU-42) — 서명 키와 Play 서비스 계정 자격증명이 필요하다.
+- Glance 홈 위젯 (BRU-68) — BRU-41에서 분리했다.
+- **녹음은 만들지 않는다.** BRU-48에서 iOS 녹음 기능을 제거했다(오디오 첨부 자체는 유지). Android에만 새로 만드는 것은 패리티가 아니라 역행이다.
+- **Play 내부 테스트 업로드** — 워크플로는 서 있고(BRU-42), `PLAY_SERVICE_ACCOUNT_JSON` 시크릿만 들어오면 자동으로 함께 나간다. Firebase App Distribution 배포는 이미 동작한다.

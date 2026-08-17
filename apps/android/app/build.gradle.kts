@@ -138,5 +138,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.google.id)
 
+    // 첨부 썸네일 (서명 URL을 직접 불러온다)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     debugImplementation(libs.compose.ui.tooling)
 }

@@ -2,10 +2,15 @@ package com.intellieffect.drop.android
 
 import android.app.Application
 import android.content.Context
+import com.intellieffect.drop.core.AttachmentsRepository
 import com.intellieffect.drop.core.DropConfiguration
 import com.intellieffect.drop.core.NotesRepository
+import com.intellieffect.drop.core.SignedUrlCache
+import com.intellieffect.drop.core.SupabaseAttachmentsRepository
 import com.intellieffect.drop.core.SupabaseAuthGateway
 import com.intellieffect.drop.core.SupabaseNotesRepository
+import com.intellieffect.drop.core.SupabaseTagsRepository
+import com.intellieffect.drop.core.TagsRepository
 import com.intellieffect.drop.core.supabaseHttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 
@@ -38,6 +43,24 @@ class DropContainer(context: Context) {
         client = httpClient,
         tokens = authGateway,
     )
+
+    val tagsRepository: TagsRepository = SupabaseTagsRepository(
+        config = configuration,
+        client = httpClient,
+        tokens = authGateway,
+    )
+
+    val attachmentsRepository: AttachmentsRepository = SupabaseAttachmentsRepository(
+        config = configuration,
+        client = httpClient,
+        tokens = authGateway,
+    )
+
+    /**
+     * 서명 URL 캐시는 앱에 하나만 둔다 — 화면마다 만들면 같은 파일의 URL을
+     * 화면 수만큼 발급하게 되어 캐시가 있으나 마나가 된다.
+     */
+    val signedUrlCache = SignedUrlCache(attachmentsRepository)
 }
 
 class DropApplication : Application() {
