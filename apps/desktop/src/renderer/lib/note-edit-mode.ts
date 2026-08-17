@@ -1,12 +1,16 @@
 // 노트 카드가 펼쳐져 있는지(= Lexical 에디터가 마운트되는지)를 정하는 한 곳.
-// 카드 안에 흩어져 있던 판단을 여기로 모은다 — 상태가 늘어나도 조건은 여기서만 바뀐다.
+//
+// BRU-53 — 포커스와 펼침은 다른 것이다. j/k/클릭으로 포커스가 옮겨가도 카드는
+// 한 줄 그대로여야 하고, `/`·`i`로 편집에 들어갔을 때만 펼쳐진다.
 
 export interface EditorOpenInput {
   /** 피드에서 이 카드가 포커스를 받고 있는가 */
   isFocused: boolean
+  /** `/`·`i`로 편집에 들어와 있는가 */
+  isEditing: boolean
 }
 
 /** 카드를 펼쳐 에디터를 마운트할지 */
-export function isEditorOpen({ isFocused }: EditorOpenInput): boolean {
-  return isFocused
+export function isEditorOpen({ isFocused, isEditing }: EditorOpenInput): boolean {
+  return isFocused && isEditing
 }

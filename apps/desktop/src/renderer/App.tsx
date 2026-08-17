@@ -21,7 +21,8 @@ function App() {
   const [route, setRoute] = useState(() => window.location.hash.replace('#', '') || 'main')
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false)
 
-  // ⌘/ 또는 ? 로 단축키 치트시트. '?'는 수식키가 없으므로 입력 중에는 무시한다.
+  // ⌘/ 또는 ? 로 단축키 치트시트. 맨 `/`는 편집 진입 키라 여기서 잡지 않는다 (BRU-53).
+  // '?'는 수식키가 없으므로 입력 중에는 무시한다.
   const handleCheatSheetKey = useCallback((e: KeyboardEvent) => {
     if (!isCheatSheetShortcut(e)) return
     if (!e.metaKey && !e.ctrlKey && isTextInputTarget(e.target)) return

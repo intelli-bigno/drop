@@ -5,6 +5,7 @@ import { isCreateNoteShortcut, isSearchShortcut, isCheatSheetShortcut } from '..
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../noteTrash'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../tagList'
 import { isToggleLockShortcut } from '../noteLock'
+import { KEYS } from '../keys'
 import type { KeyEventLike } from '../types'
 
 // 데이터화 리팩터링 전 현재 동작을 고정하는 특성 테스트.
@@ -30,8 +31,27 @@ describe('resolveNoteFeedShortcut', () => {
     }
   })
 
-  it('shouldOpenFocusedOnPlainEnter', () => {
-    expect(resolveNoteFeedShortcut(key('Enter'))).toBe('openFocused')
+  // BRU-53 — 편집 진입은 `/`·`i`뿐이다. 맨 Enter로는 열리지 않는다.
+  it('shouldNotOpenFocusedOnPlainEnter', () => {
+    expect(resolveNoteFeedShortcut(key('Enter'))).toBeNull()
+  })
+
+  it('shouldOpenFocusedOnSlashAndIAndHangulI', () => {
+    for (const k of ['/', 'i', 'ㅑ']) {
+      expect(resolveNoteFeedShortcut(key(k))).toBe('openFocused')
+    }
+  })
+
+  // ⌘/ 는 치트시트다 — 편집을 열면 안 된다
+  it('shouldNotOpenFocusedOnPrimarySlash', () => {
+    expect(resolveNoteFeedShortcut(key('/', { metaKey: true }))).toBeNull()
+    expect(resolveNoteFeedShortcut(key('/', { ctrlKey: true }))).toBeNull()
+  })
+
+  it('shouldNotOpenFocusedWhenModifiersAreHeld', () => {
+    expect(resolveNoteFeedShortcut(key('i', { metaKey: true }))).toBeNull()
+    expect(resolveNoteFeedShortcut(key('i', { shiftKey: true }))).toBeNull()
+    expect(resolveNoteFeedShortcut(key('i', { altKey: true }))).toBeNull()
   })
 
   it('shouldReplyOnShiftEnter', () => {
@@ -155,5 +175,11 @@ describe('cheat sheet shortcut', () => {
 
   it('shouldNotOpenOnPlainSlash', () => {
     expect(isCheatSheetShortcut(key('/'))).toBe(false)
+  })
+
+  // BRU-53 — 맨 `/`는 편집 진입 키가 됐다. 키 표에서도 치트시트가 그것을 주장하면 안 된다.
+  it('shouldNotClaimBareSlashInTheKeyTable', () => {
+    expect(KEYS.cheatSheetAlt).not.toContain('/')
+    expect(KEYS.cheatSheet).toEqual(['/'])
   })
 })
