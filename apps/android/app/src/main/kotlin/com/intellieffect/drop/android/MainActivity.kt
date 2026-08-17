@@ -26,8 +26,15 @@ import kotlinx.coroutines.launch
  * 태그 편집·첨부는 BRU-41.
  */
 class MainActivity : ComponentActivity() {
+    companion object {
+        /** 위젯의 ＋ 로 들어왔다는 표시. 목록을 보여 주기 전에 작성 시트를 띄운다. */
+        const val EXTRA_START_COMPOSER = "com.intellieffect.drop.START_COMPOSER"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val startComposer = intent?.getBooleanExtra(EXTRA_START_COMPOSER, false) == true
 
         setContent {
             MaterialTheme {
@@ -39,14 +46,18 @@ class MainActivity : ComponentActivity() {
                     viewModel.attach(this@MainActivity)
                     onDispose { viewModel.detach() }
                 }
-                RootScreen(viewModel)
+                RootScreen(viewModel, startComposer = startComposer)
             }
         }
     }
 }
 
 @Composable
-private fun RootScreen(viewModel: DropViewModel, modifier: Modifier = Modifier) {
+private fun RootScreen(
+    viewModel: DropViewModel,
+    startComposer: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val authState by viewModel.authStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -80,6 +91,7 @@ private fun RootScreen(viewModel: DropViewModel, modifier: Modifier = Modifier) 
                 onRemoveTag = viewModel::removeTag,
                 onAddAttachment = viewModel::addAttachment,
                 onRemoveAttachment = viewModel::removeAttachment,
+                startComposer = startComposer,
                 modifier = modifier,
             )
         }

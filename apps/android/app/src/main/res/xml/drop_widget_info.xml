@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  위젯 사양. iOS 위젯(systemSmall/medium)과 같은 자리를 노린다 — 최근 노트 세 줄.
+
+  updatePeriodMillis를 0으로 두는 이유: 갱신은 앱이 목록을 불러올 때
+  WidgetSnapshotPublisher가 밀어 준다. 시스템 주기 갱신은 30분보다 짧게 설정해도
+  무시되고, 우리에게는 필요 없는 깨우기다.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:previewLayout="@layout/drop_widget_preview"
+    android:widgetCategory="home_screen" />

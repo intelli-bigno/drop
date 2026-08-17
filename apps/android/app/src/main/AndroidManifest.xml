@@ -47,6 +47,22 @@
                 <data android:mimeType="video/*" />
             </intent-filter>
         </activity>
+
+        <!--
+          홈 화면 위젯 (BRU-68). receiver와 meta-data 둘 다 있어야 위젯 갤러리에 뜬다 —
+          iOS BRU-35가 정확히 "갤러리에 안 보인다"였고 원인은 타깃 누락이었다.
+        -->
+        <receiver
+            android:name=".DropWidgetReceiver"
+            android:exported="true"
+            android:label="DROP">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/drop_widget_info" />
+        </receiver>
     </application>
 
 </manifest>
