@@ -133,8 +133,16 @@ function toArgbHex(raw) {
 // ── 이름 변환 ────────────────────────────────────────────────────────────────
 
 const kebab = (path) => path.join('-');
+
+/**
+ * `['danger-hover']` → `dangerHover`.
+ *
+ * 경로 사이뿐 아니라 **한 조각 안의 하이픈까지** 없앤다 — 안 그러면 `danger-hover`가
+ * 그대로 식별자로 나가 Swift·Kotlin이 컴파일되지 않는다(실제로 그렇게 깨졌다).
+ */
 const camel = (path) =>
   path
+    .flatMap((part) => part.split('-'))
     .map((part, index) => (index === 0 ? part : part[0].toUpperCase() + part.slice(1)))
     .join('')
     // `2xl` 같은 숫자 시작 이름은 식별자가 못 된다.
@@ -142,25 +150,41 @@ const camel = (path) =>
 
 // ── 생성: CSS ───────────────────────────────────────────────────────────────
 
+/** 한 모드의 색·그림자 변수 줄들. 선택자 안에 들어갈 본문이다. */
+function cssModeVars(mode, indent) {
+  const lines = [];
+  for (const color of colors) {
+    lines.push(`${indent}--${kebab(color.path)}: ${cssValueFor(color.value, mode)};`);
+  }
+  for (const [key, value] of Object.entries(tokens.shadow)) {
+    if (isMeta(key)) continue;
+    lines.push(`${indent}--shadow-${key}: ${cssValueFor(value, mode)};`);
+  }
+  return lines;
+}
+
 function buildCss() {
   const lines = [`/*`, ...BANNER_LINES.map((line) => ` * ${line}`), ` */`, ``];
+  const base = MODES[0];
 
   for (const mode of MODES) {
-    // 모드가 하나뿐이면 :root에 바로 쓴다. 여러 개가 되면 첫 모드가 기본, 나머지는
-    // [data-theme] 로 나뉜다 (BRU-74에서 light가 들어올 때 이 갈래를 쓴다).
-    const selector = mode === MODES[0] ? ':root' : `:root[data-theme='${mode}']`;
-    lines.push(`${selector} {`);
+    if (mode !== base) {
+      // 기본이 아닌 모드는 두 경로로 들어온다:
+      //   1) 시스템 설정을 따라갈 때 — 단, 사용자가 기본 모드를 명시했으면 그쪽이 이긴다
+      //   2) data-theme로 명시했을 때
+      // 둘 다 없으면 "시스템은 다크인데 앱만 라이트"가 되거나 토글이 안 먹는다.
+      lines.push(`@media (prefers-color-scheme: ${mode}) {`);
+      lines.push(`  :root:not([data-theme='${base}']) {`);
+      lines.push(...cssModeVars(mode, '    '));
+      lines.push(`  }`, `}`, ``);
+    }
 
-    for (const color of colors) {
-      lines.push(`  --${kebab(color.path)}: ${cssValueFor(color.value, mode)};`);
-    }
-    for (const [key, value] of Object.entries(tokens.shadow)) {
-      if (isMeta(key)) continue;
-      lines.push(`  --shadow-${key}: ${cssValueFor(value, mode)};`);
-    }
+    const selector = mode === base ? ':root' : `:root[data-theme='${mode}']`;
+    lines.push(`${selector} {`);
+    lines.push(...cssModeVars(mode, '  '));
 
     // 모드와 무관한 값은 첫 블록에만 쓴다.
-    if (mode === MODES[0]) {
+    if (mode === base) {
       lines.push(``);
       for (const [key, value] of Object.entries(tokens.space)) {
         if (isMeta(key)) continue;
@@ -207,6 +231,8 @@ function buildSwift() {
     ...BANNER_LINES.map((line) => `// ${line}`),
     ``,
     `import SwiftUI`,
+    // 적응형 색(UIColor 동적 제공자)을 만들려면 UIKit이 필요하다. DropUI는 iOS 전용이다.
+    `import UIKit`,
     ``,
     `/// 생성된 색·치수 토큰. 화면은 이 값만 쓴다 — 리터럴 색을 화면에 적으면`,
     `/// 세 앱의 색이 다시 갈라진다.`,
@@ -216,21 +242,39 @@ function buildSwift() {
 
   for (const color of colors) {
     const name = camel(color.path);
-    // 모드가 하나면 상수, 여럿이면 모드별 분기를 여기서 만든다 (BRU-74).
     if (MODES.length === 1) {
       lines.push(`        public static let ${name} = ${swiftColor(valueFor(color.value, MODES[0]))}`);
     } else {
-      lines.push(`        public static func ${name}(_ mode: DropColorMode) -> Color {`);
-      lines.push(`            switch mode {`);
-      for (const mode of MODES) {
-        lines.push(`            case .${mode}: return ${swiftColor(valueFor(color.value, mode))}`);
-      }
-      lines.push(`            }`);
-      lines.push(`        }`);
+      // 모드를 인자로 받지 않는다 — 화면이 색을 쓸 때마다 모드를 들고 다니면
+      // 한 곳만 빠뜨려도 그 뷰만 반대 테마로 남는다. 시스템 설정을 따라
+      // 스스로 바뀌는 색으로 만든다.
+      lines.push(
+        `        public static let ${name} = DropTokens.adaptive(` +
+          `light: ${swiftColor(valueFor(color.value, 'light'))}, ` +
+          `dark: ${swiftColor(valueFor(color.value, 'dark'))})`,
+      );
     }
   }
 
-  lines.push(`    }`, ``, `    public enum Space {`);
+  lines.push(`    }`, ``);
+
+  // 라이트·다크 두 벌이 있을 때만 적응형 생성자가 필요하다.
+  if (MODES.length > 1) {
+    lines.push(
+      `    /// 시스템 외양에 따라 스스로 바뀌는 색.`,
+      `    ///`,
+      `    /// SwiftUI \`Color\`는 두 값을 품지 못해서 UIKit의 동적 색으로 만든다 —`,
+      `    /// 이렇게 해야 다크 모드 전환이 뷰 코드 없이 즉시 반영된다.`,
+      `    fileprivate static func adaptive(light: Color, dark: Color) -> Color {`,
+      `        Color(UIColor { traits in`,
+      `            traits.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)`,
+      `        })`,
+      `    }`,
+      ``,
+    );
+  }
+
+  lines.push(`    public enum Space {`);
   for (const [key, value] of Object.entries(tokens.space)) {
     if (isMeta(key)) continue;
     lines.push(`        public static let x${key}: CGFloat = ${value}`);

@@ -315,7 +315,7 @@ export function UserMenu() {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+          background: var(--accent);
           color: #fff;
           font-size: 14px;
           font-weight: 600;
@@ -328,7 +328,7 @@ export function UserMenu() {
           position: fixed;
           min-width: 240px;
           background: var(--bg-elevated);
-          border: 1px solid #3a3a3a;
+          border: 1px solid var(--border-color);
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
           overflow: hidden;
@@ -355,7 +355,7 @@ export function UserMenu() {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+          background: var(--accent);
           color: #fff;
           font-size: 18px;
           font-weight: 600;
@@ -443,7 +443,7 @@ export function UserMenu() {
 
         .user-menu-divider {
           height: 1px;
-          background: #3a3a3a;
+          background: var(--bg-tertiary);
           margin: 0 8px;
         }
 
@@ -465,7 +465,7 @@ export function UserMenu() {
         }
 
         .user-menu-item:hover {
-          background: #3a3a3a;
+          background: var(--bg-tertiary);
           color: #fff;
         }
 
