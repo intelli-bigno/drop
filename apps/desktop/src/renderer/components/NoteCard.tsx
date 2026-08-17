@@ -17,6 +17,7 @@ import { nextPriority, priorityClassName } from '../lib/note-priority'
 import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
 import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
+import { isEditorOpen } from '../lib/note-edit-mode'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
@@ -97,7 +98,7 @@ export const NoteCard = memo(
       // 상태는 둘뿐이다 — 한 줄(보기) / 펼침(편집).
       // 카드를 클릭하면 NoteFeed가 focusedIndex를 옮기므로 클릭·키보드 이동이
       // 모두 같은 한 가지 신호(isFocused)로 들어온다.
-      const isOpen = isFocused
+      const isOpen = isEditorOpen({ isFocused })
 
       // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
       const previewText = useMemo(
