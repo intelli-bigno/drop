@@ -48,6 +48,17 @@ describe('SHORTCUT_CATALOG', () => {
     }
   })
 
+  // BRU-53 — 치트시트는 ⌘/ 와 ? 두 갈래로 나뉜다. 한 항목에 섞어 적으면
+  // 화면에 "⌘ / / ?"처럼 나와 맨 `/`도 치트시트를 여는 것처럼 읽힌다.
+  it('shouldListTheCheatSheetAsTwoEntriesWithTheirOwnModifiers', () => {
+    const primary = SHORTCUT_CATALOG.find((e) => e.keyId === 'cheatSheet')
+    const alt = SHORTCUT_CATALOG.find((e) => e.keyId === 'cheatSheetAlt')
+    expect(primary?.modifier).toBe('primary')
+    expect(KEYS.cheatSheet).toEqual(['/'])
+    expect(alt?.modifier).toBeUndefined()
+    expect(KEYS.cheatSheetAlt).toEqual(['?'])
+  })
+
   it('shouldMapFeedEntriesToTheActionTheyClaim', () => {
     for (const entry of SHORTCUT_CATALOG.filter((e) => e.scope === 'feed')) {
       const event = key(KEYS[entry.keyId][0], {

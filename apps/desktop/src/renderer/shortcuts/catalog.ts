@@ -18,8 +18,8 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 탐색
   { keyId: 'focusNext', label: '다음 노트', group: '탐색', scope: 'feed' },
   { keyId: 'focusPrev', label: '이전 노트', group: '탐색', scope: 'feed' },
-  { keyId: 'openFocused', label: '노트 열기', group: '탐색', scope: 'feed' },
-  { keyId: 'clearFocus', label: '포커스 해제', group: '탐색', scope: 'feed' },
+  { keyId: 'openFocused', label: '편집 모드로 들어가기', group: '탐색', scope: 'feed' },
+  { keyId: 'clearFocus', label: '편집 나가기 · 포커스 해제', group: '탐색', scope: 'feed' },
   { keyId: 'search', label: '검색', group: '탐색', scope: 'global', modifier: 'primary' },
 
   // 노트 액션
@@ -63,7 +63,8 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     modifier: 'primary',
   },
 
-  // 도움말
+  // 도움말 — 수식키가 달라 항목을 둘로 나눈다.
+  // 맨 `/`는 편집 진입 키이므로 치트시트를 열지 않는다 (BRU-53).
   {
     keyId: 'cheatSheet',
     label: '단축키 보기',
@@ -71,6 +72,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     scope: 'global',
     modifier: 'primary',
   },
+  { keyId: 'cheatSheetAlt', label: '단축키 보기', group: '도움말', scope: 'global' },
 ]
 
 const NAMED_KEYS: Record<string, string> = {

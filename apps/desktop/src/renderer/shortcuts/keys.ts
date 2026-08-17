@@ -7,7 +7,8 @@ export const KEYS = {
   clearFocus: ['Escape'],
   focusNext: ['ArrowDown', 'j', 'ㅓ'],
   focusPrev: ['ArrowUp', 'k', 'ㅏ'],
-  openFocused: ['Enter'],
+  // 편집 진입은 `/`·`i`뿐이다 (BRU-53). Enter는 포커스만 옮기던 카드를 열지 않는다.
+  openFocused: ['/', 'i', 'ㅑ'],
   replyToFocused: ['Enter'],
   createSibling: ['Enter'],
 
@@ -39,8 +40,10 @@ export const KEYS = {
   // 잠금
   toggleLock: ['l', 'ㅣ'],
 
-  // 도움말
-  cheatSheet: ['/', '?'],
+  // 도움말 — 맨 `/`는 편집 진입 키라 치트시트를 열지 않는다 (BRU-53).
+  // ⌘/ 와 `?` 두 갈래이고, 수식키가 다르므로 항목도 둘로 나눈다.
+  cheatSheet: ['/'],
+  cheatSheetAlt: ['?'],
 } as const
 
 export type ShortcutKeyId = keyof typeof KEYS

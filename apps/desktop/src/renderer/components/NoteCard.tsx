@@ -17,6 +17,7 @@ import { nextPriority, priorityClassName } from '../lib/note-priority'
 import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
 import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
+import { isEditorOpen } from '../lib/note-edit-mode'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop } from '../hooks'
 import type { Note } from '@drop/shared'
@@ -61,6 +62,8 @@ export const NoteCard = memo(
       // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
       const contentChangedRef = useRef(false)
       const latestContentRef = useRef(note.content)
+      // `/`·`i`로만 켜지는 편집 상태. 포커스와는 다른 것이다 (BRU-53).
+      const [isEditing, setIsEditing] = useState(false)
       const [showTagPopover, setShowTagPopover] = useState(false)
       const [showTemplatePopover, setShowTemplatePopover] = useState(false)
       // 템플릿을 넣은 뒤 에디터를 새 본문으로 다시 세우기 위한 세대 번호
@@ -95,9 +98,9 @@ export const NoteCard = memo(
       const isLocked = note.isLocked && !temporarilyUnlockedNoteIds.has(note.id)
 
       // 상태는 둘뿐이다 — 한 줄(보기) / 펼침(편집).
-      // 카드를 클릭하면 NoteFeed가 focusedIndex를 옮기므로 클릭·키보드 이동이
-      // 모두 같은 한 가지 신호(isFocused)로 들어온다.
-      const isOpen = isFocused
+      // 포커스는 펼침이 아니다: j/k/클릭으로 카드를 훑어도 한 줄 그대로 남고,
+      // `/`·`i`로 편집에 들어왔을 때만 펼쳐진다 (BRU-53).
+      const isOpen = isEditorOpen({ isFocused, isEditing })
 
       // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
       const previewText = useMemo(
@@ -148,7 +151,9 @@ export const NoteCard = memo(
 
       useImperativeHandle(ref, () => ({
         focus: () => {
-          // 카드가 아직 접혀 있으면 에디터가 없다 — 펼쳐진 다음 잡도록 예약한다
+          // 편집 진입 = 펼침 + 캐럿. 카드가 아직 접혀 있으면 에디터가 없으므로
+          // 펼쳐진 다음 잡도록 예약한다.
+          setIsEditing(true)
           pendingFocusRef.current = true
           editorRef.current?.focus()
         },
@@ -186,6 +191,8 @@ export const NoteCard = memo(
           isLocked,
         })
         contentChangedRef.current = false
+        // 편집만 빠져나온다 — 포커스는 이 카드에 남는다 (한 줄로 되접힘)
+        setIsEditing(false)
         if (shouldOpen) setTagPopoverOpen(true)
         onEscapeFromNormal()
       }, [isLocked, onEscapeFromNormal, setTagPopoverOpen])
@@ -231,6 +238,7 @@ export const NoteCard = memo(
       // 시간이 지나서 저절로 닫히는 길은 두지 않는다 — 놓치면 다시 부를 방법이 없어진다.
       useEffect(() => {
         if (!isFocused) {
+          setIsEditing(false)
           setTagPopoverOpen(false)
           setShowTemplatePopover(false)
         }
