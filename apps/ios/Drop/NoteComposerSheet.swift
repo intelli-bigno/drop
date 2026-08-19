@@ -24,9 +24,14 @@ struct NoteComposerSheet: View {
 
     var body: some View {
         NavigationStack {
+            // **에디터는 종이다.** 글을 쓰는 자리에 유리를 깔면 뒤에 흐르는
+            // 목록이 글자 사이로 비쳐 읽기가 무너진다 (BRU-75).
             TextEditor(text: $text)
                 .focused($isFocused)
                 .font(.body)
+                .foregroundStyle(DropTokens.Colors.textPrimary)
+                .scrollContentBackground(.hidden)
+                .background(DropTheme.Surface.page)
                 .padding(.horizontal, DropTheme.Spacing.comfortable)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
@@ -45,6 +50,10 @@ struct NoteComposerSheet: View {
                 .onAppear { isFocused = true }
         }
         .presentationDetents([.medium, .large])
+        // 시트의 툴바는 시스템이 유리로 그린다 — 여기서 할 일은 그 아래를
+        // 종이로 두는 것뿐이다.
+        .presentationBackground(DropTheme.Surface.page)
+        .tint(DropTokens.Colors.accent)
         .interactiveDismissDisabled(isSaving)
     }
 

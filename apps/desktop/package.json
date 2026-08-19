@@ -1,8 +1,8 @@
 {
   "name": "@drop/desktop",
   "version": "0.0.9",
-  "description": "DROP - Quick note-taking app",
-  "author": "DROP Team",
+  "description": "Braindump - Quick note-taking app",
+  "author": "Braindump Team",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev --mode localdev",
@@ -20,7 +20,7 @@
   },
   "build": {
     "appId": "com.intellieffect.drop.desktop",
-    "productName": "DROP",
+    "productName": "Braindump",
     "directories": {
       "output": "release"
     },
@@ -48,7 +48,7 @@
       "icon": "build/icon.icns"
     },
     "dmg": {
-      "title": "DROP",
+      "title": "Braindump",
       "contents": [
         {
           "x": 130,

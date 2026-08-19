@@ -1,5 +1,5 @@
 /* ============================================
-   DROP - Minimal Dark Design System
+   Braindump - Minimal Dark Design System
    Clean, refined, professional
    ============================================ */
 
@@ -479,8 +479,14 @@ body {
   opacity: 1;
 }
 
-/* 오른쪽 끝 자리 — 평소엔 시간, 호버·포커스면 같은 자리가 액션 버튼이 된다.
-   액션은 absolute로 시간 위에 겹쳐 그린다: 버튼 수와 무관하게 줄 폭이 고정된다. */
+/* 오른쪽 끝 자리 — 평소엔 시간, 마우스를 올리면 같은 자리가 액션 버튼이 된다(BRU-82).
+   액션은 absolute로 시간 위에 겹쳐 그린다: 버튼 수와 무관하게 줄 폭이 고정된다.
+
+   BRU-57 — 이 상자에 액션 최대 폭(`--actions-reserved`, NoteCard가 보기 모드별로
+   계산해 넘긴다)만큼의 min-width를 준다. 예전에는 상자가 시간 폭밖에 안 돼서
+   오버레이가 왼쪽으로 흘러나가 태그를 덮었다. 자리를 미리 비워 두면 오버레이가
+   상자 안에 갇혀 태그를 침범할 수 없다. 예약 폭이 실제 버튼 수와 무관하므로
+   "줄 폭이 버튼 수에 따라 흔들리지 않는다"(BRU-46)도 그대로다. */
 .note-card-trailing {
   position: relative;
   display: flex;
@@ -488,6 +494,7 @@ body {
   justify-content: flex-end;
   gap: var(--space-2);
   flex: 0 0 auto;
+  min-width: var(--actions-reserved, 0px);
   /* 줄 높이의 바닥값 — 액션 버튼 크기와 맞춘다 (BRU-56) */
   min-height: 24px;
 }
@@ -508,6 +515,8 @@ body {
   white-space: nowrap;
 }
 
+/* 예약된 상자(.note-card-trailing) 안에 완전히 들어간다 — 왼쪽으로 삐져나가지
+   않으므로 태그를 덮을 수 없다. padding-left도 뺐다: 그 12px이 곧 침범 폭이었다. */
 .note-card-actions {
   position: absolute;
   right: 0;
@@ -517,21 +526,25 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  padding-left: var(--space-3);
   background: var(--bg-card);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 
+/* BRU-82 — 노출은 마우스 hover뿐이다. 키보드 포커스만으로는 켜지지 않는다.
+   `:focus-within`은 남겨 둔다: Tab으로 액션 버튼 자체에 도달한 키보드 사용자는
+   자기가 무엇을 고르고 있는지 볼 수 있어야 한다(단축키와 별개의 대체 경로). */
 .note-card-trailing[data-slot='actions'] .note-card-actions,
-.note-card:focus-within .note-card-actions {
+.note-card-actions:focus-within {
   opacity: 1;
   pointer-events: auto;
 }
 
 .note-card-trailing[data-slot='actions'] .note-time,
-.note-card-trailing[data-slot='actions'] .note-line-status {
+.note-card-trailing[data-slot='actions'] .note-line-status,
+.note-card-trailing:focus-within .note-time,
+.note-card-trailing:focus-within .note-line-status {
   visibility: hidden;
 }
 
@@ -587,6 +600,137 @@ body {
 /* Note Editor Container */
 .note-editor {
   padding: 4px 16px 12px;
+}
+
+/* 화면에 아직 닿지 않은 펼친 카드의 자리 (BRU-79).
+   본문 대신 대략의 높이만 잡아 둔다 — 스크롤이 오면 진짜 본문이 들어온다.
+   전체 펼치기 한 번에 목록 전량을 마운트하지 않기 위한 장치다. */
+.note-body-pending {
+  min-height: 140px;
+}
+
+/* ============================================
+   Note Viewer — 포커스된 노트의 읽기 전용 표현 (BRU-59)
+
+   에디터와 같은 자리, 같은 여백을 쓰되 입력 경로가 하나도 없다.
+   커서 모양까지 text가 아닌 default로 둬서 "여기는 쓰는 곳이 아니다"를 알린다.
+   ============================================ */
+.note-viewer {
+  padding: 4px 16px 12px;
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--text-primary);
+  cursor: default;
+  /* 읽기 전용이어도 본문을 긁어 복사하는 것은 되어야 한다 */
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.note-viewer > *:first-child {
+  margin-top: 0;
+}
+
+.note-viewer > *:last-child {
+  margin-bottom: 0;
+}
+
+.note-viewer-empty {
+  margin: 0;
+  color: var(--text-tertiary);
+}
+
+.note-viewer-paragraph {
+  margin: 0 0 8px;
+  /* 원문의 줄바꿈을 그대로 보여준다 — 노트는 문장보다 줄이 의미인 경우가 많다 */
+  white-space: pre-wrap;
+}
+
+.note-viewer-heading {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+h1.note-viewer-heading {
+  font-size: 1.35em;
+}
+h2.note-viewer-heading {
+  font-size: 1.2em;
+}
+h3.note-viewer-heading {
+  font-size: 1.08em;
+}
+h4.note-viewer-heading,
+h5.note-viewer-heading,
+h6.note-viewer-heading {
+  font-size: 1em;
+  color: var(--text-secondary);
+}
+
+.note-viewer-list {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.note-viewer-list li {
+  margin: 2px 0;
+}
+
+.note-viewer-tasks {
+  list-style: none;
+  padding-left: 2px;
+}
+
+.note-viewer-tasks li.checked {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.note-viewer-checkbox {
+  margin-right: 6px;
+}
+
+.note-viewer-quote {
+  margin: 0 0 8px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--accent-subtle);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.note-viewer-code {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.note-viewer-inline-code {
+  padding: 1px 4px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.9em;
+}
+
+.note-viewer-divider {
+  margin: 12px 0;
+  border: none;
+  border-top: 1px solid var(--border-color, rgba(127, 127, 127, 0.3));
+}
+
+.note-viewer-link {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* ============================================
@@ -3646,4 +3790,167 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: color 150ms ease;
+}
+
+
+/* ============================================
+   다중 선택 (BRU-80)
+   ============================================ */
+
+.note-row.selected {
+  position: relative;
+  border-radius: var(--radius-md);
+  background: var(--accent-subtle);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* 선택 바는 피드 아래에 붙어 있고, 태그 팝오버는 그 위로 뜬다 */
+.selection-bar-layer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.selection-bar-layer .card-popover {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: var(--space-4);
+  z-index: 50;
+}
+
+.selection-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--space-4);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.selection-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.selection-action-bar-spacer {
+  flex: 1;
+}
+
+.selection-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.selection-action:hover {
+  background: var(--bg-hover);
+}
+
+.selection-action.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.selection-action.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Shortcut Settings Dialog (BRU-84) */
+.shortcut-settings-dialog {
+  width: 420px;
+}
+
+.shortcut-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.shortcut-settings-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.shortcut-settings-recorder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.shortcut-settings-recorder:hover:not(:disabled) {
+  border-color: var(--border-focus);
+}
+
+.shortcut-settings-recorder.is-recording {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.shortcut-settings-recorder:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.shortcut-settings-status {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.shortcut-settings-status.is-error {
+  color: var(--danger);
+}
+
+.shortcut-settings-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.shortcut-settings-reset {
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.shortcut-settings-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.shortcut-settings-hint {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1.6;
 }

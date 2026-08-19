@@ -349,6 +349,51 @@ struct NotesStoreTests {
         #expect(store.visibleNotes.count == 2)
     }
 
+    /// 첨부(카메라·갤러리·공유함)는 "방금 만든 노트"에 붙여야 한다. 목록에서
+    /// 되찾으면 정렬 1순위인 고정 노트가 늘 맨 앞이라 **엉뚱한 노트에 붙는다**
+    /// (BRU-43). 그래서 `create`가 만들어진 노트를 직접 돌려준다.
+    @Test("작성한 노트를 돌려준다 — 고정 노트가 있어도 그 노트가 아니다")
+    func createReturnsTheCreatedNote() async {
+        let (store, _) = store([note("고정", created: 0, pinned: true)])
+        await store.load()
+
+        let created = await store.create(content: "새 노트")
+
+        #expect(created?.content == "새 노트")
+        #expect(created?.id != "고정")
+        // 고정 노트가 맨 앞이므로 목록 첫 줄로 되찾으면 틀린 노트를 잡는다.
+        #expect(store.visibleNotes.first?.id == "고정")
+        #expect(store.allNotes.contains { $0.id == created?.id })
+    }
+
+    /// 위젯 카메라 바로가기는 **필터가 켜진 채** 눌리기 쉽다. 그때 빈 노트는
+    /// `visibleNotes`에서 아예 걸러지므로 목록에서는 되찾을 길이 없다.
+    @Test("태그 필터가 켜져 있어도 방금 만든 노트를 돌려준다")
+    func createReturnsNoteEvenWhenFilteredOut() async {
+        let (store, _) = store([note("태그있음", tags: ["일"])])
+        await store.load()
+        store.selectedTagID = "일"
+
+        let created = await store.create(content: "")
+
+        #expect(created != nil)
+        // 빈 노트는 태그가 없어 목록에서 걸러진다 — 되찾기는 불가능하다.
+        #expect(!store.visibleNotes.contains { $0.id == created?.id })
+    }
+
+    /// 저장이 실패했으면 붙일 노트가 없다. nil을 돌려줘야 호출부가
+    /// 첨부 업로드를 건너뛴다.
+    @Test("작성이 실패하면 아무 노트도 돌려주지 않는다")
+    func createReturnsNilOnFailure() async {
+        let (store, repository) = store()
+        await store.load()
+        repository.createError = NotesRepositoryError.rejected("거절")
+
+        let created = await store.create(content: "새 노트")
+
+        #expect(created == nil)
+    }
+
     /// 실패하면 끼워 넣은 노트를 걷어내야 한다. 안 그러면 새로고침 전까지
     /// 저장되지도 않은 노트가 목록에 남아 있게 된다.
     @Test("작성이 실패하면 끼워 넣은 노트를 되돌린다")

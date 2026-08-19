@@ -1,4 +1,6 @@
 import DropCore
+import DropUI
+import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
@@ -21,7 +23,10 @@ final class ShareViewController: UIViewController {
     }
 
     private func setUpStatusLabel() {
-        view.backgroundColor = .systemBackground
+        // 공유 확장도 앱과 같은 웜 페이퍼를 쓴다 (BRU-75). 시스템 기본 배경을
+        // 두면 공유 시트에서 여기만 다른 앱처럼 보인다.
+        view.backgroundColor = UIColor(DropTheme.Surface.page)
+        statusLabel.textColor = UIColor(DropTokens.Colors.textPrimary)
         statusLabel.text = "DROP에 담는 중…"
         statusLabel.textAlignment = .center
         statusLabel.translatesAutoresizingMaskIntoConstraints = false

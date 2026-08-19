@@ -118,8 +118,12 @@ jobs:
       - name: Build (simulator)
         working-directory: apps/ios
         run: |
+          # 배포 타깃(iOS 26)보다 낮은 런타임의 시뮬레이터는 이 스킴의
+          # destination이 되지 못한다. 아무 iPhone이나 집으면 구 런타임이
+          # 걸려 "Unable to find a destination"으로 죽는다 — 런타임 버전을
+          # 내림차순으로 정렬해 가장 높은 iOS에서 고른다.
           SIM_ID=$(xcrun simctl list devices available --json \
-            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print([x['udid'] for r in d.values() for x in r if 'iPhone' in x['name']][0])")
+            | python3 -c "import json,re,sys; d=json.load(sys.stdin)['devices']; ks=sorted([k for k in d if 'iOS' in k], key=lambda k: [int(n) for n in re.findall(r'\d+', k)], reverse=True); print(next(x['udid'] for k in ks for x in d[k] if 'iPhone' in x['name']))")
           echo "SIM_ID=$SIM_ID" >> "$GITHUB_ENV"
           xcodebuild -project Drop.xcodeproj \
             -scheme Drop-localdev \

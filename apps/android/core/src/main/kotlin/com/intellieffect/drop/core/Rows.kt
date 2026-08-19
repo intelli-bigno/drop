@@ -124,3 +124,27 @@ internal data class NoteTagRow(
     @SerialName("note_id") val noteId: String,
     val tags: TagRow? = null,
 )
+
+/** `note_comments` 의 한 행 (BRU-86). */
+@Serializable
+internal data class CommentRow(
+    val id: String,
+    @SerialName("note_id") val noteId: String,
+    val body: String = "",
+    @Serializable(with = InstantSerializer::class) @SerialName("created_at") val createdAt: Instant,
+    @Serializable(with = InstantSerializer::class) @SerialName("updated_at") val updatedAt: Instant,
+) {
+    fun toComment(): NoteComment = NoteComment(
+        id = id,
+        noteId = noteId,
+        body = body,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
+}
+
+/** 개수 집계용 최소 행 — 뱃지가 쓰는 `select=note_id` 응답. */
+@Serializable
+internal data class CommentNoteIdRow(
+    @SerialName("note_id") val noteId: String,
+)

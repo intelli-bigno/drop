@@ -1,4 +1,5 @@
 import DropCore
+import DropUI
 import SwiftUI
 import WidgetKit
 
@@ -74,13 +75,13 @@ struct RecentNotesView: View {
         HStack {
             Text("DROP")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DropTokens.Colors.textSecondary)
             Spacer()
             // 위젯 어디를 눌러도 최소한 작성 화면으로는 가야 한다.
             Link(destination: DropLink.quickComposeURL) {
                 Image(systemName: "square.and.pencil")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(DropTokens.Colors.accent)
             }
         }
     }
@@ -89,12 +90,12 @@ struct RecentNotesView: View {
         VStack(alignment: .leading, spacing: 1) {
             Text(note.excerpt)
                 .font(.caption)
-                .foregroundStyle(.primary)
+                .foregroundStyle(DropTokens.Colors.textPrimary)
                 .lineLimit(family == .systemSmall ? 2 : 1)
                 .multilineTextAlignment(.leading)
             Text(RelativeTimeFormatter().string(for: note.createdAt))
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(DropTokens.Colors.textTertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -103,10 +104,10 @@ struct RecentNotesView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("아직 노트가 없습니다")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DropTokens.Colors.textSecondary)
             Text("눌러서 첫 노트 쓰기")
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(DropTokens.Colors.textTertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -118,7 +119,9 @@ struct RecentNotesWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { entry in
             RecentNotesView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                // 홈 화면 위젯도 앱과 같은 웜 페이퍼를 쓴다 (BRU-75).
+                // 시스템 기본 채움을 두면 위젯만 회색으로 떠 다른 앱처럼 보인다.
+                .containerBackground(DropTheme.Surface.card, for: .widget)
                 // 노트 줄을 벗어난 곳을 눌렀을 때의 기본 행선지.
                 .widgetURL(DropLink.quickComposeURL)
         }
@@ -144,10 +147,10 @@ struct QuickComposeView: View {
             VStack(spacing: 6) {
                 Image(systemName: "square.and.pencil")
                     .font(.largeTitle)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(DropTokens.Colors.accent)
                 Text("새 노트")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -160,11 +163,72 @@ struct QuickComposeWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
             QuickComposeView()
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(DropTheme.Surface.card, for: .widget)
                 .widgetURL(DropLink.quickComposeURL)
         }
         .configurationDisplayName("새 노트")
         .description("바로 작성 화면을 엽니다.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
+    }
+}
+
+// MARK: - 사진 바로가기 (BRU-43)
+
+/// 카메라·갤러리 위젯은 아이콘과 행선지만 다르다. 두 벌로 베껴 두면
+/// 한쪽만 고쳐지는 자리가 생긴다.
+struct ShortcutView: View {
+    let systemImage: String
+    let title: String
+
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: systemImage).font(.title3)
+            }
+        default:
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.largeTitle)
+                    .foregroundStyle(DropTokens.Colors.accent)
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct CameraWidget: Widget {
+    let kind = "CameraWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
+            ShortcutView(systemImage: "camera", title: "사진 찍기")
+                .containerBackground(DropTheme.Surface.card, for: .widget)
+                .widgetURL(DropLink.cameraURL)
+        }
+        .configurationDisplayName("사진 찍기")
+        .description("카메라를 열어 찍은 사진을 바로 노트로 만듭니다.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
+    }
+}
+
+struct GalleryWidget: Widget {
+    let kind = "GalleryWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
+            ShortcutView(systemImage: "photo.on.rectangle", title: "사진 고르기")
+                .containerBackground(DropTheme.Surface.card, for: .widget)
+                .widgetURL(DropLink.galleryURL)
+        }
+        .configurationDisplayName("사진 고르기")
+        .description("사진 보관함을 열어 고른 사진을 바로 노트로 만듭니다.")
         .supportedFamilies([.systemSmall, .accessoryCircular])
     }
 }

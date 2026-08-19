@@ -1,6 +1,36 @@
 {
+  "$comment" : "웜 페이퍼 팔레트의 앰버 액센트. 값의 정본은 design-system/drop/tokens.json의 color.accent (light #d9730d / dark #e9a23b) — 여기 손으로 옮겨 적은 이유는 앱이 뜨기 전(런치·시스템 UI)에 읽히는 값이라 Swift 코드로는 늦기 때문이다. 토큰을 바꾸면 이 파일도 함께 고친다 (BRU-75).",
   "colors" : [
-    { "idiom" : "universal" }
+    {
+      "idiom" : "universal",
+      "color" : {
+        "color-space" : "srgb",
+        "components" : {
+          "alpha" : "1.000",
+          "red" : "0.851",
+          "green" : "0.451",
+          "blue" : "0.051"
+        }
+      }
+    },
+    {
+      "idiom" : "universal",
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "color" : {
+        "color-space" : "srgb",
+        "components" : {
+          "alpha" : "1.000",
+          "red" : "0.914",
+          "green" : "0.635",
+          "blue" : "0.231"
+        }
+      }
+    }
   ],
   "info" : { "author" : "xcode", "version" : 1 }
 }

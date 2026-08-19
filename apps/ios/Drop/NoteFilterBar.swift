@@ -21,9 +21,9 @@ struct NoteFilterBar: View {
             } label: {
                 Image(systemName: isSearching ? "xmark" : "magnifyingglass")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(isSearching ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(isSearching ? DropTokens.Colors.accent : DropTokens.Colors.textSecondary)
                     .frame(width: 32, height: 32)
-                    .background(Color.secondary.opacity(0.10), in: Circle())
+                    .background(DropTheme.Surface.field, in: Circle())
             }
             .buttonStyle(.plain)
 
@@ -38,13 +38,18 @@ struct NoteFilterBar: View {
                     .submitLabel(.search)
                     .padding(.horizontal, DropTheme.Spacing.comfortable)
                     .padding(.vertical, 6)
-                    .background(Color.secondary.opacity(0.12), in: Capsule())
+                    .foregroundStyle(DropTokens.Colors.textPrimary)
+                    .background(DropTheme.Surface.field, in: Capsule())
             } else {
                 chips
             }
         }
         .padding(.horizontal, DropTheme.Spacing.comfortable)
         .padding(.vertical, DropTheme.Spacing.base)
+        .frame(maxWidth: .infinity)
+        // 목록 **위에** 떠서 따라다니는 기능 레이어라 유리다 (BRU-75).
+        // 색을 칠하지 않는 것이 핵심 — 커스텀 배경을 얹는 순간 유리가 죽는다.
+        .glassEffect(.regular, in: Rectangle())
     }
 
     private var chips: some View {
@@ -108,11 +113,13 @@ struct FilterChip: View {
                 .font(.footnote.weight(isOn ? .semibold : .regular))
                 .padding(.horizontal, DropTheme.Spacing.comfortable)
                 .padding(.vertical, DropTheme.Spacing.base)
+                // 칩은 유리 위에 앉는 작은 표면이다. 여기까지 유리로 만들면
+                // 유리 위 유리가 되어 둘 다 흐려진다 — 토큰 표면으로 둔다.
                 .background(
-                    isOn ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.10),
+                    isOn ? DropTheme.Surface.selected : DropTheme.Surface.field,
                     in: Capsule()
                 )
-                .foregroundStyle(isOn ? Color.accentColor : Color.primary)
+                .foregroundStyle(isOn ? DropTokens.Colors.accent : DropTokens.Colors.textPrimary)
         }
         .buttonStyle(.plain)
     }

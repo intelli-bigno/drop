@@ -7,6 +7,7 @@ import { TagPopover } from './TagPopover'
 import { ProjectPopover } from './ProjectPopover'
 import { TemplatePopover } from './TemplatePopover'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
+import { NoteViewer } from './NoteViewer'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
@@ -17,12 +18,17 @@ import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
 import { nextPriority, priorityClassName } from '../lib/note-priority'
 import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
-import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
+import {
+  resolveTrailingSlot,
+  shouldPinStatusStayVisible,
+  reservedActionsWidth,
+} from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
-import { isEditorOpen } from '../lib/note-edit-mode'
+import { resolveNoteCardView } from '../lib/note-edit-mode'
+import { shouldMountNoteBody } from '../lib/note-body-mount'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
-import { useDragAndDrop } from '../hooks'
+import { useDragAndDrop, useHasEnteredViewport } from '../hooks'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
 
@@ -31,6 +37,8 @@ interface Props {
   isFocused: boolean
   depth?: number
   viewMode?: NoteViewMode
+  /** 목록 전체 펼치기 토글이 켜져 있는가 (BRU-79) */
+  expandAll?: boolean
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
   /**
@@ -55,12 +63,14 @@ export const NoteCard = memo(
         isFocused,
         depth = 0,
         viewMode = 'active',
+        expandAll = false,
         onEscapeFromNormal,
         onReply,
         onPopoverOpenChange,
       },
       ref
     ) => {
+      const cardRef = useRef<HTMLDivElement>(null)
       const editorRef = useRef<LexicalEditorHandle>(null)
       const pendingFocusRef = useRef(false)
       // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
@@ -113,10 +123,18 @@ export const NoteCard = memo(
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
       const isLocked = note.isLocked && !temporarilyUnlockedNoteIds.has(note.id)
 
-      // 상태는 둘뿐이다 — 한 줄(보기) / 펼침(편집).
-      // 포커스는 펼침이 아니다: j/k/클릭으로 카드를 훑어도 한 줄 그대로 남고,
-      // `/`·`i`로 편집에 들어왔을 때만 펼쳐진다 (BRU-53).
-      const isOpen = isEditorOpen({ isFocused, isEditing })
+      // 상태는 셋이다 — 한 줄 / 읽기 전용 viewer / 편집 에디터.
+      // 포커스만 옮겨도 본문은 펼쳐지지만 viewer까지다 (BRU-59): 에디터는
+      // `/`·`i`로 들어왔을 때만 열린다 (BRU-53). 일괄 펼치기(BRU-79)도 viewer까지다.
+      const view = resolveNoteCardView({ isFocused, isEditing, expandAll })
+      const isEditorMounted = view === 'editor'
+      const isOpen = view !== 'one-line'
+
+      // 펼쳐진 본문은 화면에 닿을 때 마운트한다 (BRU-79). 피드에 가상화가 없어
+      // 노트 전량이 DOM에 있으므로, 이 조건이 없으면 전체 펼치기 한 번에 N개의
+      // 뷰어·첨부 목록·링크 프리뷰가 동시에 서고 요청이 폭주한다.
+      const hasEnteredViewport = useHasEnteredViewport(cardRef, { enabled: isOpen })
+      const isBodyMounted = shouldMountNoteBody({ view, hasEnteredViewport, isFocused })
 
       // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
       const previewText = useMemo(
@@ -131,7 +149,9 @@ export const NoteCard = memo(
       // 잠긴 노트는 댓글이 몇 개인지도 흘리지 않는다 — 첨부·링크 개수와 같은 규칙
       const commentCount = isLocked ? 0 : storedCommentCount
 
-      const trailingSlot = resolveTrailingSlot({ isHovered, isFocused })
+      // 액션은 마우스를 올렸을 때만 나온다 (BRU-82). 키보드만 쓰는 경로는
+      // 단축키와 `.note-card:focus-within` CSS 규칙이 따로 맡는다.
+      const trailingSlot = resolveTrailingSlot({ isHovered })
       const showStatusIcons = shouldPinStatusStayVisible({
         isPinned: note.isPinned,
         isLocked: note.isLocked,
@@ -191,13 +211,13 @@ export const NoteCard = memo(
         },
       }))
 
-      // 펼쳐진 뒤에 예약된 포커스를 소비한다
+      // 에디터가 마운트된 뒤에 예약된 포커스를 소비한다 (viewer에는 캐럿이 없다)
       useEffect(() => {
-        if (!isOpen) return
+        if (!isEditorMounted) return
         if (!pendingFocusRef.current) return
         pendingFocusRef.current = false
         editorRef.current?.focus()
-      }, [isOpen])
+      }, [isEditorMounted])
 
       const handleChange = useCallback(
         (content: string) => {
@@ -345,13 +365,22 @@ export const NoteCard = memo(
         updateNotePriority(note.id, nextPriority(note.priority))
       }
 
-      const cardClassName = ['note-card', isFocused && 'focused', isDragOver && 'drag-over', depth > 0 && 'note-card-reply', isLocked && 'locked', isOpen ? 'open' : 'one-line']
+      const cardClassName = [
+        'note-card',
+        isFocused && 'focused',
+        isDragOver && 'drag-over',
+        depth > 0 && 'note-card-reply',
+        isLocked && 'locked',
+        isOpen ? 'open' : 'one-line',
+        `note-card-${view}`,
+      ]
         .filter(Boolean)
         .join(' ')
 
       return (
         <>
           <div
+            ref={cardRef}
             className={cardClassName}
             style={indentStyle}
             data-note-id={note.id}
@@ -442,7 +471,17 @@ export const NoteCard = memo(
                   </span>
                 )}
               </div>
-              <div className="note-card-trailing" data-slot={trailingSlot}>
+              <div
+                className="note-card-trailing"
+                data-slot={trailingSlot}
+                // 액션이 들어갈 자리를 미리 비워 둔다 — 오버레이가 왼쪽으로
+                // 흘러나가 태그를 덮지 않게 하는 유일한 장치다 (BRU-57).
+                style={
+                  {
+                    '--actions-reserved': `${reservedActionsWidth(viewMode)}px`,
+                  } as React.CSSProperties
+                }
+              >
                 {showStatusIcons && (
                   <span className="note-line-status" aria-hidden="true">
                     {note.isPinned && <Icon name="pin" size={12} />}
@@ -576,25 +615,36 @@ export const NoteCard = memo(
             </div>
             {isOpen &&
               (isLocked ? (
+                // 잠긴 노트는 펼쳐도 본문을 흘리지 않는다 — viewer도 예외가 아니다
                 <LockedNoteOverlay
                   onTemporaryUnlock={handleTemporaryUnlock}
                   onPermanentUnlock={handlePermanentUnlock}
                 />
+              ) : !isBodyMounted ? (
+                // 아직 화면에 닿지 않았다 — 자리만 잡아 두고 스크롤이 오면 채운다.
+                // 접힌 것처럼 보이면 안 되므로 카드는 열린 상태 그대로다.
+                <div className="note-body-pending" aria-hidden="true" />
               ) : (
                 <>
-                  <div className="note-editor" onKeyDown={handleEditorKeyDown}>
-                    <LexicalEditor
-                      key={`${note.id}:${editorEpoch}`}
-                      ref={editorRef}
-                      initialContent={note.content}
-                      onChange={handleChange}
-                      onEscape={handleEditorEscape}
-                      onAddFile={handleAddFile}
-                    />
-                  </div>
+                  {isEditorMounted ? (
+                    <div className="note-editor" onKeyDown={handleEditorKeyDown}>
+                      <LexicalEditor
+                        key={`${note.id}:${editorEpoch}`}
+                        ref={editorRef}
+                        initialContent={note.content}
+                        onChange={handleChange}
+                        onEscape={handleEditorEscape}
+                        onAddFile={handleAddFile}
+                      />
+                    </div>
+                  ) : (
+                    // 읽기 전용 (BRU-59). 저장 경로에 닿는 것이 아무것도 없다.
+                    <NoteViewer content={note.content} />
+                  )}
                   <AttachmentList
                     attachments={note.attachments}
-                    onRemove={handleRemoveAttachment}
+                    // viewer에서는 첨부도 읽기만 한다 — 삭제는 편집 모드의 일이다
+                    onRemove={isEditorMounted ? handleRemoveAttachment : undefined}
                   />
                   <LinkPreviews content={note.content} attachments={note.attachments} />
                 </>

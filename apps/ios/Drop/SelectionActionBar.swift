@@ -35,7 +35,9 @@ struct SelectionActionBar: View {
         }
         .padding(.vertical, DropTheme.Spacing.comfortable)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        // 목록 위에 잠깐 뜨는 일시적 표면 — 유리가 맞는 자리다 (BRU-75).
+        .glassEffect(.regular, in: Rectangle())
+        .tint(DropTokens.Colors.accent)
     }
 
     private func action(

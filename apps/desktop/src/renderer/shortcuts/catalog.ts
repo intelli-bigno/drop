@@ -3,7 +3,7 @@ import { KEYS, type ShortcutKeyId } from './keys'
 // 치트시트에 보여줄 항목. 키는 여기에 적지 않고 KEYS에서 keyId로 참조한다 —
 // 단축키를 추가하면 keys.ts 한 곳만 고치면 되고, 목록이 실제 동작과 어긋나지 않는다.
 
-export type ShortcutScope = 'feed' | 'global' | 'trash' | 'tag' | 'note'
+export type ShortcutScope = 'feed' | 'global' | 'trash' | 'tag' | 'note' | 'selection'
 
 export interface ShortcutCatalogEntry {
   keyId: ShortcutKeyId
@@ -21,6 +21,23 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   { keyId: 'openFocused', label: '편집 모드로 들어가기', group: '탐색', scope: 'feed' },
   { keyId: 'clearFocus', label: '편집 나가기 · 포커스 해제', group: '탐색', scope: 'feed' },
   { keyId: 'search', label: '검색', group: '탐색', scope: 'global', modifier: 'primary' },
+
+  // 다중 선택 (BRU-80)
+  { keyId: 'enterVisualSelection', label: '선택 모드', group: '선택', scope: 'selection' },
+  {
+    keyId: 'extendSelectionNext',
+    label: '선택 아래로',
+    group: '선택',
+    scope: 'selection',
+    modifier: 'shift',
+  },
+  {
+    keyId: 'extendSelectionPrev',
+    label: '선택 위로',
+    group: '선택',
+    scope: 'selection',
+    modifier: 'shift',
+  },
 
   // 노트 액션
   { keyId: 'createNote', label: '새 노트', group: '노트 액션', scope: 'global' },
