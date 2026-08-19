@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.intellieffect.drop.core.AttachmentType
 import com.intellieffect.drop.core.AuthStore
+import com.intellieffect.drop.core.CommentsStore
 import com.intellieffect.drop.core.GoogleIdentity
 import com.intellieffect.drop.core.GoogleIdentityProvider
 import com.intellieffect.drop.core.NotesStore
@@ -42,6 +43,13 @@ class DropViewModel(application: Application) : AndroidViewModel(application) {
 
     val authStore = AuthStore(gateway = container.authGateway, identityProvider = identityProvider)
     val notesStore = NotesStore(container.notesRepository)
+
+    /**
+     * 댓글 상태는 노트 상태와 **따로** 산다 (BRU-86). 한 덩어리로 합치면 목록·검색·
+     * 위젯이 보는 노트 목록에 댓글이 섞일 길이 생긴다 — BRU-62가 테이블을 나눠
+     * 막아 둔 것을 화면에서 도로 풀어 주는 셈이다.
+     */
+    val commentsStore = CommentsStore(container.commentsRepository)
     val signedUrlCache = container.signedUrlCache
 
     private val widgets = WidgetSnapshotPublisher(application)
@@ -68,6 +76,8 @@ class DropViewModel(application: Application) : AndroidViewModel(application) {
         authStore.signOut()
         // 로그아웃 뒤에도 위젯에 앞 사용자의 노트가 남아 있으면 안 된다.
         widgets.clear()
+        // 댓글도 마찬가지다 — 뱃지 숫자만 남아도 앞 사용자의 흔적이다.
+        commentsStore.clear()
         // 서명 URL은 사용자마다 다르다 — 비우지 않으면 다음 사용자가 앞 사용자의
         // 파일 URL을 그대로 쓰게 된다.
         signedUrlCache.clear()

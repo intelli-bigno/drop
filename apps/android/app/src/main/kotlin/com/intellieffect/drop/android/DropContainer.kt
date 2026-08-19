@@ -3,11 +3,13 @@ package com.intellieffect.drop.android
 import android.app.Application
 import android.content.Context
 import com.intellieffect.drop.core.AttachmentsRepository
+import com.intellieffect.drop.core.CommentsRepository
 import com.intellieffect.drop.core.DropConfiguration
 import com.intellieffect.drop.core.NotesRepository
 import com.intellieffect.drop.core.SignedUrlCache
 import com.intellieffect.drop.core.SupabaseAttachmentsRepository
 import com.intellieffect.drop.core.SupabaseAuthGateway
+import com.intellieffect.drop.core.SupabaseCommentsRepository
 import com.intellieffect.drop.core.SupabaseNotesRepository
 import com.intellieffect.drop.core.SupabaseTagsRepository
 import com.intellieffect.drop.core.TagsRepository
@@ -45,6 +47,13 @@ class DropContainer(context: Context) {
     )
 
     val tagsRepository: TagsRepository = SupabaseTagsRepository(
+        config = configuration,
+        client = httpClient,
+        tokens = authGateway,
+    )
+
+    /** 댓글은 노트가 아니다 — 리포지토리도 따로 둔다 (BRU-86). */
+    val commentsRepository: CommentsRepository = SupabaseCommentsRepository(
         config = configuration,
         client = httpClient,
         tokens = authGateway,
