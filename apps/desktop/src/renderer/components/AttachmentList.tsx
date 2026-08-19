@@ -2,7 +2,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { FileIcon, defaultStyles } from 'react-file-icon'
 import type { Attachment } from '@drop/shared'
-import { getAttachmentUrl, getSignedAttachmentUrl } from '../lib/supabase'
+import {
+  getAttachmentUrl,
+  getSignedAttachmentUrl,
+  invalidateSignedAttachmentUrl,
+} from '../lib/supabase'
 import { Icon } from './Icon'
 
 interface Props {
@@ -69,7 +73,11 @@ function useAttachmentUrl(storagePath: string) {
     }
   }, [storagePath, retryCount])
 
-  const retry = () => setRetryCount((c) => c + 1)
+  // 재시도는 캐시를 건너뛴다 — 캐시된 URL 그대로 다시 물으면 같은 실패를 반복한다
+  const retry = () => {
+    invalidateSignedAttachmentUrl(storagePath)
+    setRetryCount((c) => c + 1)
+  }
 
   return { url, retry }
 }
