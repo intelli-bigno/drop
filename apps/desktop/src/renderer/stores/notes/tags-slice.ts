@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../auth'
 import { tagRowToTag } from '@drop/shared'
 import type { TagRow } from '@drop/shared'
+import type { Note, Tag } from '@drop/shared'
 import type { NotesState, TagsSlice } from './types'
 import {
   applyTagAttach,
@@ -20,6 +21,39 @@ import {
  * (팝오버는 고른 뒤에도 열려 있고 다시 누르면 뗀다). 그때 지울 행의 id를 여기서 기다린다.
  */
 const pendingAttach = new Map<string, Promise<string | null>>()
+
+/** 노트가 담긴 세 배열 + 태그 목록 — 태그 전이는 항상 이 넷을 함께 옮긴다 */
+type TagViews = Pick<NotesState, 'notes' | 'archivedNotes' | 'trashedNotes' | 'allTags'>
+
+/**
+ * 스토어는 활성·보관함·휴지통 노트를 각각 다른 배열로 든다. 태그 칩(과 그 × 버튼)은
+ * 뷰 모드와 무관하게 렌더되므로, 전이를 활성 배열에만 걸면 보관된 노트의 태그 조작이
+ * 화면에서도 서버에서도 통째로 사라진다.
+ */
+function acrossViews(
+  state: TagViews,
+  step: (notes: Note[], allTags: Tag[]) => { notes: Note[]; allTags: Tag[] }
+): TagViews {
+  const active = step(state.notes, state.allTags)
+  const archived = step(state.archivedNotes, active.allTags)
+  const trashed = step(state.trashedNotes, archived.allTags)
+
+  return {
+    notes: active.notes,
+    archivedNotes: archived.notes,
+    trashedNotes: trashed.notes,
+    allTags: trashed.allTags,
+  }
+}
+
+/** 세 배열 어디에 있든 노트를 찾는다 */
+function findNote(state: TagViews, noteId: string): Note | undefined {
+  return (
+    state.notes.find((n) => n.id === noteId) ??
+    state.archivedNotes.find((n) => n.id === noteId) ??
+    state.trashedNotes.find((n) => n.id === noteId)
+  )
+}
 
 export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set, get) => ({
   allTags: [],
@@ -61,41 +95,63 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
     if (!resolved) return
 
     const { tag, isNew } = resolved
-    const note = get().notes.find((n) => n.id === noteId)
+    const note = findNote(get(), noteId)
     if (note?.tags.some((t) => t.id === tag.id)) return
 
     // 1. 화면 먼저 — 왕복을 기다리지 않는다
-    set((state) => applyTagAttach({ notes: state.notes, allTags: state.allTags, noteId, tag }))
+    set((state) =>
+      acrossViews(state, (notes, allTags) => applyTagAttach({ notes, allTags, noteId, tag }))
+    )
 
-    const rollback = (tagId: string) =>
+    // 되돌릴 때 화면에서 뗄 id — 서버 id로 갈아 끼운 뒤에는 그쪽이 된다
+    let attachedId = tag.id
+    // 이 자리에서 만든 태그만 목록에서도 지운다. 서버가 태그 행을 이미 만들어 준 뒤라면
+    // 연결이 실패해도 태그 자체는 실재하므로 목록에서 지우면 안 된다.
+    let dropFromAllTags = isNew
+
+    const rollback = () =>
       set((state) =>
-        applyTagDetach({
-          notes: state.notes,
-          allTags: state.allTags,
-          noteId,
-          tagId,
-          dropFromAllTags: isNew,
-        })
+        acrossViews(state, (notes, allTags) =>
+          applyTagDetach({ notes, allTags, noteId, tagId: attachedId, dropFromAllTags })
+        )
       )
 
     // 2. 서버는 뒤따라간다
     const nowIso = now.toISOString()
-    // 되돌릴 때 화면에서 뗄 id — 서버 id로 갈아 끼운 뒤에는 그쪽이 된다
-    let attachedId = tag.id
     const persist = async (): Promise<string | null> => {
       try {
         if (!isNew) {
-          // 태그 id를 이미 아니까 두 요청을 나란히 보낸다 — 왕복 1회분 시간에 끝난다
-          const [link, touch] = await Promise.all([
+          let targetId = tag.id
+
+          // 같은 이름을 방금 다른 노트에 처음 붙였고 서버 id가 아직 안 온 경우가 있다.
+          // 그대로 보내면 'pending:…'이 uuid 자리에 실려 요청이 죽는다 — 진짜 id를 기다린다.
+          if (isProvisionalTagId(targetId)) {
+            const settled = await pendingAttach.get(targetId)
+            // 원 부착이 실패했다면 서버에 붙일 태그 자체가 없다
+            if (!settled) {
+              rollback()
+              return null
+            }
+            targetId = settled
+            attachedId = settled
+          }
+
+          // 태그 id를 이미 아니까 두 요청을 나란히 보낸다 — 왕복 1회분 시간에 끝난다.
+          // 사용 시각은 정렬 힌트일 뿐이라 부착과 생사를 같이 하지 않는다 → allSettled.
+          const [link, touch] = await Promise.allSettled([
             supabase
               .from('note_tags')
-              .upsert({ note_id: noteId, tag_id: tag.id }, { onConflict: 'note_id,tag_id' }),
-            supabase.from('tags').update({ last_used_at: nowIso }).eq('id', tag.id),
+              .upsert({ note_id: noteId, tag_id: targetId }, { onConflict: 'note_id,tag_id' }),
+            supabase.from('tags').update({ last_used_at: nowIso }).eq('id', targetId),
           ])
-          if (link.error) throw link.error
-          // 사용 시각은 정렬 힌트일 뿐이다 — 여기서 실패해도 부착은 되돌리지 않는다
-          if (touch.error) console.error('Failed to bump tag last_used_at:', touch.error)
-          return tag.id
+          if (link.status === 'rejected') throw link.reason
+          if (link.value.error) throw link.value.error
+          if (touch.status === 'rejected') {
+            console.error('Failed to bump tag last_used_at:', touch.reason)
+          } else if (touch.value.error) {
+            console.error('Failed to bump tag last_used_at:', touch.value.error)
+          }
+          return targetId
         }
 
         // 처음 보는 이름 — 있으면 사용 시각만 올리고 없으면 만든다 (왕복 1회)
@@ -112,13 +168,12 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
 
         const saved = tagRowToTag(data as TagRow)
         attachedId = saved.id
+        // 태그 행은 서버에 실재한다 — 이 뒤로는 연결이 실패해도 목록에서 지우지 않는다
+        dropFromAllTags = false
         set((state) =>
-          reconcileTagId({
-            notes: state.notes,
-            allTags: state.allTags,
-            provisionalId: tag.id,
-            tag: saved,
-          })
+          acrossViews(state, (notes, allTags) =>
+            reconcileTagId({ notes, allTags, provisionalId: tag.id, tag: saved })
+          )
         )
 
         const { error: linkError } = await supabase
@@ -129,7 +184,7 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
         return saved.id
       } catch (error) {
         console.error('Failed to add tag to note:', error)
-        rollback(attachedId)
+        rollback()
         return null
       }
     }
@@ -143,13 +198,14 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
   },
 
   removeTagFromNote: async (noteId, tagId) => {
-    const removed = get()
-      .notes.find((n) => n.id === noteId)
-      ?.tags.find((t) => t.id === tagId)
-    if (!removed) return
+    // 보관함·휴지통 노트도 × 버튼을 그대로 갖는다. 활성 배열만 보고 곧장 return하면
+    // 그 노트들의 해제는 서버에 아예 나가지 않는다. 찾은 값은 롤백용으로만 쓴다.
+    const removed = findNote(get(), noteId)?.tags.find((t) => t.id === tagId)
 
     // 1. 화면 먼저
-    set((state) => applyTagDetach({ notes: state.notes, allTags: state.allTags, noteId, tagId }))
+    set((state) =>
+      acrossViews(state, (notes, allTags) => applyTagDetach({ notes, allTags, noteId, tagId }))
+    )
 
     // 2. 아직 서버 id를 못 받은 태그면 그것부터 기다린다
     let serverTagId = tagId
@@ -169,8 +225,11 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
     if (error) {
       console.error('Failed to remove tag from note:', error)
       // 되돌린다 — 서버에는 아직 붙어 있다
+      if (!removed) return
       set((state) =>
-        applyTagAttach({ notes: state.notes, allTags: state.allTags, noteId, tag: removed })
+        acrossViews(state, (notes, allTags) =>
+          applyTagAttach({ notes, allTags, noteId, tag: removed })
+        )
       )
     }
   },
