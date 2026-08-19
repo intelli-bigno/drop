@@ -98,4 +98,27 @@ struct DropLinkTests {
     func emptyNoteIDIsNil() {
         #expect(DropLink(url: URL(string: "drop://note/")!) == nil)
     }
+
+    @Test("카메라 링크를 읽는다")
+    func parsesCameraLink() {
+        #expect(DropLink(url: URL(string: "drop://camera")!) == .camera)
+    }
+
+    @Test("갤러리 링크를 읽는다")
+    func parsesGalleryLink() {
+        #expect(DropLink(url: URL(string: "drop://gallery")!) == .gallery)
+    }
+
+    /// 웹 링크로도 같은 곳으로 가야 한다 — 링크 해석 경로는 하나다.
+    @Test("웹 링크로도 카메라·갤러리를 연다")
+    func parsesUniversalCameraAndGalleryLinks() {
+        #expect(DropLink(url: URL(string: "https://drop.intellieffect.com/camera")!) == .camera)
+        #expect(DropLink(url: URL(string: "https://drop.intellieffect.com/gallery")!) == .gallery)
+    }
+
+    /// 녹음 기능은 BRU-48에서 앱에서 제거됐다. 없는 곳으로 보내는 링크를 만들지 않는다.
+    @Test("녹음 링크는 여전히 모르는 링크다")
+    func recordLinkStaysUnknown() {
+        #expect(DropLink(url: URL(string: "drop://record")!) == nil)
+    }
 }

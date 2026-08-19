@@ -17,9 +17,17 @@ struct HomeView: View {
     /// 댓글은 노트가 아니므로 상태도 따로 둔다 — `NotesStore`에 섞을 길을 만들지 않는다.
     @State private var comments: CommentsStore
     @State private var composer: ComposerTarget?
+    /// 펼쳐 볼 노트 (BRU-77). 노트 자체가 아니라 id를 들고 있는다 —
+    /// 뷰어가 떠 있는 동안 노트가 바뀌면(편집 저장) 새 값이 그려져야 한다.
+    @State private var detailTarget: NoteDetailTarget?
     /// 댓글 시트를 띄울 노트.
     @State private var commentTarget: Note?
     @State private var photoSelection: [PhotosPickerItem] = []
+    /// 위젯의 갤러리 바로가기로 들어왔을 때 여는 사진 보관함 (BRU-43).
+    @State private var isPickingPhotos = false
+    /// 위젯의 카메라 바로가기.
+    @State private var isCapturing = false
+    @State private var cameraUnavailable = false
     @State private var viewingAttachments: AttachmentPresentation?
     /// 썸네일용 서명 URL 캐시. 스크롤할 때마다 다시 발급받지 않기 위해 화면 단위로 하나 둔다.
     @State private var attachmentURLs: AttachmentURLCache?
@@ -75,6 +83,41 @@ struct HomeView: View {
                     guard text != nil else { return }
                     composer = .newWithText(router.consumeComposeText() ?? "")
                 }
+                // 위젯의 카메라·갤러리 바로가기 (BRU-43). 화면 안의 버튼과 같은 경로로 보낸다 —
+                // 위젯 전용 첨부 경로를 따로 만들면 두 길이 어긋난다.
+                .onChange(of: router.pendingCapture) { _, capture in
+                    guard capture != nil else { return }
+                    switch router.consumeCapture() {
+                    case .camera:
+                        if CameraPicker.isAvailable {
+                            isCapturing = true
+                        } else {
+                            cameraUnavailable = true
+                        }
+                    case .gallery:
+                        isPickingPhotos = true
+                    case nil:
+                        break
+                    }
+                }
+                .photosPicker(
+                    isPresented: $isPickingPhotos,
+                    selection: $photoSelection,
+                    maxSelectionCount: 5,
+                    matching: .any(of: [.images, .videos])
+                )
+                .fullScreenCover(isPresented: $isCapturing) {
+                    CameraPicker { data in
+                        Task { await addCameraNote(data: data) }
+                    }
+                    .ignoresSafeArea()
+                }
+                .alert(
+                    "카메라를 쓸 수 없습니다",
+                    isPresented: $cameraUnavailable,
+                    actions: { Button("확인") {} },
+                    message: { Text("이 기기에서는 카메라를 열 수 없습니다. 사진 보관함에서 골라 주세요.") }
+                )
                 .sheet(item: $composer) { target in
                     NoteComposerSheet(target: target) { content in
                         switch target {
@@ -85,6 +128,19 @@ struct HomeView: View {
                         case let .reply(parent):
                             await notes.create(content: content, parentID: parent.id)
                         }
+                    }
+                }
+                // 펼치기(뷰어). 읽기 전용 경로다 — 여기서는 저장이 일어나지 않는다 (BRU-77).
+                .sheet(item: $detailTarget) { target in
+                    if let note = notes.allNotes.first(where: { $0.id == target.id }) {
+                        NoteDetailView(
+                            note: note,
+                            commentCount: comments.count(for: note.id),
+                            comments: comments,
+                            attachmentURL: attachmentURL,
+                            onSubmitEdit: { content in await notes.update(id: note.id, content: content) },
+                            onStateAction: { action in await perform(action, on: note) }
+                        )
                     }
                 }
                 .sheet(item: $commentTarget) { note in
@@ -203,11 +259,14 @@ struct HomeView: View {
                 )
             }
         )
+        // 탭은 **펼치기**다. 편집기는 뷰어에서 "편집"을 한 번 더 눌러야 열린다 —
+        // 열어 보려던 동작이 저장 경로를 건드리면 안 된다 (BRU-77 / BRU-66).
+        // 선택 모드에서는 그대로 선택 토글.
         .onTapGesture {
             if notes.isSelecting {
                 notes.toggleSelection(id: note.id)
             } else {
-                composer = .existing(note)
+                detailTarget = NoteDetailTarget(id: note.id)
             }
         }
         // 롱프레스는 선택 모드 하나만 쓴다. 예전에는 같은 롱프레스를
@@ -381,6 +440,20 @@ struct HomeView: View {
 }
 
 private extension HomeView {
+    /// 뷰어에서 고른 상태 변경을 목록의 저장소로 넘긴다 (BRU-77).
+    /// **본문은 여기서 다루지 않는다** — 뷰어에서 본문이 나가는 길은 편집기뿐이다.
+    func perform(_ action: NoteViewerAction, on note: Note) async {
+        switch action {
+        case .archive: await notes.archive(id: note.id)
+        case .unarchive: await notes.unarchive(id: note.id)
+        case .trash: await notes.moveToTrash(id: note.id)
+        case .restore: await notes.restore(id: note.id)
+        case .deletePermanently: await notes.deletePermanently(id: note.id)
+        // 편집·댓글은 뷰어가 제 시트로 처리한다 — 목록을 거치지 않는다.
+        case .edit, .comments: break
+        }
+    }
+
     /// 공유 시트로 들어온 항목을 노트로 만든다.
     ///
     /// 앱 안에서 녹음하는 경로는 BRU-48에서 없앴지만, **오디오가 노트로 들어오는
@@ -396,8 +469,9 @@ private extension HomeView {
 
         let attachments = container.makeAttachmentsRepository()
         for item in items {
-            await notes.create(content: item.text)
-            guard let note = notes.visibleNotes.first else { continue }
+            // 만들어진 노트를 그대로 받는다. 목록에서 되찾으면 고정 노트가
+            // 맨 앞이라 남의 노트에 첨부가 붙는다 (BRU-43).
+            guard let note = await notes.create(content: item.text) else { continue }
 
             for fileName in item.fileNames {
                 let url = inbox.fileURL(named: fileName)
@@ -418,10 +492,31 @@ private extension HomeView {
         await notes.load()
     }
 
+    /// 카메라로 찍은 한 장을 노트로 만든다 (BRU-43).
+    /// 보관함에서 고른 사진과 같은 자리로 간다 — 빈 노트 하나에 첨부를 붙인다.
+    func addCameraNote(data: Data) async {
+        // 첨부는 **방금 만든 그 노트**에 붙인다. 목록 첫 줄로 되찾던 예전 코드는
+        // 정렬 1순위가 `isPinned`라 고정 노트가 하나만 있어도 사진이 그리로 갔고,
+        // 태그·검색 필터가 켜져 있으면 빈 노트가 `visibleNotes`에서 걸러져
+        // 더 엉뚱한 노트에 붙었다 — 위젯 카메라 바로가기가 딱 그 경로다 (BRU-43).
+        guard let container, let note = await notes.create(content: "") else { return }
+
+        do {
+            _ = try await container.makeAttachmentsRepository().upload(
+                data: data,
+                fileName: "camera-\(Int(Date().timeIntervalSince1970)).jpg",
+                type: .image,
+                toNote: note.id
+            )
+        } catch {
+            notes.report(error: error)
+        }
+        await notes.load()
+    }
+
     func addPhotoNote(items: [PhotosPickerItem]) async {
         defer { photoSelection = [] }
-        await notes.create(content: "")
-        guard let container, let note = notes.visibleNotes.first else { return }
+        guard let container, let note = await notes.create(content: "") else { return }
 
         let repository = container.makeAttachmentsRepository()
         for item in items {
@@ -440,6 +535,12 @@ private extension HomeView {
         }
         await notes.load()
     }
+}
+
+/// 뷰어가 볼 노트. 노트를 통째로 들고 있으면 편집 저장 뒤에도 옛 값이 남는다 —
+/// id만 들고 목록에서 매번 찾는다 (BRU-77).
+struct NoteDetailTarget: Identifiable, Equatable {
+    let id: String
 }
 
 struct AttachmentPresentation: Identifiable {
