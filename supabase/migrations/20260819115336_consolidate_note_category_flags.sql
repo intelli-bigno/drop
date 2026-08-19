@@ -20,6 +20,7 @@
 -- ============================================
 -- 클라이언트 정규식과 같은 패턴:
 --   /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
+-- 대소문자 무시(~*)여야 한다 — `HTTPS://…`로 시작하는 본문이 실제로 있다.
 CREATE OR REPLACE FUNCTION note_content_has_url(p_content TEXT)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -27,7 +28,7 @@ IMMUTABLE
 PARALLEL SAFE
 SET search_path = ''
 AS $$
-  SELECT COALESCE(p_content, '') ~ 'https?://[^\s<>"{}|\\^`\[\]]+';
+  SELECT COALESCE(p_content, '') ~* 'https?://[^\s<>"{}|\\^`\[\]]+';
 $$;
 
 COMMENT ON FUNCTION note_content_has_url(TEXT) IS

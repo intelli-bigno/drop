@@ -10,7 +10,7 @@
 
 BEGIN;
 
-SELECT plan(29);
+SELECT plan(32);
 
 CREATE TEMP TABLE t_user AS SELECT id FROM auth.users LIMIT 1;
 
@@ -40,6 +40,10 @@ SELECT ok(
   '콜론·언더스코어가 들어간 긴 URL'
 );
 SELECT ok(public.note_content_has_url('http://legacy.example.com'), 'https가 아닌 http');
+-- 스킴 대소문자 — 클라이언트 정규식은 /i다. DB도 같아야 한다.
+SELECT ok(public.note_content_has_url('HTTPS://A.EXAMPLE'), '대문자 스킴 HTTPS://');
+SELECT ok(public.note_content_has_url('HTTP://B.EXAMPLE'), '대문자 스킴 HTTP://');
+SELECT ok(public.note_content_has_url(E'메모 한 줄\nHttps://Mixed.Example/Path'), '섞인 대소문자 스킴');
 SELECT ok(public.note_content_has_url(E'끝줄에 URL\nhttps://a.example'), '마지막 줄 URL');
 
 SELECT ok(NOT public.note_content_has_url('그냥 메모 한 줄'), 'URL 없는 본문');
