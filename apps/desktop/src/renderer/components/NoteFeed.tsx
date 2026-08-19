@@ -21,7 +21,7 @@ import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../short
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
-import { computeFeedScrollTop } from '../lib/feed-scroll'
+import { scrollFocusedNoteIntoView } from '../lib/feed-scroll'
 import { applyNoteFilters } from '../lib/note-filters'
 import { buildNoteRows } from '../lib/note-hierarchy'
 
@@ -302,27 +302,10 @@ export function NoteFeed() {
       const element = cardElementRefs.current.get(item.note.id)
       if (!element) return
 
-      const container = feedRef.current
-      if (!container) return
-
-      const rect = element.getBoundingClientRect()
-      const containerRect = container.getBoundingClientRect()
-
       // 목표 scrollTop을 직접 계산한다 — scrollIntoView({ block: 'nearest' })는
-      // 헤더 오프셋을 적용하지 않아 카드가 헤더 아래에 걸린 채 멈춘다 (BRU-23)
-      const nextScrollTop = computeFeedScrollTop({
-        currentScrollTop: container.scrollTop,
-        elementOffsetTop: rect.top - containerRect.top + container.scrollTop,
-        elementHeight: rect.height,
-        viewportHeight: container.clientHeight,
-        topInset: FEED_TOP_INSET,
-      })
-
-      if (nextScrollTop !== container.scrollTop) {
-        // 키보드 이동은 즉시 반영한다 — 애니메이션이 붙으면 연타 시 위치가 밀린다.
-        // 움직임이 없으므로 prefers-reduced-motion과도 충돌하지 않는다.
-        container.scrollTop = nextScrollTop
-      }
+      // 헤더 오프셋을 적용하지 않아 카드가 헤더 아래에 걸린 채 멈춘다 (BRU-23).
+      // 적용 대상은 카드의 실제 스크롤 조상이다 — 피드 래퍼는 스크롤하지 않는다 (BRU-85).
+      scrollFocusedNoteIntoView(element, FEED_TOP_INSET)
     })
 
     return () => cancelAnimationFrame(rafId)

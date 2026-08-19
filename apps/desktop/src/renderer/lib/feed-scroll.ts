@@ -42,3 +42,52 @@ export function computeFeedScrollTop({
 
   return Math.max(target, 0)
 }
+
+const SCROLLABLE_OVERFLOW = new Set(['auto', 'scroll', 'overlay'])
+
+/**
+ * 요소에서 위로 올라가며 실제로 스크롤하는 조상을 찾는다.
+ *
+ * 목표 scrollTop을 아무리 정확히 계산해도 엉뚱한 요소에 대입하면 아무 일도 일어나지
+ * 않는다 — BRU-85가 정확히 그것이었다. 피드 래퍼(.feed)는 flex 컬럼일 뿐이고
+ * overflow-y: auto를 가진 것은 자식(.feed-content)이라, 래퍼의 scrollTop은 늘 0이었다.
+ * 그래서 "어느 div에 ref를 걸었나"에 기대지 않고 DOM에서 직접 찾는다.
+ */
+export function resolveScrollContainer(element: HTMLElement | null): HTMLElement | null {
+  let node = element?.parentElement ?? null
+
+  while (node) {
+    const overflowY = getComputedStyle(node).overflowY
+    if (SCROLLABLE_OVERFLOW.has(overflowY)) return node
+    node = node.parentElement
+  }
+
+  return null
+}
+
+/** 포커스된 카드가 뷰포트 안에 들어오도록 스크롤 컨테이너를 움직인다. */
+export function scrollFocusedNoteIntoView(element: HTMLElement, topInset: number): void {
+  const container = resolveScrollContainer(element)
+  if (!container) return
+
+  const rect = element.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+
+  const nextScrollTop = computeFeedScrollTop({
+    currentScrollTop: container.scrollTop,
+    elementOffsetTop: rect.top - containerRect.top + container.scrollTop,
+    elementHeight: rect.height,
+    viewportHeight: container.clientHeight,
+    topInset,
+  })
+
+  if (nextScrollTop === container.scrollTop) return
+
+  // 키보드 이동은 즉시 반영한다 — .feed-content의 scroll-behavior: smooth가
+  // 걸린 채로 연타하면 위치가 밀린다.
+  if (typeof container.scrollTo === 'function') {
+    container.scrollTo({ top: nextScrollTop, behavior: 'instant' })
+  } else {
+    container.scrollTop = nextScrollTop
+  }
+}
