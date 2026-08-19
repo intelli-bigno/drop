@@ -24,6 +24,18 @@ import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { scrollFocusedNoteIntoView } from '../lib/feed-scroll'
 import { applyNoteFilters } from '../lib/note-filters'
 import { buildNoteRows } from '../lib/note-hierarchy'
+import { resolveNoteSelectionShortcut } from '../shortcuts/noteSelection'
+import {
+  enterVisualSelection,
+  extendSelection,
+  isIndexSelected,
+  selectedIndexes,
+  selectionCount,
+  type VisualSelection,
+} from '../lib/note-selection'
+import { buildBulkDeleteConfirmMessage, type BulkActionId } from '../lib/bulk-actions'
+import { SelectionActionBar } from './SelectionActionBar'
+import { BulkTagPopover } from './BulkTagPopover'
 
 // 피드 상단에서 헤더에 가려지는 높이. 이만큼 여유를 두고 카드를 맞춘다.
 const FEED_TOP_INSET = 60
@@ -61,6 +73,7 @@ export function NoteFeed() {
     trashedNotes,
     archivedNotes,
     restoreNote,
+    permanentlyDeleteNote,
     emptyTrash,
     archiveNote,
     unarchiveNote,
@@ -70,6 +83,12 @@ export function NoteFeed() {
     selectNote,
   } = useNotesStore()
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
+  // 비주얼 선택 (BRU-80). 앵커·헤드만 들고 범위는 lib/note-selection.ts가 계산한다.
+  const [selection, setSelection] = useState<VisualSelection | null>(null)
+  const [showBulkTagPopover, setShowBulkTagPopover] = useState(false)
+  const [pendingBulkDelete, setPendingBulkDelete] = useState<
+    'trash' | 'deletePermanently' | null
+  >(null)
   const [showTagManagement, setShowTagManagement] = useState(false)
   const [pinDialogNoteId, setPinDialogNoteId] = useState<string | null>(null)
   const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
@@ -84,6 +103,7 @@ export function NoteFeed() {
 
   // 이벤트 핸들러용 ref (의존성 분리) - 나중에 업데이트됨
   const focusedIndexRef = useRef<number | null>(focusedIndex)
+  const selectionRef = useRef<VisualSelection | null>(selection)
   const orderedNotesRef = useRef<Array<{ note: Note; depth: number }>>([])
   const deleteNoteRef = useRef<(id: string) => void>(deleteNote)
   const requestDeleteNoteRef = useRef<(id: string) => void>(requestDeleteNote)
@@ -182,6 +202,10 @@ export function NoteFeed() {
   }, [focusedIndex])
 
   useEffect(() => {
+    selectionRef.current = selection
+  }, [selection])
+
+  useEffect(() => {
     deleteNoteRef.current = deleteNote
   }, [deleteNote])
 
@@ -219,9 +243,14 @@ export function NoteFeed() {
     // 텍스트 입력 영역에서 버블링된 이벤트 무시
     if (isTextInputTarget(e.target)) return
 
-    // Escape로 포커스 해제 (피드에 직접 포커스가 있을 때만)
     if (e.key === 'Escape') {
       e.preventDefault()
+      // 선택 중이면 Esc는 선택만 푼다 — 포커스까지 잃으면 이어서 j/k를 칠 수 없다 (BRU-80)
+      if (selectionRef.current) {
+        setSelection(null)
+        return
+      }
+      // Escape로 포커스 해제 (피드에 직접 포커스가 있을 때만)
       setFocusedIndex(null)
     }
   }, [])
@@ -322,6 +351,58 @@ export function NoteFeed() {
       selectNote(null)
     }
   }, [selectedNoteId, noteIndexMap, selectNote])
+
+  // ── 일괄 액션 (BRU-80) ──────────────────────────────────────────────
+  const selectedNotes = useMemo(
+    () =>
+      selectedIndexes(selection)
+        .map((index) => orderedNotes[index]?.note)
+        .filter((note): note is Note => Boolean(note)),
+    [selection, orderedNotes]
+  )
+
+  const clearSelection = useCallback(() => {
+    setSelection(null)
+    setShowBulkTagPopover(false)
+  }, [])
+
+  const handleBulkAction = useCallback(
+    async (action: BulkActionId) => {
+      if (action === 'tag') {
+        setShowBulkTagPopover(true)
+        return
+      }
+
+      // 삭제는 한 장일 때와 똑같이 확인을 거친다 (BRU-24)
+      if (action === 'trash' || action === 'deletePermanently') {
+        setPendingBulkDelete(action)
+        return
+      }
+
+      // 목록을 먼저 복사한다 — 처리 중에 선택이 비워지기 때문이다
+      const targets = selectedNotes.map((note) => note.id)
+      clearSelection()
+
+      for (const id of targets) {
+        if (action === 'archive') await archiveNote(id)
+        else if (action === 'unarchive') await unarchiveNote(id)
+        else if (action === 'restore') await restoreNote(id)
+      }
+    },
+    [selectedNotes, clearSelection, archiveNote, unarchiveNote, restoreNote]
+  )
+
+  const confirmBulkDelete = useCallback(async () => {
+    const action = pendingBulkDelete
+    const targets = selectedNotes.map((note) => note.id)
+    setPendingBulkDelete(null)
+    clearSelection()
+
+    for (const id of targets) {
+      if (action === 'deletePermanently') await permanentlyDeleteNote(id)
+      else await deleteNote(id)
+    }
+  }, [pendingBulkDelete, selectedNotes, clearSelection, deleteNote, permanentlyDeleteNote])
 
   // 새 노트 생성 후 해당 노트 편집 모드로
   const handleCreateNote = useCallback(async () => {
@@ -540,11 +621,47 @@ export function NoteFeed() {
       if (currentOrderedNotes.length === 0) return
       if (isTextInputTarget(e.target)) return
 
+      // 선택 키가 먼저다 — Shift+J/K는 피드 리졸버가 보지 않는 자리다 (BRU-80)
+      const selectionAction = resolveNoteSelectionShortcut(e as unknown as React.KeyboardEvent)
+      if (selectionAction) {
+        const currentSelection = selectionRef.current
+        const maxIndex = currentOrderedNotes.length - 1
+
+        if (selectionAction === 'exitVisual') {
+          if (!currentSelection) return
+          e.preventDefault()
+          setSelection(null)
+          return
+        }
+
+        if (selectionAction === 'enterVisual') {
+          e.preventDefault()
+          const startIndex = currentFocusedIndex ?? 0
+          setFocusedIndex(startIndex)
+          setSelection(enterVisualSelection(startIndex))
+          return
+        }
+
+        // 선택에 들어가지 않은 상태의 Shift+J/K는 그 자리에서 선택을 연다
+        const base = currentSelection ?? enterVisualSelection(currentFocusedIndex ?? 0)
+        const direction = selectionAction === 'extendNext' ? 1 : -1
+        const next = extendSelection(base, direction, maxIndex)
+        if (!next) return
+
+        e.preventDefault()
+        setSelection(next)
+        // 머리를 따라 포커스도 움직여야 화면이 따라온다 (BRU-85의 스크롤 경로를 그대로 탄다)
+        setFocusedIndex(next.headIndex)
+        return
+      }
+
       const action = resolveNoteFeedShortcut(e as unknown as React.KeyboardEvent)
       if (!action) return
 
       if (action === 'focusNext') {
         e.preventDefault()
+        // 맨 j/k는 선택을 벗어나는 이동이다
+        setSelection(null)
         if (currentFocusedIndex === null) {
           setFocusedIndex(0)
         } else {
@@ -557,6 +674,7 @@ export function NoteFeed() {
 
       if (action === 'focusPrev') {
         e.preventDefault()
+        setSelection(null)
         if (currentFocusedIndex === null) {
           setFocusedIndex(currentOrderedNotes.length - 1)
         } else {
@@ -784,6 +902,22 @@ export function NoteFeed() {
           onCancel={cancelDeleteNote}
         />
       )}
+      {pendingBulkDelete && (
+        <ConfirmDialog
+          title={
+            pendingBulkDelete === 'deletePermanently'
+              ? '선택한 노트를 영구 삭제할까요?'
+              : '선택한 노트를 삭제할까요?'
+          }
+          message={buildBulkDeleteConfirmMessage(selectedNotes.length, pendingBulkDelete)}
+          confirmLabel={pendingBulkDelete === 'deletePermanently' ? '영구 삭제' : '삭제'}
+          danger
+          onConfirm={() => {
+            void confirmBulkDelete()
+          }}
+          onCancel={() => setPendingBulkDelete(null)}
+        />
+      )}
       {showEmptyTrashConfirm && (
         <ConfirmDialog
           title="휴지통 비우기"
@@ -917,6 +1051,7 @@ export function NoteFeed() {
               return (
                 <div
                   key={item.note.id}
+                  className={isIndexSelected(selection, globalIndex) ? 'note-row selected' : 'note-row'}
                   ref={(el) => {
                     if (el) cardElementRefs.current.set(item.note.id, el)
                     else cardElementRefs.current.delete(item.note.id)
@@ -940,6 +1075,22 @@ export function NoteFeed() {
         ))
         )}
       </div>
+      {selection && (
+        <div className="selection-bar-layer">
+          {showBulkTagPopover && (
+            <BulkTagPopover
+              notes={selectedNotes}
+              onClose={() => setShowBulkTagPopover(false)}
+            />
+          )}
+          <SelectionActionBar
+            count={selectionCount(selection)}
+            viewMode={viewMode}
+            onAction={handleBulkAction}
+            onClear={clearSelection}
+          />
+        </div>
+      )}
     </div>
   )
 }

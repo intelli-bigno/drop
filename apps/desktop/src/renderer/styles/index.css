@@ -3575,3 +3575,75 @@ body {
   cursor: pointer;
   transition: color 150ms ease;
 }
+
+
+/* ============================================
+   다중 선택 (BRU-80)
+   ============================================ */
+
+.note-row.selected {
+  position: relative;
+  border-radius: var(--radius-md);
+  background: var(--accent-subtle);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* 선택 바는 피드 아래에 붙어 있고, 태그 팝오버는 그 위로 뜬다 */
+.selection-bar-layer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.selection-bar-layer .card-popover {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: var(--space-4);
+  z-index: 50;
+}
+
+.selection-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--space-4);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.selection-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.selection-action-bar-spacer {
+  flex: 1;
+}
+
+.selection-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.selection-action:hover {
+  background: var(--bg-hover);
+}
+
+.selection-action.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.selection-action.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
