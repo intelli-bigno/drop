@@ -1,4 +1,4 @@
-.PHONY: help install setup test test-db clean tokens tokens-check \
+.PHONY: help install setup test test-db db-test clean tokens tokens-check \
         electron-rebuild electron-dev electron-dev-local electron-dev-remote \
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
@@ -18,6 +18,7 @@ help:
 	@echo "  테스트/정리"
 	@echo "    make test                 - 테스트 실행"
 	@echo "    make test-db              - database 패키지 테스트"
+	@echo "    make db-test              - DB 트리거·함수 회귀 테스트 (pgTAP)"
 	@echo "    make clean                - 빌드 산출물 및 node_modules 정리"
 	@echo ""
 	@echo "  디자인 토큰"
@@ -70,6 +71,10 @@ test:
 # database 패키지 테스트
 test-db:
 	pnpm --filter @drop/database test
+
+# DB 트리거·함수 회귀 테스트 (pgTAP). 로컬 Supabase가 떠 있어야 한다.
+db-test:
+	supabase test db
 
 # 빌드 산출물 정리
 clean:
