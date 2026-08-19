@@ -15,6 +15,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProviders as GlanceColorScheme
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -23,6 +24,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.material3.ColorProviders
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.intellieffect.drop.core.RelativeTimeFormatter
@@ -43,7 +45,10 @@ class DropWidget : GlanceAppWidget() {
         val snapshot = widgetSnapshotStore(context).read()
 
         provideContent {
-            GlanceTheme {
+            // 앱과 **같은** 두 벌을 넘긴다. 인자 없이 GlanceTheme를 쓰면 Material 기본
+            // 팔레트(또는 기기의 다이내믹 컬러)로 그려져 홈 화면에만 옛 색이 남는다 —
+            // 위젯은 앱과 별도 프로세스에서 그려지므로 앱 테마가 여기까지 오지 않는다.
+            GlanceTheme(colors = DropGlanceColors) {
                 WidgetBody(snapshot)
             }
         }
@@ -57,7 +62,7 @@ private fun WidgetBody(snapshot: WidgetSnapshot) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(GlanceTheme.colors.widgetBackground)
+            .background(GlanceTheme.colors.background)
             .padding(12.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
@@ -110,6 +115,15 @@ private fun WidgetBody(snapshot: WidgetSnapshot) {
 class DropWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DropWidget()
 }
+
+/**
+ * 위젯이 쓰는 색. 앱의 [DropColorSchemes]를 그대로 넘긴다 (BRU-76) —
+ * 위젯만 따로 정의하면 두 곳이 언젠가 갈라진다.
+ */
+private val DropGlanceColors: GlanceColorScheme = ColorProviders(
+    light = DropColorSchemes.light,
+    dark = DropColorSchemes.dark,
+)
 
 /** 위젯의 ＋ 가 넘기는 표시. MainActivity가 같은 이름의 extra로 읽는다. */
 val startComposerKey = ActionParameters.Key<Boolean>(MainActivity.EXTRA_START_COMPOSER)

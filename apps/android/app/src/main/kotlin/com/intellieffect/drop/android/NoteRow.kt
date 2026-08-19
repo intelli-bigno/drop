@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -129,20 +130,45 @@ fun SwipeableNoteRow(
         state = state,
         modifier = modifier,
         backgroundContent = {
-            val (color, label, alignment) = when (state.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd ->
-                    Triple(MaterialTheme.colorScheme.tertiaryContainer, startLabel(viewMode), Alignment.CenterStart)
+            // 라벨 색을 **배경과 짝지어** 정한다. 예전처럼 색을 물려받게 두면
+            // 팔레트를 갈아 끼울 때마다 onSurface 글자가 엉뚱한 배경 위에 놓여
+            // 대비가 조용히 무너진다 (BRU-76에서 실제로 확인한 함정).
+            val (background, label, alignment) = when (state.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> Triple(
+                    SwipeBackground(
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+                    startLabel(viewMode),
+                    Alignment.CenterStart,
+                )
 
-                SwipeToDismissBoxValue.EndToStart ->
-                    Triple(MaterialTheme.colorScheme.errorContainer, endLabel(viewMode), Alignment.CenterEnd)
+                SwipeToDismissBoxValue.EndToStart -> Triple(
+                    SwipeBackground(
+                        MaterialTheme.colorScheme.errorContainer,
+                        MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                    endLabel(viewMode),
+                    Alignment.CenterEnd,
+                )
 
-                SwipeToDismissBoxValue.Settled ->
-                    Triple(MaterialTheme.colorScheme.surface, "", Alignment.Center)
+                SwipeToDismissBoxValue.Settled -> Triple(
+                    SwipeBackground(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.onSurface,
+                    ),
+                    "",
+                    Alignment.Center,
+                )
             }
-            Box(Modifier.fillMaxSize().background(color), contentAlignment = alignment) {
+            Box(
+                Modifier.fillMaxSize().background(background.container),
+                contentAlignment = alignment,
+            ) {
                 Text(
                     text = label,
                     modifier = Modifier.padding(horizontal = 20.dp),
+                    color = background.onContainer,
                     fontWeight = FontWeight.Medium,
                 )
             }
@@ -151,6 +177,9 @@ fun SwipeableNoteRow(
         NoteRow(note, isSelected, onClick, onLongClick)
     }
 }
+
+/** 스와이프 배경과 그 위 글자색은 항상 한 쌍으로 움직인다. */
+private data class SwipeBackground(val container: Color, val onContainer: Color)
 
 private fun startLabel(viewMode: NoteViewMode) = when (viewMode) {
     NoteViewMode.ACTIVE -> "고정"

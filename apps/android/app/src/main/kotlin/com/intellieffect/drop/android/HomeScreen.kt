@@ -103,7 +103,13 @@ fun HomeScreen(
         },
         floatingActionButton = {
             if (state.viewMode == NoteViewMode.ACTIVE && !state.isSelecting) {
-                FloatingActionButton(onClick = { composing = ComposerTarget.New }) { Text("＋") }
+                FloatingActionButton(
+                    onClick = { composing = ComposerTarget.New },
+                    // M3 기본값(primaryContainer)은 이 팔레트에서 종이와 거의 구별되지
+                    // 않는다. 담기는 이 앱의 유일한 주 동작이라 강조색을 그대로 쓴다.
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) { Text("＋") }
             }
         },
     ) { insets ->
