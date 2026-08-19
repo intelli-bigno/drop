@@ -89,6 +89,10 @@ struct NoteComposerSheet: View {
             Image(systemName: isPreviewing ? "pencil" : "eye")
         }
         .accessibilityLabel(isPreviewing ? "편집" : "미리보기")
+        // 이름은 상태에 따라 바뀐다 — 게다가 "편집"은 뷰어(NoteDetailView)의 버튼과
+        // 겹친다. 컴포저가 뷰어 위에 뜨는 지금(BRU-77) 이름으로 찾으면 어느 쪽을
+        // 잡을지 알 수 없으므로, 검증이 붙잡을 고정 손잡이를 따로 준다.
+        .accessibilityIdentifier("미리보기 전환")
     }
 
     /// 툴바 명령을 본문에 적용한다. 무엇을 어디에 끼워 넣을지는 전부

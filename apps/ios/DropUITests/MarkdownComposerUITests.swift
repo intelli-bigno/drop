@@ -26,8 +26,21 @@ final class MarkdownComposerUITests: XCTestCase {
         return row
     }
 
+    /// 행을 눌러 **뷰어**를 연 뒤, 거기서 "편집"을 한 번 더 눌러 컴포저를 연다.
+    ///
+    /// 예전에는 행 탭이 곧 컴포저였다. BRU-77이 그 탭을 읽기 전용 뷰어로 바꿨다 —
+    /// 열어 보려던 동작이 저장 경로를 건드리면 안 되기 때문이다(BRU-66).
+    /// 편집기로 가는 길은 이제 이 두 걸음뿐이다.
     private func openComposer() -> XCUIElement {
         markdownRow().tap()
+
+        // 뷰어가 떴다는 증거이자 다음 걸음. 이 시점에는 컴포저가 아직 없으므로
+        // "편집"이라는 이름을 가진 버튼은 뷰어의 것 하나뿐이다.
+        let edit = app.buttons["편집"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5), "탭해도 뷰어가 열리지 않았다")
+        XCTAssertFalse(app.navigationBars["노트 편집"].exists, "탭만 했는데 편집기가 열렸다")
+        edit.tap()
+
         let editor = app.textViews.firstMatch
         XCTAssertTrue(editor.waitForExistence(timeout: 3), "컴포저가 열리지 않았다")
         return editor
@@ -51,7 +64,7 @@ final class MarkdownComposerUITests: XCTestCase {
 
     func testPreviewRendersBlocks() throws {
         _ = openComposer()
-        app.buttons["미리보기"].tap()
+        app.buttons["미리보기 전환"].tap()
 
         // 제목은 기호 없이 글자만 선다.
         XCTAssertTrue(app.staticTexts["이번 주 정리"].waitForExistence(timeout: 3), "제목이 렌더되지 않았다")
@@ -69,9 +82,11 @@ final class MarkdownComposerUITests: XCTestCase {
     func testPreviewRoundTripLeavesSourceUntouched() throws {
         let before = openComposer().value as? String
 
-        app.buttons["미리보기"].tap()
+        app.buttons["미리보기 전환"].tap()
         XCTAssertTrue(app.staticTexts["이번 주 정리"].waitForExistence(timeout: 3), "미리보기로 넘어가지 않았다")
-        app.buttons["편집"].tap()
+        // 같은 버튼이다 — 이름만 "편집"으로 바뀐다. 뷰어의 "편집"과 겹치므로
+        // 이름이 아니라 식별자로 잡는다.
+        app.buttons["미리보기 전환"].tap()
 
         let editor = app.textViews.firstMatch
         XCTAssertTrue(editor.waitForExistence(timeout: 3), "편집으로 돌아오지 않았다")
