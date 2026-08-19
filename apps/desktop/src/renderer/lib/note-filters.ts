@@ -16,13 +16,28 @@ export interface FilterableNote {
   hasFiles: boolean
   /** Linear로 반출된 노트의 이슈 URL. null이면 아직 반출되지 않았다 (BRU-45) */
   linearIssueUrl?: string | null
+  /** 이 노트가 속한 프로젝트. null이면 미분류 (BRU-83) */
+  projectId?: string | null
 }
+
+/**
+ * "아직 프로젝트가 없는 노트만" 을 고르는 값 (BRU-83).
+ *
+ * null은 이미 "프로젝트로 걸러내지 않음"이라 미분류를 표현할 자리가 없다.
+ * UUID와 겹치지 않는 문자열이면 프로젝트 id와 섞일 일이 없다.
+ */
+export const UNASSIGNED_PROJECT_ID = '__unassigned__'
 
 export interface NoteFilterOptions {
   /** 이 이름의 태그가 붙은 노트만 */
   filterTag: string | null
   /** 링크·미디어·파일 중 하나만 (null·'all'은 전체) */
   categoryFilter: CategoryFilter
+  /**
+   * 이 프로젝트의 노트만. null이면 걸러내지 않고,
+   * UNASSIGNED_PROJECT_ID면 아직 프로젝트가 없는 노트만 (BRU-83)
+   */
+  filterProjectId?: string | null
   /** Inbox — 태그가 하나도 없는 노트만 (BRU-50) */
   inboxOnly?: boolean
   /** 반출된 노트도 함께 보기 (기본은 숨김, BRU-45) */
@@ -63,6 +78,24 @@ function matchesTag(note: FilterableNote, filterTag: string | null): boolean {
   return note.tags.some((t) => t.name === filterTag)
 }
 
+/**
+ * 프로젝트 필터 (BRU-83).
+ *
+ * 유예(retainedNoteIds)를 여기서도 본다 — 미분류만 보다가 프로젝트를 고르는 순간
+ * 줄이 사라지면 무슨 일이 일어났는지 알 수 없다. 태그·반출과 같은 규칙이다.
+ */
+function matchesProject(
+  note: FilterableNote,
+  filterProjectId: string | null,
+  retainedNoteIds: ReadonlySet<string> | undefined
+): boolean {
+  if (!filterProjectId) return true
+  if (retainedNoteIds?.has(note.id)) return true
+  const projectId = note.projectId ?? null
+  if (filterProjectId === UNASSIGNED_PROJECT_ID) return projectId === null
+  return projectId === filterProjectId
+}
+
 function matchesInbox(
   note: FilterableNote,
   inboxOnly: boolean,
@@ -82,6 +115,7 @@ export function applyNoteFilters<T extends FilterableNote>(
   {
     filterTag,
     categoryFilter,
+    filterProjectId = null,
     inboxOnly = false,
     showExported = false,
     retainedNoteIds,
@@ -91,6 +125,7 @@ export function applyNoteFilters<T extends FilterableNote>(
     (note) =>
       matchesTag(note, filterTag) &&
       matchesCategory(note, categoryFilter) &&
+      matchesProject(note, filterProjectId, retainedNoteIds) &&
       matchesInbox(note, inboxOnly, retainedNoteIds) &&
       matchesExport(note, showExported, retainedNoteIds)
   )

@@ -146,6 +146,7 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         linearIssueUrl: null,
         linearIssueKey: null,
         linearExportedAt: null,
+        projectId: null,
       }
     }
 
@@ -178,6 +179,8 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       linearIssueUrl: null,
       linearIssueKey: null,
       linearExportedAt: null,
+      // 새 노트는 아직 프로젝트가 없다 (BRU-83)
+      projectId: null,
     }
 
     set((state) => ({

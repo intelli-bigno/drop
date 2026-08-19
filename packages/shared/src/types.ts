@@ -32,6 +32,8 @@ export interface NoteRow {
   linear_issue_url: string | null
   linear_issue_key: string | null
   linear_exported_at: string | null
+  // 프로젝트 (BRU-83). NULL이면 미분류
+  project_id: string | null
 }
 
 export interface AttachmentRow {
@@ -107,6 +109,8 @@ export interface Note {
   linearIssueUrl: string | null
   linearIssueKey: string | null
   linearExportedAt: Date | null
+  /** 이 노트가 속한 프로젝트 (BRU-83). null이면 미분류. 노트는 프로젝트 하나에만 속한다. */
+  projectId: string | null
 }
 
 export interface Attachment {
@@ -194,6 +198,7 @@ export function noteRowToNote(
     linearIssueUrl: row.linear_issue_url ?? null,
     linearIssueKey: row.linear_issue_key ?? null,
     linearExportedAt: row.linear_exported_at ? new Date(row.linear_exported_at) : null,
+    projectId: row.project_id ?? null,
   }
 }
 

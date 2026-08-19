@@ -4,6 +4,7 @@ import {
   countInboxNotes,
   isExportedNote,
   isUntaggedNote,
+  UNASSIGNED_PROJECT_ID,
   type FilterableNote,
 } from '../note-filters'
 
@@ -228,6 +229,78 @@ describe('반출된 노트 (BRU-45)', () => {
     })
 
     expect(ids(result)).toEqual(['b'])
+  })
+})
+
+describe('프로젝트 필터 (BRU-83)', () => {
+  it('filterProjectId가 있으면 그 프로젝트의 노트만 남긴다', () => {
+    const notes = [
+      note('in', { projectId: 'p1' }),
+      note('other', { projectId: 'p2' }),
+      note('none'),
+    ]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      filterProjectId: 'p1',
+    })
+
+    expect(ids(result)).toEqual(['in'])
+  })
+
+  it('filterProjectId가 null이면 프로젝트로 걸러내지 않는다', () => {
+    const notes = [note('a', { projectId: 'p1' }), note('b')]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      filterProjectId: null,
+    })
+
+    expect(ids(result)).toEqual(['a', 'b'])
+  })
+
+  it('UNASSIGNED_PROJECT_ID면 아직 프로젝트가 없는 노트만 남긴다 — 분류할 것을 찾는 길', () => {
+    const notes = [note('a', { projectId: 'p1' }), note('b'), note('c', { projectId: null })]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      filterProjectId: UNASSIGNED_PROJECT_ID,
+    })
+
+    expect(ids(result)).toEqual(['b', 'c'])
+  })
+
+  it('태그 필터와 AND로 걸린다', () => {
+    const notes = [
+      note('both', { projectId: 'p1', tags: [{ name: 'work' }] }),
+      note('project-only', { projectId: 'p1' }),
+      note('tag-only', { tags: [{ name: 'work' }] }),
+    ]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: 'work',
+      categoryFilter: null,
+      filterProjectId: 'p1',
+    })
+
+    expect(ids(result)).toEqual(['both'])
+  })
+
+  it('프로젝트를 막 지정한 노트는 팝오버가 닫힐 때까지 자리를 지킨다', () => {
+    // 미분류만 보다가 프로젝트를 고르는 순간 줄이 사라지면 무슨 일이 일어났는지 알 수 없다
+    const notes = [note('being-assigned', { projectId: 'p1' }), note('untouched')]
+
+    const result = applyNoteFilters(notes, {
+      filterTag: null,
+      categoryFilter: null,
+      filterProjectId: UNASSIGNED_PROJECT_ID,
+      retainedNoteIds: new Set(['being-assigned']),
+    })
+
+    expect(ids(result)).toEqual(['being-assigned', 'untouched'])
   })
 })
 
