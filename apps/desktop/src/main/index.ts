@@ -23,7 +23,10 @@ import {
   withQuickCaptureShortcut,
 } from './settings'
 import {
-  buildRegistrationPlan,
+  registerQuickCaptureShortcut,
+  type ShortcutRegistrationResult,
+} from './quick-capture-shortcut'
+import {
   DEFAULT_QUICK_CAPTURE_ACCELERATOR,
   DEV_QUICK_CAPTURE_ACCELERATOR,
   describeRegistrationFailure,
@@ -1055,57 +1058,43 @@ function refreshTrayMenu(): void {
   tray.setContextMenu(contextMenu)
 }
 
-export interface ShortcutRegistrationResult {
-  ok: boolean
-  /** 실제로 등록된 조합. 모두 실패하면 null. */
-  accelerator: string | null
-  /** 시도한 조합 전부 — 실패를 알릴 때 그대로 보여 준다. */
-  attempted: string[]
-}
-
 /**
  * 퀵캡처 전역 단축키를 등록한다 (BRU-84).
  *
- * 사용자 지정 조합 → 빌드 기본값 순으로 시도하고, 모두 실패하면 결과에 그대로 담아
- * 호출자가 사용자에게 알릴 수 있게 한다. 조용히 삼키지 않는다.
+ * 실제 등록 판단은 `registerQuickCaptureShortcut`에 있다 — 여기서는 Electron 객체를 넘기고
+ * 결과를 앱 상태(활성 조합·트레이 메뉴)에 반영하는 일만 한다.
  */
 function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
-  const previous = activeQuickCaptureAccelerator
-  if (previous) {
-    globalShortcut.unregister(previous)
-    activeQuickCaptureAccelerator = null
-  }
-
   const preferred = resolveQuickCaptureAccelerator({
     stored: appSettings.quickCaptureShortcut,
     isPackaged: app.isPackaged,
   })
   const fallback = app.isPackaged ? DEFAULT_QUICK_CAPTURE_ACCELERATOR : DEV_QUICK_CAPTURE_ACCELERATOR
-  const attempted = buildRegistrationPlan(preferred, fallback)
 
-  for (const accelerator of attempted) {
-    let registered = false
-    try {
-      registered = globalShortcut.register(accelerator, () => {
-        createQuickCaptureWindow({ fromGlobalShortcut: true })
-      })
-    } catch (error) {
-      // Electron은 표기를 못 읽으면 던진다 — 다음 후보로 넘어간다.
+  const result = registerQuickCaptureShortcut({
+    registrar: globalShortcut,
+    preferred,
+    fallback,
+    previous: activeQuickCaptureAccelerator,
+    onTrigger: () => {
+      createQuickCaptureWindow({ fromGlobalShortcut: true })
+    },
+    onError: (accelerator, error) => {
       console.warn(`[globalShortcut] ${accelerator} 등록 중 오류:`, error)
-    }
+    },
+  })
 
-    if (registered) {
-      activeQuickCaptureAccelerator = accelerator
-      console.info(`[globalShortcut] 퀵캡처 전역 단축키 등록: ${accelerator}`)
-      refreshTrayMenu()
-      return { ok: true, accelerator, attempted }
-    }
-
-    console.warn(`[globalShortcut] ${accelerator} 등록 실패 — 다른 앱이 점유 중일 수 있습니다`)
+  activeQuickCaptureAccelerator = result.accelerator
+  if (result.accelerator) {
+    console.info(`[globalShortcut] 퀵캡처 전역 단축키 등록: ${result.accelerator}`)
+  } else {
+    console.warn(
+      `[globalShortcut] 등록 실패 — 다른 앱이 점유 중일 수 있습니다: ${result.attempted.join(', ')}`
+    )
   }
-
   refreshTrayMenu()
-  return { ok: false, accelerator: null, attempted }
+
+  return result
 }
 
 /** 등록 실패를 사용자에게 보여 준다 — 로그만 남기고 넘어가지 않는다. */
