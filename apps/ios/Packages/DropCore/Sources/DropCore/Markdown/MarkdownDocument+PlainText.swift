@@ -19,12 +19,12 @@ public extension MarkdownDocument {
         blocks.flatMap { block -> [String] in
             switch block {
             case let .heading(_, content):
-                [plainText(of: content)]
+                [content.plainText]
             case let .paragraph(content):
-                [plainText(of: content)]
+                [content.plainText]
             case let .list(items):
                 items.map { item in
-                    String(repeating: " ", count: item.indent * 2) + marker(for: item) + plainText(of: item.content)
+                    String(repeating: " ", count: item.indent * 2) + marker(for: item) + item.content.plainText
                 }
             case let .codeBlock(_, code):
                 [code]
@@ -43,15 +43,23 @@ public extension MarkdownDocument {
         return "• "
     }
 
-    private static func plainText(of inlines: [MarkdownInline]) -> String {
-        inlines.map { inline in
-            switch inline {
-            case let .text(value): value
-            case let .strong(content): plainText(of: content)
-            case let .emphasis(content): plainText(of: content)
-            case let .code(value): value
-            case let .link(content, _): plainText(of: content)
-            }
-        }.joined()
+}
+
+public extension MarkdownInline {
+    /// 문법을 걷어낸 글자.
+    var plainText: String {
+        switch self {
+        case let .text(value): value
+        case let .strong(content): content.plainText
+        case let .emphasis(content): content.plainText
+        case let .code(value): value
+        case let .link(content, _): content.plainText
+        }
+    }
+}
+
+public extension Sequence<MarkdownInline> {
+    var plainText: String {
+        map(\.plainText).joined()
     }
 }
