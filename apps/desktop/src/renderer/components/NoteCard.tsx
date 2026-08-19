@@ -24,9 +24,10 @@ import {
 } from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
 import { resolveNoteCardView } from '../lib/note-edit-mode'
+import { shouldMountNoteBody } from '../lib/note-body-mount'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
-import { useDragAndDrop } from '../hooks'
+import { useDragAndDrop, useHasEnteredViewport } from '../hooks'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
 
@@ -67,6 +68,7 @@ export const NoteCard = memo(
       },
       ref
     ) => {
+      const cardRef = useRef<HTMLDivElement>(null)
       const editorRef = useRef<LexicalEditorHandle>(null)
       const pendingFocusRef = useRef(false)
       // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
@@ -119,6 +121,12 @@ export const NoteCard = memo(
       const view = resolveNoteCardView({ isFocused, isEditing, expandAll })
       const isEditorMounted = view === 'editor'
       const isOpen = view !== 'one-line'
+
+      // 펼쳐진 본문은 화면에 닿을 때 마운트한다 (BRU-79). 피드에 가상화가 없어
+      // 노트 전량이 DOM에 있으므로, 이 조건이 없으면 전체 펼치기 한 번에 N개의
+      // 뷰어·첨부 목록·링크 프리뷰가 동시에 서고 요청이 폭주한다.
+      const hasEnteredViewport = useHasEnteredViewport(cardRef, { enabled: isOpen })
+      const isBodyMounted = shouldMountNoteBody({ view, hasEnteredViewport, isFocused })
 
       // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
       const previewText = useMemo(
@@ -353,6 +361,7 @@ export const NoteCard = memo(
       return (
         <>
           <div
+            ref={cardRef}
             className={cardClassName}
             style={indentStyle}
             data-note-id={note.id}
@@ -567,6 +576,10 @@ export const NoteCard = memo(
                   onTemporaryUnlock={handleTemporaryUnlock}
                   onPermanentUnlock={handlePermanentUnlock}
                 />
+              ) : !isBodyMounted ? (
+                // 아직 화면에 닿지 않았다 — 자리만 잡아 두고 스크롤이 오면 채운다.
+                // 접힌 것처럼 보이면 안 되므로 카드는 열린 상태 그대로다.
+                <div className="note-body-pending" aria-hidden="true" />
               ) : (
                 <>
                   {isEditorMounted ? (
