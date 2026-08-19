@@ -3,6 +3,23 @@ import { contextBridge, ipcRenderer } from 'electron'
 // Supabase를 renderer에서 직접 사용하므로 IPC 불필요
 // 필요시 여기에 Electron 전용 API 추가 (파일 시스템 접근 등)
 
+/** 전역 퀵캡처 단축키 상태 (BRU-84) — main의 quickCaptureShortcutState()와 짝이다. */
+export interface QuickCaptureShortcutState {
+  /** 실제로 등록된 조합. 등록에 실패했으면 null. */
+  accelerator: string | null
+  /** 사용자가 직접 고른 조합. null이면 기본값을 따르고 있다. */
+  custom: string | null
+  /** 이 빌드의 기본 조합. */
+  fallback: string
+  registered: boolean
+}
+
+export interface SetShortcutResult {
+  ok: boolean
+  error?: string
+  state: QuickCaptureShortcutState
+}
+
 const api = {
   platform: process.platform,
 
@@ -41,6 +58,14 @@ const api = {
         ipcRenderer.removeListener('quickCapture:refresh', handler)
       }
     },
+  },
+  settings: {
+    /** 전역 퀵캡처 단축키의 현재 상태 (BRU-84) */
+    getQuickCaptureShortcut: (): Promise<QuickCaptureShortcutState> =>
+      ipcRenderer.invoke('settings:getQuickCaptureShortcut'),
+    /** 조합 변경. null을 주면 기본값으로 되돌린다. */
+    setQuickCaptureShortcut: (accelerator: string | null): Promise<SetShortcutResult> =>
+      ipcRenderer.invoke('settings:setQuickCaptureShortcut', accelerator),
   },
   auth: {
     onCallback: (callback: (url: string) => void): (() => void) => {

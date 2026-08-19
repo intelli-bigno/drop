@@ -6,7 +6,7 @@ import { registerAttachmentsTools } from './tools/attachments.js'
 import { registerCommentsTools } from './tools/comments.js'
 
 /**
- * DROP Notes MCP 서버 생성
+ * Braindump Notes MCP 서버 생성
  */
 export function createServer(): McpServer {
   const server = new McpServer({

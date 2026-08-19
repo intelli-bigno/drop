@@ -6,6 +6,7 @@ import { useToastStore } from '../stores/toast'
 import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
 import { describeUpdateStatus, type UpdateStatus } from '../lib/update-status'
 import { TagManagementDialog } from './TagManagementDialog'
+import { ShortcutSettingsDialog } from './ShortcutSettingsDialog'
 
 // updater 이벤트의 info는 unknown으로 노출된다 — 필요한 필드만 안전하게 꺼낸다
 function versionOf(info: unknown): string {
@@ -21,6 +22,7 @@ export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const [tokenCopied, setTokenCopied] = useState(false)
   const [showTagManagement, setShowTagManagement] = useState(false)
+  const [showShortcutSettings, setShowShortcutSettings] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
@@ -152,6 +154,11 @@ export function UserMenu() {
     setShowTagManagement(true)
   }
 
+  const handleOpenShortcutSettings = () => {
+    setIsOpen(false)
+    setShowShortcutSettings(true)
+  }
+
   const dropdown =
     isOpen &&
     createPortal(
@@ -191,6 +198,27 @@ export function UserMenu() {
           태그 관리
         </button>
 
+        <button className="user-menu-item" onClick={handleOpenShortcutSettings}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2" y="6" width="20" height="12" rx="2" ry="2" />
+            <line x1="6" y1="10" x2="6.01" y2="10" />
+            <line x1="10" y1="10" x2="10.01" y2="10" />
+            <line x1="14" y1="10" x2="14.01" y2="10" />
+            <line x1="18" y1="10" x2="18.01" y2="10" />
+            <line x1="8" y1="14" x2="16" y2="14" />
+          </svg>
+          전역 단축키
+        </button>
+
         <button className="user-menu-item" onClick={handleCopyMcpToken}>
           <svg
             width="16"
@@ -212,7 +240,7 @@ export function UserMenu() {
 
         <div className="user-menu-about">
           <div className="user-menu-version">
-            <span>DROP</span>
+            <span>Braindump</span>
             <span className="user-menu-version-number">{appVersion ? `v${appVersion}` : '…'}</span>
           </div>
           <button
@@ -274,6 +302,9 @@ export function UserMenu() {
       {dropdown}
       {showTagManagement && (
         <TagManagementDialog onClose={() => setShowTagManagement(false)} />
+      )}
+      {showShortcutSettings && (
+        <ShortcutSettingsDialog onClose={() => setShowShortcutSettings(false)} />
       )}
 
       <style>{`
