@@ -9,8 +9,16 @@ import SwiftUI
 @MainActor
 @Observable
 final class DropRouter {
+    /// 위젯에서 들어온 사진 첨부 요청 (BRU-43). 카메라·갤러리는 여는 창만 다르고
+    /// 그 뒤는 앱의 기존 사진 첨부 경로를 그대로 탄다.
+    enum QuickCapture: Equatable {
+        case camera
+        case gallery
+    }
+
     private(set) var pendingNoteID: String?
     private(set) var pendingComposeText: String?
+    private(set) var pendingCapture: QuickCapture?
 
     func handle(_ link: DropLink) {
         switch link {
@@ -18,6 +26,10 @@ final class DropRouter {
             pendingNoteID = id
         case let .compose(text):
             pendingComposeText = text ?? ""
+        case .camera:
+            pendingCapture = .camera
+        case .gallery:
+            pendingCapture = .gallery
         }
     }
 
@@ -29,5 +41,10 @@ final class DropRouter {
     func consumeComposeText() -> String? {
         defer { pendingComposeText = nil }
         return pendingComposeText
+    }
+
+    func consumeCapture() -> QuickCapture? {
+        defer { pendingCapture = nil }
+        return pendingCapture
     }
 }

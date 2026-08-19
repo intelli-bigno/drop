@@ -168,3 +168,64 @@ struct QuickComposeWidget: Widget {
         .supportedFamilies([.systemSmall, .accessoryCircular])
     }
 }
+
+// MARK: - 사진 바로가기 (BRU-43)
+
+/// 카메라·갤러리 위젯은 아이콘과 행선지만 다르다. 두 벌로 베껴 두면
+/// 한쪽만 고쳐지는 자리가 생긴다.
+struct ShortcutView: View {
+    let systemImage: String
+    let title: String
+
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: systemImage).font(.title3)
+            }
+        default:
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.largeTitle)
+                    .foregroundStyle(.tint)
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct CameraWidget: Widget {
+    let kind = "CameraWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
+            ShortcutView(systemImage: "camera", title: "사진 찍기")
+                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(DropLink.cameraURL)
+        }
+        .configurationDisplayName("사진 찍기")
+        .description("카메라를 열어 찍은 사진을 바로 노트로 만듭니다.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
+    }
+}
+
+struct GalleryWidget: Widget {
+    let kind = "GalleryWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
+            ShortcutView(systemImage: "photo.on.rectangle", title: "사진 고르기")
+                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(DropLink.galleryURL)
+        }
+        .configurationDisplayName("사진 고르기")
+        .description("사진 보관함을 열어 고른 사진을 바로 노트로 만듭니다.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
+    }
+}
