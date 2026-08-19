@@ -33,10 +33,11 @@ interface Props {
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
   /**
-   * 태그 팝오버가 열리고 닫힐 때 알린다 (BRU-50).
-   * Inbox 필터가 태그를 다는 동안 이 노트를 목록에 붙잡아 두는 데 쓴다.
+   * 카드 아래 팝오버가 열리고 닫힐 때 알린다 (BRU-50).
+   * 필터가 팝오버를 쓰는 동안 이 노트를 목록에 붙잡아 두는 데 쓴다 —
+   * 고르는 순간 줄이 사라지면 팝오버가 허공에 뜬다.
    */
-  onTagPopoverOpenChange?: (noteId: string, open: boolean) => void
+  onPopoverOpenChange?: (noteId: string, open: boolean) => void
 }
 
 export interface NoteCardHandle {
@@ -55,7 +56,7 @@ export const NoteCard = memo(
         viewMode = 'active',
         onEscapeFromNormal,
         onReply,
-        onTagPopoverOpenChange,
+        onPopoverOpenChange,
       },
       ref
     ) => {
@@ -140,24 +141,24 @@ export const NoteCard = memo(
         onDrop: (files) => files.forEach(handleAddFile),
       })
 
-      // 팝오버 상태는 항상 이 함수로 바꾼다 — 피드가 Inbox 이탈을 유예하려면
+      // 팝오버 상태는 항상 이 함수로 바꾼다 — 피드가 목록 이탈을 유예하려면
       // 열림/닫힘을 하나도 놓치지 않고 알아야 한다 (BRU-50)
       const setTagPopoverOpen = useCallback(
         (open: boolean) => {
           setShowTagPopover(open)
-          onTagPopoverOpenChange?.(note.id, open)
+          onPopoverOpenChange?.(note.id, open)
         },
-        [note.id, onTagPopoverOpenChange]
+        [note.id, onPopoverOpenChange]
       )
 
       // 카드가 통째로 사라질 때(삭제·보관 등) 피드에 남은 유예를 걷어낸다
-      const tagPopoverOpenRef = useRef(false)
-      tagPopoverOpenRef.current = showTagPopover
+      const popoverOpenRef = useRef(false)
+      popoverOpenRef.current = showTagPopover
       useEffect(() => {
         return () => {
-          if (tagPopoverOpenRef.current) onTagPopoverOpenChange?.(note.id, false)
+          if (popoverOpenRef.current) onPopoverOpenChange?.(note.id, false)
         }
-      }, [note.id, onTagPopoverOpenChange])
+      }, [note.id, onPopoverOpenChange])
 
       useImperativeHandle(ref, () => ({
         focus: () => {

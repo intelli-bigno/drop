@@ -76,8 +76,8 @@ export function NoteFeed() {
   const [showUnlockAllDialog, setShowUnlockAllDialog] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false)
-  // 지금 태그 팝오버가 열려 있는 노트 (Inbox에서 목록 이탈을 유예하는 데 쓴다)
-  const [tagPopoverNoteId, setTagPopoverNoteId] = useState<string | null>(null)
+  // 지금 팝오버가 열려 있는 노트 (필터에서 목록 이탈을 유예하는 데 쓴다)
+  const [popoverNoteId, setPopoverNoteId] = useState<string | null>(null)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -131,8 +131,8 @@ export function NoteFeed() {
   // Inbox에서 태그 팝오버가 열려 있는 노트. 태그를 다는 순간 목록에서 빠지면
   // 팝오버가 허공에 뜨고 두 번째 태그를 달 길이 사라진다 — 닫힐 때까지 자리를 지킨다.
   const retainedNoteIds = useMemo(
-    () => (tagPopoverNoteId ? new Set([tagPopoverNoteId]) : undefined),
-    [tagPopoverNoteId]
+    () => (popoverNoteId ? new Set([popoverNoteId]) : undefined),
+    [popoverNoteId]
   )
 
   const filteredNotes = useMemo(() => {
@@ -205,9 +205,9 @@ export function NoteFeed() {
     togglePinNoteRef.current = togglePinNote
   }, [togglePinNote])
 
-  // 카드가 태그 팝오버를 열고 닫을 때 알려온다 (BRU-50 — Inbox 이탈 유예)
-  const handleTagPopoverOpenChange = useCallback((noteId: string, open: boolean) => {
-    setTagPopoverNoteId((current) => (open ? noteId : current === noteId ? null : current))
+  // 카드가 팝오버를 열고 닫을 때 알려온다 (BRU-50 — 목록 이탈 유예)
+  const handlePopoverOpenChange = useCallback((noteId: string, open: boolean) => {
+    setPopoverNoteId((current) => (open ? noteId : current === noteId ? null : current))
   }, [])
 
   const handleEscapeFromNormal = useCallback((index: number) => {
@@ -948,7 +948,7 @@ export function NoteFeed() {
                     isFocused={focusedIndex === globalIndex}
                     onEscapeFromNormal={() => handleEscapeFromNormal(globalIndex)}
                     onReply={viewMode === 'active' ? handleReply : undefined}
-                    onTagPopoverOpenChange={handleTagPopoverOpenChange}
+                    onPopoverOpenChange={handlePopoverOpenChange}
                   />
                 </div>
               )
