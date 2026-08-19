@@ -15,6 +15,7 @@ import {
 import { initAutoUpdater, setupUpdaterIpc } from './updater'
 import { isQuitting, markQuitting, shouldHideOnClose } from './quit-state'
 import { isSafeExternalUrl } from './url-utils'
+import { resolveUserDataDir } from './user-data'
 import {
   type AppSettings,
   DEFAULT_SETTINGS,
@@ -1176,10 +1177,11 @@ function handleOAuthCallback(url: string): void {
   }
 }
 
-// dev 실행이 설치본과 세션/캐시(userData)를 공유하지 않도록 분리 — whenReady 이전에 설정해야 함
-if (!app.isPackaged) {
-  app.setPath('userData', `${app.getPath('userData')}-dev`)
-}
+// 저장 경로를 표시 이름(productName)에서 떼어 고정한다 — whenReady 이전에 설정해야 함.
+// 기본값은 appData/<app name>이라, 표시 이름을 Braindump로 바꾸면 기존 설치본의
+// 세션·설정이 통째로 다른 경로로 옮겨 가 전원 강제 로그아웃이 된다 (BRU-28).
+// dev 실행은 접미사로 분리해 설치본의 세션/캐시를 건드리지 않는다.
+app.setPath('userData', resolveUserDataDir(app.getPath('appData'), app.isPackaged))
 
 app.whenReady().then(() => {
   appSettings = loadSettings(app.getPath('userData'))
