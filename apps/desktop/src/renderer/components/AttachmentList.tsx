@@ -2,12 +2,17 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { FileIcon, defaultStyles } from 'react-file-icon'
 import type { Attachment } from '@drop/shared'
-import { getAttachmentUrl, getSignedAttachmentUrl } from '../lib/supabase'
+import {
+  getAttachmentUrl,
+  getSignedAttachmentUrl,
+  invalidateSignedAttachmentUrl,
+} from '../lib/supabase'
 import { Icon } from './Icon'
 
 interface Props {
   attachments: Attachment[]
-  onRemove: (attachmentId: string) => void
+  /** 없으면 첨부를 읽기 전용으로 그린다 (BRU-59) */
+  onRemove?: (attachmentId: string) => void
   maxVisible?: number
   onShowMore?: () => void
 }
@@ -68,7 +73,11 @@ function useAttachmentUrl(storagePath: string) {
     }
   }, [storagePath, retryCount])
 
-  const retry = () => setRetryCount((c) => c + 1)
+  // 재시도는 캐시를 건너뛴다 — 캐시된 URL 그대로 다시 물으면 같은 실패를 반복한다
+  const retry = () => {
+    invalidateSignedAttachmentUrl(storagePath)
+    setRetryCount((c) => c + 1)
+  }
 
   return { url, retry }
 }
@@ -184,7 +193,8 @@ function ImageAttachment({
   onExpand,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
   onExpand: () => void
 }) {
   const [hasError, setHasError] = useState(false)
@@ -211,7 +221,9 @@ function ImageAttachment({
 
   return (
     <div className="attachment-card attachment-image">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       <div className="attachment-thumbnail" onClick={handleClick}>
         {hasError ? (
           <div className="attachment-error" onClick={handleRetry}>
@@ -233,7 +245,8 @@ function VideoAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const [hasError, setHasError] = useState(false)
   const { url, retry } = useAttachmentUrl(attachment.storagePath)
@@ -245,7 +258,9 @@ function VideoAttachment({
 
   return (
     <div className="attachment-card attachment-video">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       {hasError ? (
         <div className="attachment-error" onClick={handleRetry}>
           <span>로드 실패</span>
@@ -270,7 +285,8 @@ function AudioAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const [hasError, setHasError] = useState(false)
   const { url, retry } = useAttachmentUrl(attachment.storagePath)
@@ -282,7 +298,9 @@ function AudioAttachment({
 
   return (
     <div className="attachment-card attachment-audio">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       {hasError ? (
         <div className="attachment-error" onClick={handleRetry}>
           <span>로드 실패</span>
@@ -307,7 +325,8 @@ function FileAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const { url } = useAttachmentUrl(attachment.storagePath)
 
@@ -324,7 +343,9 @@ function FileAttachment({
 
   return (
     <div className="attachment-card attachment-file">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       <div className="attachment-file-content" onClick={handleDownload}>
         <div className="attachment-file-icon">
           <FileIcon extension={ext} {...styles} />
@@ -343,7 +364,8 @@ function TextAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [content, setContent] = useState<string | null>(null)
@@ -362,7 +384,9 @@ function TextAttachment({
 
   return (
     <div className="attachment-card attachment-text">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       <div className="attachment-text-content" onClick={() => setExpanded(true)}>
         <div className="attachment-text-header">
           <span className="attachment-text-icon">
@@ -395,7 +419,8 @@ function YouTubeAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const isLoading = attachment.metadata?.loading === true
   const [hasError, setHasError] = useState(false)
@@ -446,7 +471,9 @@ function YouTubeAttachment({
 
   return (
     <div className="attachment-card attachment-youtube">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       <div
         className="attachment-youtube-content"
         onClick={() => openUrl(originalUrl)}
@@ -505,7 +532,8 @@ function InstagramAttachment({
   onRemove,
 }: {
   attachment: Attachment
-  onRemove: () => void
+  /** 없으면 삭제 버튼을 그리지 않는다 — 읽기 전용 viewer(BRU-59) 경로 */
+  onRemove?: () => void
 }) {
   const isLoading = attachment.metadata?.loading === true
   const { url, retry } = useAttachmentUrl(attachment.storagePath)
@@ -561,7 +589,9 @@ function InstagramAttachment({
 
   return (
     <div className="attachment-card attachment-instagram">
-      <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      {onRemove && (
+        <button className="attachment-remove" onClick={onRemove} title="첨부 삭제" aria-label="첨부 삭제"><Icon name="x" size={12} /></button>
+      )}
       <div className="attachment-instagram-content" onClick={() => !hasError && setExpanded(true)}>
         <div className="attachment-instagram-thumbnail">
           {hasError ? (
@@ -661,7 +691,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <ImageAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
                 onExpand={() => handleImageExpand(attachment.id)}
               />
             )
@@ -670,7 +700,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <VideoAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           case 'audio':
@@ -678,7 +708,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <AudioAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           case 'file':
@@ -686,7 +716,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <FileAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           case 'text':
@@ -694,7 +724,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <TextAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           case 'instagram':
@@ -702,7 +732,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <InstagramAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           case 'youtube':
@@ -710,7 +740,7 @@ export function AttachmentList({ attachments, onRemove, maxVisible, onShowMore }
               <YouTubeAttachment
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={() => onRemove(attachment.id)}
+                onRemove={onRemove ? () => onRemove(attachment.id) : undefined}
               />
             )
           default:

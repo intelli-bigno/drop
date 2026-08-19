@@ -101,6 +101,9 @@ export function NoteFeed() {
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false)
   // 지금 태그 팝오버가 열려 있는 노트 (Inbox에서 목록 이탈을 유예하는 데 쓴다)
   const [tagPopoverNoteId, setTagPopoverNoteId] = useState<string | null>(null)
+  // 목록 전체 펼치기 (BRU-79). 훑어보기용 일시 토글이라 **세션 간 유지하지 않는다** —
+  // 스토어가 아니라 여기 로컬 state에 두는 것이 그 결정의 구조적 보장이다.
+  const [expandAll, setExpandAll] = useState(false)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -1031,6 +1034,15 @@ export function NoteFeed() {
                 </button>
               )}
               <button
+                className={`icon-btn ${expandAll ? 'active' : ''}`}
+                onClick={() => setExpandAll((on) => !on)}
+                title={expandAll ? '모두 접기' : '모두 펼쳐보기'}
+                aria-label={expandAll ? '모두 접기' : '모두 펼쳐보기'}
+                aria-pressed={expandAll}
+              >
+                <Icon name={expandAll ? 'chevrons-up' : 'chevrons-down'} />
+              </button>
+              <button
                 className="icon-btn"
                 onClick={() => setShowSearchDialog(true)}
                 title="검색 (⌘K)"
@@ -1117,6 +1129,7 @@ export function NoteFeed() {
                     note={item.note}
                     depth={item.depth}
                     viewMode={viewMode}
+                    expandAll={expandAll}
                     isFocused={focusedIndex === globalIndex}
                     onEscapeFromNormal={() => handleEscapeFromNormal(globalIndex)}
                     onReply={viewMode === 'active' ? handleReply : undefined}
