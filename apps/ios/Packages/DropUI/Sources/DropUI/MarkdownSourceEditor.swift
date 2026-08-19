@@ -3,9 +3,17 @@ import UIKit
 
 /// 마크다운 원문을 그대로 치는 편집기.
 ///
-/// SwiftUI `TextEditor`가 아니라 `UITextView`를 감싼 이유는 하나 — **커서 위치**다.
-/// 툴바가 "고른 글자를 굵게"를 하려면 선택 범위를 알아야 하는데, `TextEditor`의
-/// `selection` 바인딩은 iOS 18부터이고 이 앱의 하한은 iOS 17이다 (BRU-37).
+/// SwiftUI `TextEditor`가 아니라 `UITextView`를 감싼 이유 — 하한이 iOS 26이 된
+/// 지금(BRU-75) **커서 위치는 더 이상 이유가 아니다**. `TextEditor(text:selection:)`는
+/// iOS 18부터 있다. 남은 이유는 자동 치환이다:
+///
+/// - **똑똑한 따옴표·대시를 끌 수 있는 것은 UIKit뿐이다.** SwiftUI에는
+///   `smartQuotesType`·`smartDashesType`에 해당하는 API가 없다. 마크다운은 기호가
+///   문법이라, `"`가 `“`로 바뀌는 순간 코드 블록도 링크도 깨진다.
+/// - 툴바의 편집 명령(`MarkdownEditor`)이 `NSRange`로 도는데, SwiftUI의
+///   `TextSelection`은 `String.Index` 범위(그것도 다중 선택 가능)라 매번 변환이 든다.
+///
+/// 앞의 이유가 없어지면 이 래퍼도 없어져야 한다 (BRU-37).
 public struct MarkdownSourceEditor: UIViewRepresentable {
     @Binding private var text: String
     @Binding private var selection: NSRange
@@ -22,7 +30,11 @@ public struct MarkdownSourceEditor: UIViewRepresentable {
         view.delegate = context.coordinator
         view.font = .preferredFont(forTextStyle: .body)
         view.adjustsFontForContentSizeCategory = true
+        // 배경은 시트가 깐 종이(`DropTheme.Surface.page`)를 그대로 비춘다.
+        // 글자·커서는 팔레트에서 가져온다 — UIKit의 기본 label 색은 웜 페이퍼 밖이다.
         view.backgroundColor = .clear
+        view.textColor = UIColor(DropTokens.Colors.textPrimary)
+        view.tintColor = UIColor(DropTokens.Colors.accent)
         view.textContainerInset = .zero
         view.textContainer.lineFragmentPadding = 0
         // 마크다운은 기호가 문법이다. 자동 대문자·자동 수정이 켜져 있으면

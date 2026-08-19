@@ -45,7 +45,10 @@ public struct MarkdownToolbar: View {
             .padding(.horizontal, DropTheme.Spacing.base)
         }
         .frame(height: 44)
-        .background(.bar)
+        // 툴바는 **기능 레이어**다 — 콘텐츠(종이) 위에 떠서 손이 닿는 자리이므로
+        // 유리가 맞다. 시스템 재질(.bar)은 웜 페이퍼 팔레트 밖이라 이 줄만
+        // 시스템 외양으로 되돌아간다 (BRU-75).
+        .glassEffect(.regular, in: Rectangle())
         .overlay(alignment: .top) { Divider() }
     }
 }
