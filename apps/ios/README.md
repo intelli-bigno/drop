@@ -51,4 +51,4 @@ apps/ios/
 - **`Drop.xcodeproj`는 커밋하지 않는다.** `project.yml`이 SoT이고 `make ios-generate`가 프로젝트를 만든다 — pbxproj 머지 충돌을 없애기 위한 선택. Xcode에서 파일을 추가해도 디렉토리 구조만 맞으면 재생성 시 반영된다.
 - **로컬 빌드에는 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`가 필요하다** (`xcode-select`가 CommandLineTools를 가리키고 있다). Makefile 타겟은 이미 넘긴다.
 - **번들 ID는 `com.intellieffect.drop.mobile`이다.** 과거 Flutter 앱이 쓰던 것을 그대로 이어받았다(BRU-21/PR #36) — App Group·App Store Connect 레코드·TestFlight 테스터가 유지된다. 빌드 번호는 그 시절 것보다 커야 하므로 CI가 시간 기반으로 만든다.
-- 최소 배포 타겟 **iOS 17.0** (`@Observable` 사용 조건).
+- 최소 배포 타겟 **iOS 26.0** (BRU-75). Liquid Glass API(`glassEffect` · `buttonStyle(.glass)`)가 iOS 26부터라, 낮추면 화면마다 `if #available(iOS 26, *)` 게이트와 비유리 폴백이 붙어 코드가 두 갈래로 갈린다. 개인 앱이고 TestFlight 테스터가 소수라 구형 기기를 포기하는 비용이 그보다 싸다는 판단. `project.yml`과 `Packages/*/Package.swift`가 같은 값을 들고 있고, `make ios-test`의 「디자인 시스템 감사」가 어긋나면 실패시킨다.

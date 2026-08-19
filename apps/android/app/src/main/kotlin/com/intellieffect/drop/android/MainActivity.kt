@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -37,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val startComposer = intent?.getBooleanExtra(EXTRA_START_COMPOSER, false) == true
 
         setContent {
-            MaterialTheme {
+            DropTheme {
                 val viewModel: DropViewModel = viewModel()
                 // 계정 선택 창은 Activity가 있어야 뜬다. ViewModel은 Activity보다 오래
                 // 살기 때문에 들고 있으면 누수다 — 화면이 붙어 있는 동안만 빌려 주고
@@ -84,6 +83,7 @@ private fun RootScreen(
 
             HomeScreen(
                 store = viewModel.notesStore,
+                commentsStore = viewModel.commentsStore,
                 userEmail = current.user.email,
                 urlCache = viewModel.signedUrlCache,
                 onSignOut = { viewModel.signOut() },

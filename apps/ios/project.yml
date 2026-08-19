@@ -1,8 +1,12 @@
 name: Drop
 options:
   bundleIdPrefix: com.intellieffect.drop
+  # Liquid Glass(`glassEffect` · `buttonStyle(.glass)`)는 iOS 26부터다.
+  # iOS 17을 유지하면 화면마다 `if #available(iOS 26, *)` 게이트와 비유리
+  # 폴백이 따라붙어 코드가 두 갈래로 갈린다 — 개인 앱이고 TestFlight 테스터가
+  # 소수라 구형 기기를 포기하는 비용이 그보다 싸다 (BRU-75에서 확정).
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.0"
   createIntermediateGroups: true
   groupSortPosition: top
   generateEmptyDirectories: true
@@ -80,6 +84,10 @@ targets:
     dependencies:
       - package: DropCore
         product: DropCore
+      # 확장도 앱과 같은 팔레트를 봐야 한다 (BRU-75). 색 값을 여기 복사해 두면
+      # 토큰이 바뀔 때 확장만 옛 색으로 남는다.
+      - package: DropUI
+        product: DropUI
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.intellieffect.drop.mobile.share
@@ -100,6 +108,9 @@ targets:
     dependencies:
       - package: DropCore
         product: DropCore
+      # 위젯도 같은 팔레트를 본다 (BRU-75).
+      - package: DropUI
+        product: DropUI
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.intellieffect.drop.mobile.widget

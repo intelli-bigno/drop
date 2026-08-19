@@ -1,4 +1,4 @@
-# DROP — Design System (Master)
+# Braindump — Design System (Master)
 
 > **기계가 읽는 정본은 `tokens.json`이다** (BRU-73). 이 문서는 사람이 읽는 설명이고,
 > 색값 표는 참고용이다 — 실제 값은 JSON을 보고, 바꿀 때도 JSON만 고친 뒤 `make tokens`를 돌린다.

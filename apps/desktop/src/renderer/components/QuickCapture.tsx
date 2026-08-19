@@ -292,7 +292,7 @@ export function QuickCapture() {
       <div className="quick-capture">
         <div className="quick-capture-panel">
           <div className="quick-capture-auth-message">
-            DROP app not logged in. Press ESC to close.
+            Braindump app not logged in. Press ESC to close.
           </div>
         </div>
       </div>

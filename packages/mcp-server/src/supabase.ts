@@ -25,7 +25,7 @@ function getApiKey(): string {
   if (!API_KEY) {
     throw new Error(
       'DROP_TOKEN not set.\n' +
-        '1. DROP 앱 → 프로필 → Copy MCP Token\n' +
+        '1. Braindump 앱 → 프로필 → Copy MCP Token\n' +
         '2. .mcp.json의 env에 DROP_TOKEN 추가'
     )
   }
@@ -54,7 +54,7 @@ export async function validateApiKey(): Promise<string> {
 
   if (error || !data) {
     throw new Error(
-      'Invalid API key.\n' + 'DROP 앱 → 프로필 → Copy MCP Token에서 새 키를 복사하세요.'
+      'Invalid API key.\n' + 'Braindump 앱 → 프로필 → Copy MCP Token에서 새 키를 복사하세요.'
     )
   }
 

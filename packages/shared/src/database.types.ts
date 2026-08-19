@@ -543,6 +543,15 @@ export type Database = {
         Returns: Json
       }
       mcp_validate_key: { Args: { api_key: string }; Returns: string }
+      note_categories: {
+        Args: { p_content: string; p_note_id: string }
+        Returns: {
+          has_files: boolean
+          has_link: boolean
+          has_media: boolean
+        }[]
+      }
+      note_content_has_url: { Args: { p_content: string }; Returns: boolean }
       regenerate_mcp_api_key: { Args: never; Returns: string }
       set_note_pin: { Args: { p_pin: string }; Returns: boolean }
       verify_note_pin: { Args: { p_pin: string }; Returns: boolean }

@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   globalShortcut,
   ipcMain,
   Menu,
@@ -14,6 +15,29 @@ import {
 import { initAutoUpdater, setupUpdaterIpc } from './updater'
 import { isQuitting, markQuitting, shouldHideOnClose } from './quit-state'
 import { isSafeExternalUrl } from './url-utils'
+import { resolveUserDataDir } from './user-data'
+import {
+  type AppSettings,
+  DEFAULT_SETTINGS,
+  loadSettings,
+  saveSettings,
+  withQuickCaptureShortcut,
+  withShortcutNoticeSuppressed,
+} from './settings'
+import {
+  registerQuickCaptureShortcut,
+  type ShortcutRegistrationResult,
+} from './quick-capture-shortcut'
+import {
+  DEFAULT_QUICK_CAPTURE_ACCELERATOR,
+  describeFallbackRegistration,
+  formatAccelerator,
+  DEV_QUICK_CAPTURE_ACCELERATOR,
+  describeRegistrationFailure,
+  normalizeAccelerator,
+  resolveQuickCaptureAccelerator,
+  shouldReturnFocusToPreviousApp,
+} from '../shared/shortcuts'
 
 // Handle EPIPE errors that occur when stdout is closed (e.g., tray app without terminal)
 process.on('uncaughtException', (error) => {
@@ -824,6 +848,12 @@ let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 let quickCaptureWindow: BrowserWindow | null = null
 
+let appSettings: AppSettings = { ...DEFAULT_SETTINGS }
+/** 지금 실제로 등록돼 있는 전역 조합. 등록에 모두 실패하면 null. */
+let activeQuickCaptureAccelerator: string | null = null
+/** 이번 캡처가 다른 앱에서 불려 왔는가 — 닫을 때 포커스를 돌려줄지 판단한다. */
+let quickCaptureInvokedFromOtherApp = false
+
 function getRendererUrl(hash = ''): string {
   if (process.env.ELECTRON_RENDERER_URL) {
     return `${process.env.ELECTRON_RENDERER_URL}${hash ? `#${hash}` : ''}`
@@ -875,7 +905,15 @@ function hardenAppWindow(window: BrowserWindow): void {
   })
 }
 
-function createQuickCaptureWindow(): void {
+/** 지금 이 앱의 창 중 하나가 포커스를 쥐고 있는가. */
+function isAppFocused(): boolean {
+  return BrowserWindow.getAllWindows().some((window) => !window.isDestroyed() && window.isFocused())
+}
+
+function createQuickCaptureWindow(options: { fromGlobalShortcut?: boolean } = {}): void {
+  // 전역 단축키로 들어온 경우에만, 그리고 앱이 포커스가 아니었을 때만 포커스를 되돌려준다.
+  quickCaptureInvokedFromOtherApp = Boolean(options.fromGlobalShortcut) && !isAppFocused()
+
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
     // 이미 창이 있으면 포커스
     app.focus({ steal: true })
@@ -921,10 +959,11 @@ function createQuickCaptureWindow(): void {
   })
 
   quickCaptureWindow.on('blur', () => {
-    // 포커스 잃으면 숨김
+    // 포커스 잃으면 숨김. 이미 포커스가 다른 곳으로 갔으므로 app.hide()는 하지 않는다.
     if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
       quickCaptureWindow.hide()
     }
+    quickCaptureInvokedFromOtherApp = false
   })
 
   quickCaptureWindow.on('closed', () => {
@@ -936,6 +975,19 @@ function hideQuickCaptureWindow(): void {
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
     quickCaptureWindow.hide()
   }
+
+  // 다른 앱에서 불러온 캡처였다면 그 앱으로 포커스를 돌려준다 (BRU-84).
+  // macOS는 앱 단위 hide가 직전 앱을 다시 앞으로 올려 준다.
+  if (
+    shouldReturnFocusToPreviousApp({
+      platform: process.platform,
+      invokedFromOtherApp: quickCaptureInvokedFromOtherApp,
+    })
+  ) {
+    app.hide()
+  }
+
+  quickCaptureInvokedFromOtherApp = false
 }
 
 function showMainWindow(): void {
@@ -974,16 +1026,28 @@ function createTray(): void {
   }
 
   tray = new Tray(icon)
-  tray.setToolTip('DROP')
+  tray.setToolTip('Braindump')
+
+  refreshTrayMenu()
+
+  tray.on('click', () => {
+    showMainWindow()
+  })
+}
+
+/** 등록된 조합이 바뀌면 메뉴 라벨도 따라가야 한다 — 안 맞는 라벨은 거짓말이 된다. */
+function refreshTrayMenu(): void {
+  if (!tray || tray.isDestroyed()) return
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Quick Capture',
-      accelerator: 'Ctrl+Space',
+      // 등록에 실패했으면 조합을 표시하지 않는다 — 눌러도 안 되는 키를 적어 두지 않는다.
+      accelerator: activeQuickCaptureAccelerator ?? undefined,
       click: () => createQuickCaptureWindow(),
     },
     {
-      label: 'Open DROP',
+      label: 'Open Braindump',
       click: () => showMainWindow(),
     },
     { type: 'separator' },
@@ -996,21 +1060,79 @@ function createTray(): void {
   ])
 
   tray.setContextMenu(contextMenu)
-
-  tray.on('click', () => {
-    showMainWindow()
-  })
 }
 
-function registerGlobalShortcuts(): void {
-  // Quick Capture 핫키 — dev 빌드는 설치본(Ctrl+Space)과 충돌하지 않게 별도 키 사용
-  const accelerator = app.isPackaged ? 'Control+Space' : 'Control+Shift+Space'
-  const registered = globalShortcut.register(accelerator, () => {
-    createQuickCaptureWindow()
+/**
+ * 퀵캡처 전역 단축키를 등록한다 (BRU-84).
+ *
+ * 실제 등록 판단은 `registerQuickCaptureShortcut`에 있다 — 여기서는 Electron 객체를 넘기고
+ * 결과를 앱 상태(활성 조합·트레이 메뉴)에 반영하는 일만 한다.
+ */
+function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
+  const preferred = resolveQuickCaptureAccelerator({
+    stored: appSettings.quickCaptureShortcut,
+    isPackaged: app.isPackaged,
+  })
+  const fallback = app.isPackaged ? DEFAULT_QUICK_CAPTURE_ACCELERATOR : DEV_QUICK_CAPTURE_ACCELERATOR
+
+  const result = registerQuickCaptureShortcut({
+    registrar: globalShortcut,
+    preferred,
+    fallback,
+    previous: activeQuickCaptureAccelerator,
+    onTrigger: () => {
+      createQuickCaptureWindow({ fromGlobalShortcut: true })
+    },
+    onError: (accelerator, error) => {
+      console.warn(`[globalShortcut] ${accelerator} 등록 중 오류:`, error)
+    },
   })
 
-  if (!registered) {
-    console.warn(`[globalShortcut] ${accelerator} registration failed - may be in use by another app`)
+  activeQuickCaptureAccelerator = result.accelerator
+  if (result.accelerator) {
+    console.info(`[globalShortcut] 퀵캡처 전역 단축키 등록: ${result.accelerator}`)
+  } else {
+    console.warn(
+      `[globalShortcut] 등록 실패 — 다른 앱이 점유 중일 수 있습니다: ${result.attempted.join(', ')}`
+    )
+  }
+  refreshTrayMenu()
+
+  return result
+}
+
+/**
+ * 단축키 문제를 사용자에게 보여 준다 — 로그만 남기고 넘어가지 않는다.
+ *
+ * "아무것도 못 잡았다"와 "고른 조합 대신 기본값이 잡혔다"는 다른 사건이라 문구도 다르다.
+ */
+async function notifyShortcutRegistrationProblem(
+  result: ShortcutRegistrationResult
+): Promise<void> {
+  // ⌥Space는 Alfred 같은 앱이 흔히 점유한다 — 매 실행마다 뜨면 상시 나그가 된다.
+  if (appSettings.suppressShortcutNotice) return
+
+  const { title, message } =
+    result.accelerator && result.preferred
+      ? describeFallbackRegistration(result.preferred, result.accelerator, process.platform)
+      : describeRegistrationFailure(result.attempted, process.platform)
+
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title,
+    message,
+    buttons: ['확인', '다시 보지 않기'],
+    defaultId: 0,
+    cancelId: 0,
+  })
+
+  if (response !== 1) return
+
+  appSettings = withShortcutNoticeSuppressed(appSettings, true)
+  try {
+    saveSettings(app.getPath('userData'), appSettings)
+  } catch (error) {
+    console.warn('[settings] 경고 숨김 설정 저장 실패:', error)
   }
 }
 
@@ -1077,17 +1199,26 @@ function handleOAuthCallback(url: string): void {
   }
 }
 
-// dev 실행이 설치본과 세션/캐시(userData)를 공유하지 않도록 분리 — whenReady 이전에 설정해야 함
-if (!app.isPackaged) {
-  app.setPath('userData', `${app.getPath('userData')}-dev`)
-}
+// 저장 경로를 표시 이름(productName)에서 떼어 고정한다 — whenReady 이전에 설정해야 함.
+// 기본값은 appData/<app name>이라, 표시 이름을 Braindump로 바꾸면 기존 설치본의
+// 세션·설정이 통째로 다른 경로로 옮겨 가 전원 강제 로그아웃이 된다 (BRU-28).
+// dev 실행은 접미사로 분리해 설치본의 세션/캐시를 건드리지 않는다.
+app.setPath('userData', resolveUserDataDir(app.getPath('appData'), app.isPackaged))
 
 app.whenReady().then(() => {
+  appSettings = loadSettings(app.getPath('userData'))
+
   setupIpcHandlers()
   setupQuickCaptureHandlers()
+  setupSettingsHandlers()
   setupUpdaterIpc()
   createTray()
-  registerGlobalShortcuts()
+
+  const shortcutResult = applyQuickCaptureShortcut()
+  if (!shortcutResult.preferredRegistered) {
+    void notifyShortcutRegistrationProblem(shortcutResult)
+  }
+
   createWindow()
 
   // Initialize auto-updater after window is created
@@ -1161,5 +1292,73 @@ function setupQuickCaptureHandlers(): void {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('quickCapture:refresh')
     }
+  })
+}
+
+/** 화면이 읽는 단축키 현재 상태. */
+interface QuickCaptureShortcutState {
+  /** 실제로 등록된 조합. 등록에 실패했으면 null. */
+  accelerator: string | null
+  /** 사용자가 직접 고른 조합. null이면 기본값을 따르고 있다는 뜻. */
+  custom: string | null
+  /** 이 빌드의 기본 조합. */
+  fallback: string
+  /** 등록 성공 여부. */
+  registered: boolean
+}
+
+function quickCaptureShortcutState(): QuickCaptureShortcutState {
+  return {
+    accelerator: activeQuickCaptureAccelerator,
+    custom: appSettings.quickCaptureShortcut,
+    fallback: app.isPackaged ? DEFAULT_QUICK_CAPTURE_ACCELERATOR : DEV_QUICK_CAPTURE_ACCELERATOR,
+    registered: activeQuickCaptureAccelerator !== null,
+  }
+}
+
+function setupSettingsHandlers(): void {
+  ipcMain.handle('settings:getQuickCaptureShortcut', () => quickCaptureShortcutState())
+
+  // null을 주면 기본값으로 되돌린다.
+  ipcMain.handle('settings:setQuickCaptureShortcut', (_event, accelerator: string | null) => {
+    if (accelerator !== null && !normalizeAccelerator(accelerator)) {
+      return {
+        ok: false,
+        error: `쓸 수 없는 조합입니다: ${accelerator}`,
+        state: quickCaptureShortcutState(),
+      }
+    }
+
+    const previous = appSettings
+    appSettings = withQuickCaptureShortcut(appSettings, accelerator)
+
+    const result = applyQuickCaptureShortcut()
+
+    // `ok`만 보면 안 된다 — 기본값으로 물러서서 잡힌 것도 ok는 true다.
+    // 요청한 그 조합이 잡히지 않았으면 실패다. 되돌리고, 화면에 실패라고 답한다.
+    if (!result.preferredRegistered) {
+      appSettings = previous
+      applyQuickCaptureShortcut()
+      return {
+        ok: false,
+        error: result.preferred
+          ? `${formatAccelerator(result.preferred, process.platform)} 조합을 등록하지 못했습니다 — 다른 앱이 이미 쓰고 있습니다. 이전 설정으로 되돌렸습니다.`
+          : describeRegistrationFailure(result.attempted, process.platform).message,
+        state: quickCaptureShortcutState(),
+      }
+    }
+
+    try {
+      saveSettings(app.getPath('userData'), appSettings)
+    } catch (error) {
+      console.warn('[settings] 저장 실패:', error)
+      return {
+        ok: false,
+        error: '단축키는 적용됐지만 저장하지 못했습니다. 다음 실행에는 기본값으로 돌아갑니다.',
+        state: quickCaptureShortcutState(),
+      }
+    }
+
+    return { ok: true, state: quickCaptureShortcutState() }
   })
 }

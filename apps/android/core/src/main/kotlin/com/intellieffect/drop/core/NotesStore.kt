@@ -159,11 +159,5 @@ class NotesStore(private val repository: NotesRepository) {
         )
     }
 
-    private fun messageFor(error: Throwable): String = when (error) {
-        is NotesRepositoryException.NotAuthenticated -> "로그인이 필요합니다."
-        is NotesRepositoryException.Rejected -> "서버가 요청을 거절했습니다: ${error.reason}"
-        is NotesRepositoryException.Network -> "네트워크에 연결하지 못했습니다."
-        is NotesRepositoryException.Decoding -> "응답을 이해하지 못했습니다."
-        else -> error.message ?: error.toString()
-    }
+    private fun messageFor(error: Throwable): String = RepositoryErrorMessage.text(error)
 }

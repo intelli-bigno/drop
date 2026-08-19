@@ -66,7 +66,7 @@ public struct NoteCard: View {
                 Color.clear
                     .frame(width: DropTheme.Hierarchy.indent * CGFloat(depth))
                 Capsule()
-                    .fill(Color.secondary.opacity(0.25))
+                    .fill(DropTheme.Hierarchy.rail)
                     .frame(width: DropTheme.Hierarchy.railWidth)
                     .padding(.trailing, DropTheme.Spacing.base)
             }
@@ -79,7 +79,7 @@ public struct NoteCard: View {
         HStack(spacing: DropTheme.Spacing.base) {
             if isSelecting {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(isSelected ? DropTokens.Colors.accent : DropTokens.Colors.textTertiary)
                     .font(.subheadline)
             }
 
@@ -90,20 +90,20 @@ public struct NoteCard: View {
             if note.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.caption2)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(DropTokens.Colors.accent)
             }
 
             if note.isLocked {
                 Image(systemName: "lock.fill")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
             }
 
             // 부모가 이 목록에 없어 최상위로 올라온 답글. 표시가 없으면 독립 노트로 읽힌다.
             if isOrphanedReply {
                 Image(systemName: "arrow.turn.up.left")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
                     .accessibilityLabel("답글")
             }
 
@@ -121,15 +121,21 @@ public struct NoteCard: View {
 
             Text(Self.relativeTime.string(for: note.createdAt))
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DropTokens.Colors.textTertiary)
                 .lineLimit(1)
                 .fixedSize()
         }
         .padding(.horizontal, DropTheme.Spacing.comfortable * 0.75)
         .padding(.vertical, DropTheme.Spacing.base)
+        // **종이다. 유리가 아니다.** 목록 행은 콘텐츠 레이어라 뒤가 비치면
+        // 본문이 읽히지 않는다 — 유리는 툴바·FAB·시트에만 쓴다 (BRU-75).
         .background(
-            Color.secondary.opacity(isSelected ? 0.16 : 0.06),
+            isSelected ? DropTheme.Surface.selected : DropTheme.Surface.card,
             in: RoundedRectangle(cornerRadius: DropTheme.Radius.row)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DropTheme.Radius.row)
+                .stroke(isSelected ? DropTokens.Colors.borderFocus : DropTokens.Colors.borderSubtle)
         )
         .contentShape(Rectangle())
     }
@@ -139,11 +145,12 @@ public struct NoteCard: View {
         if note.content.isEmpty {
             Text("빈 노트")
                 .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(DropTokens.Colors.textMuted)
                 .lineLimit(1)
         } else {
             Text(note.content)
                 .font(.subheadline)
+                .foregroundStyle(DropTokens.Colors.textPrimary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -162,7 +169,7 @@ public struct NoteCard: View {
                 Text("\(commentCount)")
             }
             .font(.caption2)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DropTokens.Colors.textSecondary)
             .fixedSize()
             .accessibilityLabel("댓글 \(commentCount)개")
         }
@@ -184,7 +191,7 @@ public struct NoteCard: View {
                 if note.attachments.count > Self.inlineAttachmentLimit {
                     Text("+\(note.attachments.count - Self.inlineAttachmentLimit)")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DropTokens.Colors.textSecondary)
                 }
             }
             .fixedSize()
@@ -201,12 +208,13 @@ public struct NoteCard: View {
                         .lineLimit(1)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
-                        .background(Color.secondary.opacity(0.12), in: Capsule())
+                        .foregroundStyle(DropTokens.Colors.textSecondary)
+                        .background(DropTheme.Surface.field, in: Capsule())
                 }
                 if note.tags.count > Self.inlineTagLimit {
                     Text("+\(note.tags.count - Self.inlineTagLimit)")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DropTokens.Colors.textSecondary)
                 }
             }
             .fixedSize()

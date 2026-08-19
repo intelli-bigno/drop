@@ -43,7 +43,7 @@ interface SuccessResult {
 export function registerNotesTools(server: McpServer) {
   server.tool(
     'list_notes',
-    'List recent notes from DROP',
+    'List recent notes from Braindump',
     {
       limit: z.number().min(1).max(100).default(20).describe('Number of notes to return'),
       offset: z.number().min(0).default(0).describe('Offset for pagination'),

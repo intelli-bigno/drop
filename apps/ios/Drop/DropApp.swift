@@ -1,4 +1,5 @@
 import DropCore
+import DropUI
 import GoogleSignIn
 import SwiftUI
 
@@ -39,6 +40,9 @@ struct DropApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // 앱 전역 강조색. 시스템이 알아서 칠하는 자리(선택 표시·
+                // 컨트롤 강조)까지 웜 페이퍼 앰버로 통일한다 (BRU-75).
+                .tint(DropTokens.Colors.accent)
                 .environment(\.dropContainer, container)
                 .environment(auth)
                 .environment(router)

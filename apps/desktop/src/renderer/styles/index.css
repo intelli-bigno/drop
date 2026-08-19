@@ -1,5 +1,5 @@
 /* ============================================
-   DROP - Minimal Dark Design System
+   Braindump - Minimal Dark Design System
    Clean, refined, professional
    ============================================ */
 
@@ -3646,4 +3646,95 @@ body {
 .selection-action.danger:hover {
   background: var(--danger);
   color: #fff;
+}
+
+/* Shortcut Settings Dialog (BRU-84) */
+.shortcut-settings-dialog {
+  width: 420px;
+}
+
+.shortcut-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.shortcut-settings-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.shortcut-settings-recorder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.shortcut-settings-recorder:hover:not(:disabled) {
+  border-color: var(--border-focus);
+}
+
+.shortcut-settings-recorder.is-recording {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.shortcut-settings-recorder:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.shortcut-settings-status {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.shortcut-settings-status.is-error {
+  color: var(--danger);
+}
+
+.shortcut-settings-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.shortcut-settings-reset {
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.shortcut-settings-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.shortcut-settings-hint {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1.6;
 }
