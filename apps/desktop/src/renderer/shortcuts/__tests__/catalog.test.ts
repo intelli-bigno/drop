@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { SHORTCUT_CATALOG, formatKeyForDisplay } from '../catalog'
 import { KEYS } from '../keys'
 import { resolveNoteFeedShortcut } from '../noteFeed'
+import { resolveNoteSelectionShortcut } from '../noteSelection'
 import type { KeyEventLike } from '../types'
 
 function key(k: string, mods: Partial<Omit<KeyEventLike, 'key'>> = {}): KeyEventLike {
@@ -44,6 +45,19 @@ describe('SHORTCUT_CATALOG', () => {
           shiftKey: entry.modifier === 'shift',
         })
         expect(resolveNoteFeedShortcut(event)).not.toBeNull()
+      }
+    }
+  })
+
+  // BRU-80 — 선택 항목도 같은 방식으로 실제 동작에 묶어 둔다
+  it('shouldListOnlyKeysThatTheSelectionResolverActuallyHandles', () => {
+    const selectionEntries = SHORTCUT_CATALOG.filter((e) => e.scope === 'selection')
+    expect(selectionEntries.length).toBeGreaterThan(0)
+
+    for (const entry of selectionEntries) {
+      for (const k of KEYS[entry.keyId]) {
+        const event = key(k, { shiftKey: entry.modifier === 'shift' })
+        expect(resolveNoteSelectionShortcut(event)).not.toBeNull()
       }
     }
   })
