@@ -38,18 +38,23 @@ struct CommentsSheet: View {
                 )
         }
         .presentationDetents([.large])
+        // 시트 껍데기(내비게이션 바)는 시스템이 유리로 그리고,
+        // 그 안의 **내용은 종이**여야 한다 — 댓글 글자가 뒤에 흐르는 목록 위에서
+        // 읽히지 않으면 안 된다 (BRU-75).
+        .presentationBackground(DropTheme.Surface.page)
     }
 
     /// 어느 노트에 다는 댓글인지 늘 보이게 둔다 — 시트만 보면 맥락이 사라진다.
     private var noteHeader: some View {
         Text(note.content.isEmpty ? "빈 노트" : note.content)
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DropTokens.Colors.textSecondary)
             .lineLimit(2)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DropTheme.Spacing.comfortable)
             .padding(.vertical, DropTheme.Spacing.base)
-            .background(.bar)
+            // 노트 본문을 보여 주는 자리라 콘텐츠다 — 유리가 아니라 종이.
+            .background(DropTheme.Surface.card)
     }
 
     /// 스크롤 컨테이너는 항상 하나, 항상 여기 있다 — 빈 상태에서도 당겨서
@@ -73,6 +78,8 @@ struct CommentsSheet: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(DropTheme.Surface.page)
         .scrollBounceBehavior(.always, axes: .vertical)
         .refreshable { await store.load(noteID: note.id) }
     }
@@ -81,10 +88,11 @@ struct CommentsSheet: View {
         VStack(alignment: .leading, spacing: DropTheme.Spacing.tight) {
             Text(comment.body)
                 .font(.subheadline)
+                .foregroundStyle(DropTokens.Colors.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(Self.relativeTime.string(for: comment.createdAt))
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DropTokens.Colors.textTertiary)
         }
         .padding(.vertical, DropTheme.Spacing.tight)
         // 댓글에는 휴지통이 없다 — 지우면 바로 사라진다. 그래서 전체 스와이프는 막는다.
@@ -94,6 +102,7 @@ struct CommentsSheet: View {
             } label: {
                 Label("삭제", systemImage: "trash")
             }
+            .tint(DropTheme.SwipeAction.destructive)
         }
     }
 
@@ -115,20 +124,23 @@ struct CommentsSheet: View {
                 .focused($isFocused)
                 .padding(.horizontal, DropTheme.Spacing.base)
                 .padding(.vertical, DropTheme.Spacing.tight)
-                .background(Color.secondary.opacity(0.12), in: Capsule())
+                .foregroundStyle(DropTokens.Colors.textPrimary)
+                .background(DropTheme.Surface.field, in: Capsule())
 
             Button {
                 send()
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 28))
+                    .foregroundStyle(DropTokens.Colors.cta)
             }
             // 보내는 중 중복 탭을 막지 않으면 같은 댓글이 두 번 올라간다.
             .disabled(isSending || trimmed.isEmpty)
         }
         .padding(.horizontal, DropTheme.Spacing.comfortable)
         .padding(.vertical, DropTheme.Spacing.base)
-        .background(.bar)
+        // 목록 위에 얹혀 따라다니는 입력 바 — 기능 레이어라 유리다.
+        .glassEffect(.regular, in: Rectangle())
     }
 
     private var trimmed: String {
