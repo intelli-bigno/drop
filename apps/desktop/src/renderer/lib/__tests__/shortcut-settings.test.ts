@@ -33,6 +33,21 @@ describe('describeShortcutState', () => {
     expect(status.text).toContain('⇧⌘K')
   })
 
+  it('flags the case where a custom combination silently fell back to the default', () => {
+    const status = describeShortcutState(
+      {
+        accelerator: 'Alt+Space',
+        custom: 'Command+Shift+K',
+        fallback: 'Alt+Space',
+        registered: true,
+      },
+      'darwin'
+    )
+    expect(status.tone).toBe('error')
+    expect(status.text).toContain('⇧⌘K')
+    expect(status.text).toContain('⌥Space')
+  })
+
   it('renders word modifiers off macOS', () => {
     expect(describeShortcutState(registered, 'win32').text).toContain('Alt+Space')
   })

@@ -4,7 +4,7 @@
  * Electron의 `globalShortcut`을 직접 부르지 않고 주입받는다 — 배선 자체를 vitest로 덮기 위해서다.
  * 순수 규칙(정규화·시도 순서)은 `shared/shortcuts.ts`에 있고, 여기는 "실제로 잡혔는가"만 다룬다.
  */
-import { buildRegistrationPlan } from '../shared/shortcuts'
+import { buildRegistrationPlan, normalizeAccelerator } from '../shared/shortcuts'
 
 /** Electron `globalShortcut`에서 이 모듈이 쓰는 부분만 추린 것. */
 export interface GlobalShortcutRegistrar {
@@ -17,6 +17,15 @@ export interface ShortcutRegistrationResult {
   ok: boolean
   /** 실제로 등록된 조합. 모두 실패하면 null. */
   accelerator: string | null
+  /** 요청한 조합(정규화). 표기가 잘못됐으면 null. */
+  preferred: string | null
+  /**
+   * 요청한 그 조합이 실제로 잡혔는지.
+   *
+   * `ok`와 반드시 구분한다 — 기본값으로 물러서서 잡힌 것도 `ok`는 true다.
+   * 사용자가 고른 조합이 실패한 것을 성공으로 보고하면 그게 곧 "조용히 삼키기"다.
+   */
+  preferredRegistered: boolean
   /** 시도한 조합 전부 — 실패를 알릴 때 그대로 보여 준다. */
   attempted: string[]
 }
@@ -45,6 +54,7 @@ export function registerQuickCaptureShortcut(
 
   if (previous) registrar.unregister(previous)
 
+  const normalizedPreferred = normalizeAccelerator(preferred)
   const attempted = buildRegistrationPlan(preferred, fallback)
 
   for (const accelerator of attempted) {
@@ -57,9 +67,21 @@ export function registerQuickCaptureShortcut(
     }
 
     if (registered) {
-      return { ok: true, accelerator, attempted }
+      return {
+        ok: true,
+        accelerator,
+        preferred: normalizedPreferred,
+        preferredRegistered: accelerator === normalizedPreferred,
+        attempted,
+      }
     }
   }
 
-  return { ok: false, accelerator: null, attempted }
+  return {
+    ok: false,
+    accelerator: null,
+    preferred: normalizedPreferred,
+    preferredRegistered: false,
+    attempted,
+  }
 }

@@ -141,4 +141,58 @@ describe('registerQuickCaptureShortcut', () => {
     registrar.callbacks.get('Alt+Space')?.()
     expect(onTrigger).toHaveBeenCalledTimes(1)
   })
+
+  it('reports that the requested accelerator was NOT the one registered when it falls back', () => {
+    const registrar = fakeRegistrar(['Alt+Space'])
+
+    const result = registerQuickCaptureShortcut({
+      registrar,
+      preferred: 'Command+Shift+K',
+      fallback: 'Alt+Space',
+      onTrigger: () => {},
+    })
+
+    // ok는 "무언가 잡혔다"일 뿐이다 — 사용자가 고른 조합이 잡혔는지는 별개다.
+    expect(result.ok).toBe(true)
+    expect(result.preferredRegistered).toBe(false)
+  })
+
+  it('reports the requested accelerator as registered when it actually is', () => {
+    const registrar = fakeRegistrar(['Command+Shift+K'])
+
+    const result = registerQuickCaptureShortcut({
+      registrar,
+      preferred: 'Command+Shift+K',
+      fallback: 'Alt+Space',
+      onTrigger: () => {},
+    })
+
+    expect(result.preferredRegistered).toBe(true)
+  })
+
+  it('treats a preferred accelerator equal to the default as requested-and-registered', () => {
+    const registrar = fakeRegistrar(['Alt+Space'])
+
+    const result = registerQuickCaptureShortcut({
+      registrar,
+      preferred: 'alt+space',
+      fallback: 'Alt+Space',
+      onTrigger: () => {},
+    })
+
+    expect(result.preferredRegistered).toBe(true)
+  })
+
+  it('reports nothing registered when every candidate fails', () => {
+    const registrar = fakeRegistrar([])
+
+    const result = registerQuickCaptureShortcut({
+      registrar,
+      preferred: 'Command+Shift+K',
+      fallback: 'Alt+Space',
+      onTrigger: () => {},
+    })
+
+    expect(result.preferredRegistered).toBe(false)
+  })
 })

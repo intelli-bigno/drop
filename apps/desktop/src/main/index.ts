@@ -28,6 +28,8 @@ import {
 } from './quick-capture-shortcut'
 import {
   DEFAULT_QUICK_CAPTURE_ACCELERATOR,
+  describeFallbackRegistration,
+  formatAccelerator,
   DEV_QUICK_CAPTURE_ACCELERATOR,
   describeRegistrationFailure,
   normalizeAccelerator,
@@ -1097,9 +1099,17 @@ function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
   return result
 }
 
-/** 등록 실패를 사용자에게 보여 준다 — 로그만 남기고 넘어가지 않는다. */
-function notifyShortcutRegistrationFailure(attempted: string[]): void {
-  const { title, message } = describeRegistrationFailure(attempted, process.platform)
+/**
+ * 단축키 문제를 사용자에게 보여 준다 — 로그만 남기고 넘어가지 않는다.
+ *
+ * "아무것도 못 잡았다"와 "고른 조합 대신 기본값이 잡혔다"는 다른 사건이라 문구도 다르다.
+ */
+function notifyShortcutRegistrationProblem(result: ShortcutRegistrationResult): void {
+  const { title, message } =
+    result.accelerator && result.preferred
+      ? describeFallbackRegistration(result.preferred, result.accelerator, process.platform)
+      : describeRegistrationFailure(result.attempted, process.platform)
+
   void dialog.showMessageBox({ type: 'warning', title, message, buttons: ['확인'] })
 }
 
@@ -1181,8 +1191,8 @@ app.whenReady().then(() => {
   createTray()
 
   const shortcutResult = applyQuickCaptureShortcut()
-  if (!shortcutResult.ok) {
-    notifyShortcutRegistrationFailure(shortcutResult.attempted)
+  if (!shortcutResult.preferredRegistered) {
+    notifyShortcutRegistrationProblem(shortcutResult)
   }
 
   createWindow()
@@ -1299,13 +1309,17 @@ function setupSettingsHandlers(): void {
     appSettings = withQuickCaptureShortcut(appSettings, accelerator)
 
     const result = applyQuickCaptureShortcut()
-    if (!result.ok) {
-      // 새 조합이 안 잡히면 되돌린다 — 단축키가 없는 상태로 두지 않는다.
+
+    // `ok`만 보면 안 된다 — 기본값으로 물러서서 잡힌 것도 ok는 true다.
+    // 요청한 그 조합이 잡히지 않았으면 실패다. 되돌리고, 화면에 실패라고 답한다.
+    if (!result.preferredRegistered) {
       appSettings = previous
       applyQuickCaptureShortcut()
       return {
         ok: false,
-        error: describeRegistrationFailure(result.attempted, process.platform).message,
+        error: result.preferred
+          ? `${formatAccelerator(result.preferred, process.platform)} 조합을 등록하지 못했습니다 — 다른 앱이 이미 쓰고 있습니다. 이전 설정으로 되돌렸습니다.`
+          : describeRegistrationFailure(result.attempted, process.platform).message,
         state: quickCaptureShortcutState(),
       }
     }

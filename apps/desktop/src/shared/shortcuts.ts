@@ -196,6 +196,29 @@ export function describeRegistrationFailure(
 }
 
 /**
+ * 요청한 조합이 안 잡혀 기본값으로 물러섰을 때의 문구.
+ *
+ * "등록 실패"와 구분한다 — 단축키는 살아 있지만 사용자가 고른 것이 아니다.
+ * 이걸 성공으로 뭉뚱그리면 사용자는 자기 조합이 먹는 줄 안다.
+ */
+export function describeFallbackRegistration(
+  requested: string,
+  active: string,
+  platform: string = 'darwin'
+): { title: string; message: string } {
+  const wanted = formatAccelerator(requested, platform)
+  const inUse = formatAccelerator(active, platform)
+
+  return {
+    title: '고른 단축키를 쓸 수 없습니다',
+    message:
+      `${wanted} 조합은 다른 앱이 이미 쓰고 있어 잡지 못했습니다.\n` +
+      `지금은 기본값 ${inUse} 로 퀵캡처가 열립니다.\n\n` +
+      '메뉴 → 설정 → 전역 단축키에서 다른 조합을 고르거나, 그 조합을 쓰는 앱을 종료한 뒤 다시 시도하세요.',
+  }
+}
+
+/**
  * 캡처 창을 닫을 때 직전에 쓰던 앱으로 포커스를 돌려줄지.
  * macOS에서만 앱 단위 hide가 있고, 앱 안에서 연 캡처까지 숨기면 오히려 방해가 된다.
  */

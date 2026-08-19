@@ -26,6 +26,16 @@ export function describeShortcutState(
     }
   }
 
+  // 고른 조합이 아니라 기본값이 잡혀 있으면 그건 성공이 아니다.
+  if (state.custom !== null && state.custom !== state.accelerator) {
+    return {
+      tone: 'error',
+      text:
+        `${formatAccelerator(state.custom, platform)} 조합을 등록하지 못했습니다 — 다른 앱이 쓰고 있습니다. ` +
+        `지금은 기본값 ${formatAccelerator(state.accelerator, platform)} 로 열립니다.`,
+    }
+  }
+
   const rendered = formatAccelerator(state.accelerator, platform)
   return {
     tone: 'ok',

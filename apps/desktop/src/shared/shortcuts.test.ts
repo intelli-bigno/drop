@@ -4,6 +4,7 @@ import {
   DEV_QUICK_CAPTURE_ACCELERATOR,
   acceleratorFromKeyEvent,
   buildRegistrationPlan,
+  describeFallbackRegistration,
   describeRegistrationFailure,
   formatAccelerator,
   isValidAccelerator,
@@ -234,5 +235,18 @@ describe('acceleratorFromKeyEvent', () => {
     expect(
       acceleratorFromKeyEvent({ ...base, altKey: true, key: 'Escape', code: 'Escape' })
     ).toBeNull()
+  })
+})
+
+describe('describeFallbackRegistration', () => {
+  it('names both the combination that failed and the one actually in use', () => {
+    const { message } = describeFallbackRegistration('Command+Shift+K', 'Alt+Space', 'darwin')
+    expect(message).toContain('⇧⌘K')
+    expect(message).toContain('⌥Space')
+  })
+
+  it('does not claim that nothing was registered', () => {
+    const { message } = describeFallbackRegistration('Command+Shift+K', 'Alt+Space', 'darwin')
+    expect(message).not.toContain('등록되지 않았습니다')
   })
 })
