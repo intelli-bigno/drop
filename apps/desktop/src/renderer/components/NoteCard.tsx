@@ -16,7 +16,11 @@ import { useProfileStore } from '../stores/profile'
 import { formatRelativeTime } from '../lib/time-utils'
 import { nextPriority, priorityClassName } from '../lib/note-priority'
 import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
-import { resolveTrailingSlot, shouldPinStatusStayVisible } from '../lib/note-card-trailing'
+import {
+  resolveTrailingSlot,
+  shouldPinStatusStayVisible,
+  reservedActionsWidth,
+} from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
 import { isEditorOpen } from '../lib/note-edit-mode'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
@@ -123,7 +127,9 @@ export const NoteCard = memo(
       // 잠긴 노트는 댓글이 몇 개인지도 흘리지 않는다 — 첨부·링크 개수와 같은 규칙
       const commentCount = isLocked ? 0 : storedCommentCount
 
-      const trailingSlot = resolveTrailingSlot({ isHovered, isFocused })
+      // 액션은 마우스를 올렸을 때만 나온다 (BRU-82). 키보드만 쓰는 경로는
+      // 단축키와 `.note-card:focus-within` CSS 규칙이 따로 맡는다.
+      const trailingSlot = resolveTrailingSlot({ isHovered })
       const showStatusIcons = shouldPinStatusStayVisible({
         isPinned: note.isPinned,
         isLocked: note.isLocked,
@@ -408,7 +414,17 @@ export const NoteCard = memo(
                   </span>
                 )}
               </div>
-              <div className="note-card-trailing" data-slot={trailingSlot}>
+              <div
+                className="note-card-trailing"
+                data-slot={trailingSlot}
+                // 액션이 들어갈 자리를 미리 비워 둔다 — 오버레이가 왼쪽으로
+                // 흘러나가 태그를 덮지 않게 하는 유일한 장치다 (BRU-57).
+                style={
+                  {
+                    '--actions-reserved': `${reservedActionsWidth(viewMode)}px`,
+                  } as React.CSSProperties
+                }
+              >
                 {showStatusIcons && (
                   <span className="note-line-status" aria-hidden="true">
                     {note.isPinned && <Icon name="pin" size={12} />}
