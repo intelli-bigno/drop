@@ -42,6 +42,9 @@ struct NoteDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(DropTheme.Spacing.comfortable)
             }
+            // 뷰어도 종이 위다 — 시스템 기본 배경을 걷어내고 웜 페이퍼를 깐다 (BRU-75).
+            .scrollContentBackground(.hidden)
+            .background(DropTheme.Surface.page)
             .navigationTitle(note.displayID > 0 ? "#\(note.displayID)" : "노트")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -64,6 +67,7 @@ struct NoteDetailView: View {
                 )
             }
         }
+        .presentationBackground(DropTheme.Surface.page)
         .accessibilityIdentifier("노트 뷰어")
     }
 
@@ -77,16 +81,16 @@ struct NoteDetailView: View {
                 .fill(DropTheme.Priority.color(for: note.priority))
                 .frame(width: DropTheme.Priority.dotSize, height: DropTheme.Priority.dotSize)
             if note.isPinned {
-                Image(systemName: "pin.fill").font(.caption).foregroundStyle(.orange)
+                Image(systemName: "pin.fill").font(.caption).foregroundStyle(DropTokens.Colors.accent)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(note.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
                 if note.updatedAt.timeIntervalSince(note.createdAt) > 1 {
                     Text("수정 \(Self.relativeTime.string(for: note.updatedAt))")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(DropTokens.Colors.textTertiary)
                 }
             }
             Spacer()
@@ -100,10 +104,11 @@ struct NoteDetailView: View {
         if note.content.isEmpty {
             Text("빈 노트")
                 .font(.body)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(DropTokens.Colors.textMuted)
         } else {
             Text(note.content)
                 .font(.body)
+                .foregroundStyle(DropTokens.Colors.textPrimary)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("노트 본문")
@@ -134,9 +139,10 @@ struct NoteDetailView: View {
             ForEach(note.tags) { tag in
                 Text("#\(tag.name)")
                     .font(.caption)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.12), in: Capsule())
+                    .background(DropTheme.Surface.field, in: Capsule())
             }
         }
     }

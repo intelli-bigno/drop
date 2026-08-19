@@ -193,10 +193,10 @@ struct ShortcutView: View {
             VStack(spacing: 6) {
                 Image(systemName: systemImage)
                     .font(.largeTitle)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(DropTokens.Colors.accent)
                 Text(title)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -209,7 +209,7 @@ struct CameraWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
             ShortcutView(systemImage: "camera", title: "사진 찍기")
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(DropTheme.Surface.card, for: .widget)
                 .widgetURL(DropLink.cameraURL)
         }
         .configurationDisplayName("사진 찍기")
@@ -224,7 +224,7 @@ struct GalleryWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RecentNotesProvider()) { _ in
             ShortcutView(systemImage: "photo.on.rectangle", title: "사진 고르기")
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(DropTheme.Surface.card, for: .widget)
                 .widgetURL(DropLink.galleryURL)
         }
         .configurationDisplayName("사진 고르기")
