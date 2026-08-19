@@ -12,6 +12,12 @@ enum PreviewLaunch {
         ProcessInfo.processInfo.arguments.contains("-dropPreview")
     }
 
+    /// 인메모리 표본 대신 **로컬 Supabase**를 본다. 시드 사용자로 붙는다(BRU-71의 iOS판).
+    /// 화면에서 한 동작이 DB에 무엇을 남기는지(또는 남기지 않는지) 실측할 때 쓴다.
+    static var usesSeededLocalSession: Bool {
+        ProcessInfo.processInfo.arguments.contains("-dropLocalSession")
+    }
+
     @MainActor
     static func makeRepository() -> any NotesRepository {
         InMemoryNotesRepository(notes: sampleNotes)

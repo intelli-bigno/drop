@@ -186,4 +186,15 @@ struct WidgetDeepLinkTests {
     func noteRowOpensThatNote() {
         #expect(DropLink(url: DropLink.noteURL(id: "abc-123")) == .note(id: "abc-123"))
     }
+
+    /// 위젯이 여는 URL과 앱이 읽는 해석이 같은 곳에서 나오는지 확인한다 (BRU-43).
+    @Test("카메라 바로가기 링크는 카메라로 해석된다")
+    func cameraShortcutOpensCamera() {
+        #expect(DropLink(url: DropLink.cameraURL) == .camera)
+    }
+
+    @Test("갤러리 바로가기 링크는 갤러리로 해석된다")
+    func galleryShortcutOpensGallery() {
+        #expect(DropLink(url: DropLink.galleryURL) == .gallery)
+    }
 }

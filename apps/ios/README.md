@@ -23,12 +23,24 @@ apps/ios/
 | --- | --- |
 | `make ios-config` | 환경변수 → `Config/Config-*.xcconfig` 생성 |
 | `make ios-test` | DropCore 테스트 (시뮬레이터 불필요, 가장 빠른 피드백) |
+| `make ios-uitest` | 화면을 실제로 조작하는 검증 (시뮬레이터 필요, 느리다) |
 | `make ios-build` / `ios-build-remote` | 시뮬레이터용 빌드 (로컬 / 리모트 Supabase) |
 | `make ios-dev` / `ios-dev-remote` | 시뮬레이터에서 실행 |
 | `make ios-open` | Xcode로 열기 |
 | `make ios-clean` | 생성물 정리 |
 
 사전 준비: `brew install xcodegen`, Xcode 설치, 그리고 **`make ios-config`** 1회.
+
+## 자격증명 없이 띄우는 두 가지 (DEBUG 전용)
+
+로그인 경로가 Google 하나뿐이라, 화면을 눈으로 보거나 UI 테스트를 돌리려면 우회가 필요하다. 릴리스 빌드에는 두 경로 모두 들어가지 않는다.
+
+| 실행 인자 | 데이터 | 쓰는 곳 |
+| --- | --- | --- |
+| `-dropPreview` | 인메모리 표본 (`PreviewLaunch`) | 화면 확인, 대부분의 UI 테스트 — 네트워크·DB 없음 |
+| `-dropLocalSession` | **로컬 Supabase**, 시드 사용자 `preview@drop.local` (`supabase/seed.sql`) | 화면에서 한 동작이 DB에 무엇을 남기는지(또는 남기지 않는지) 실측 |
+
+`-dropLocalSession`은 데스크톱의 `VITE_DROP_PREVIEW=1`(BRU-71)과 같은 것이다. `supabase start`가 떠 있어야 한다 — 없으면 해당 UI 테스트는 스스로 건너뛴다.
 
 ## 구성값이 흐르는 경로
 
