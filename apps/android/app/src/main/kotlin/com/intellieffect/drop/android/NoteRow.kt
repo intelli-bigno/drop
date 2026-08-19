@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,8 @@ fun NoteRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 이 노트에 달린 댓글 수. 0이면 아무것도 그리지 않는다 (BRU-86). */
+    commentCount: Int = 0,
 ) {
     val formatter = remember { RelativeTimeFormatter() }
 
@@ -82,6 +86,17 @@ fun NoteRow(
             Text("📎${note.attachments.size}", style = MaterialTheme.typography.labelSmall)
         }
 
+        // 댓글 뱃지. 첨부와 같은 자리에 두어 "이 노트에 뭐가 더 붙어 있다"가
+        // 한 눈에 보이게 한다.
+        if (commentCount > 0) {
+            Text(
+                text = "💬$commentCount",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { contentDescription = "댓글 ${commentCount}개" },
+            )
+        }
+
         Text(
             text = formatter.format(note.createdAt),
             style = MaterialTheme.typography.labelSmall,
@@ -105,6 +120,7 @@ fun SwipeableNoteRow(
     onSwipeStart: () -> Unit,
     onSwipeEnd: () -> Unit,
     modifier: Modifier = Modifier,
+    commentCount: Int = 0,
 ) {
     val state = rememberSwipeToDismissBoxState()
 
@@ -174,7 +190,7 @@ fun SwipeableNoteRow(
             }
         },
     ) {
-        NoteRow(note, isSelected, onClick, onLongClick)
+        NoteRow(note, isSelected, onClick, onLongClick, commentCount = commentCount)
     }
 }
 
