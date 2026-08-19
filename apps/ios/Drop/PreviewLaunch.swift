@@ -120,6 +120,37 @@ enum PreviewLaunch {
                 createdAt: now.addingTimeInterval(-5400), updatedAt: now, source: .desktop,
                 priority: 1
             ),
+            // 마크다운 표본 (BRU-37). 목록에서는 기호가 걷힌 한 줄로 보이고,
+            // 컴포저의 미리보기에서 제목·목록·체크박스·코드·인용·링크가 서야 한다.
+            Note(
+                id: "9", displayID: 20,
+                content: """
+                # 이번 주 정리
+
+                **굵게**와 *기울임*, 그리고 `인라인 코드`.
+
+                - [x] 파서를 DropCore에 두기
+                - [ ] 뷰어 붙이기
+                  - 목록 안의 목록
+                - [ ] 편집기 툴바
+
+                1. 첫째
+                2. 둘째
+
+                > 저장 형식은 평문 마크다운 그대로다.
+
+                ```swift
+                let document = MarkdownParser().parse(note.content)
+                ```
+
+                ---
+
+                [이슈 보기](https://linear.app/intellieffect/issue/BRU-37)
+                """,
+                tags: [tag("설계")],
+                createdAt: now.addingTimeInterval(-300), updatedAt: now, source: .desktop,
+                priority: 2
+            ),
             Note(
                 id: "7", displayID: 15,
                 content: "어제 적어 둔 메모",

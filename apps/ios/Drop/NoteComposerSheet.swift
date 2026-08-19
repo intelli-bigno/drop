@@ -3,13 +3,18 @@ import DropUI
 import SwiftUI
 
 /// `widgets/note_composer_sheet.dart` 대응. DROP의 핵심 동선 — 빠르게 던져넣기.
+///
+/// 본문은 평문 마크다운이다. 여기서 쓰고(툴바), 여기서 읽는다(미리보기) —
+/// 목록은 한 줄만 보여 주므로 노트를 다 읽는 자리도 결국 이 시트다 (BRU-37, BRU-49).
 struct NoteComposerSheet: View {
     let target: ComposerTarget
     let onSubmit: (String) async -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var isFocused: Bool
     @State private var text: String
+    /// 커서 위치. 툴바가 "고른 글자를 굵게"를 하려면 이 값이 있어야 한다.
+    @State private var selection = NSRange(location: 0, length: 0)
+    @State private var isPreviewing = false
     @State private var isSaving = false
 
     init(target: ComposerTarget, onSubmit: @escaping (String) async -> Void) {
@@ -26,28 +31,29 @@ struct NoteComposerSheet: View {
         NavigationStack {
             // **에디터는 종이다.** 글을 쓰는 자리에 유리를 깔면 뒤에 흐르는
             // 목록이 글자 사이로 비쳐 읽기가 무너진다 (BRU-75).
-            TextEditor(text: $text)
-                .focused($isFocused)
-                .font(.body)
-                .foregroundStyle(DropTokens.Colors.textPrimary)
-                .scrollContentBackground(.hidden)
-                .background(DropTheme.Surface.page)
+            editorOrPreview
                 .padding(.horizontal, DropTheme.Spacing.comfortable)
+                .background(DropTheme.Surface.page)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("닫기") { dismiss() }
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        previewToggle
                         Button(isNew ? "추가" : "저장") { submit() }
                             // 저장 중 중복 탭을 막지 않으면 노트가 두 번 만들어진다.
                             .disabled(isSaving || trimmed.isEmpty)
                             .fontWeight(.semibold)
                     }
                 }
-                // 시트가 뜨자마자 키보드가 올라와야 "던져넣기"가 끊기지 않는다.
-                .onAppear { isFocused = true }
+                // 툴바는 키보드 위에 붙는다. 미리보기 중에는 칠 것이 없으니 걷는다.
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if !isPreviewing {
+                        MarkdownToolbar(onCommand: apply)
+                    }
+                }
         }
         .presentationDetents([.medium, .large])
         // 시트의 툴바는 시스템이 유리로 그린다 — 여기서 할 일은 그 아래를
@@ -55,6 +61,46 @@ struct NoteComposerSheet: View {
         .presentationBackground(DropTheme.Surface.page)
         .tint(DropTokens.Colors.accent)
         .interactiveDismissDisabled(isSaving)
+    }
+
+    @ViewBuilder
+    private var editorOrPreview: some View {
+        if isPreviewing {
+            ScrollView {
+                MarkdownText(text)
+                    .padding(.vertical, DropTheme.Spacing.base)
+            }
+            .scrollContentBackground(.hidden)
+        } else {
+            // 시트가 뜨자마자 키보드가 올라와야 "던져넣기"가 끊기지 않는다.
+            MarkdownSourceEditor(text: $text, selection: $selection, focusesOnAppear: true)
+        }
+    }
+
+    /// 편집↔미리보기 전환.
+    ///
+    /// **미리보기는 읽기만 한다.** 이 버튼은 화면 상태(`isPreviewing`)만 바꾸고
+    /// `text`도 저장 경로도 건드리지 않는다 — 열람했더니 본문이 달라져 있는 일이
+    /// 다시 생기면 안 된다 (BRU-66).
+    private var previewToggle: some View {
+        Button {
+            isPreviewing.toggle()
+        } label: {
+            Image(systemName: isPreviewing ? "pencil" : "eye")
+        }
+        .accessibilityLabel(isPreviewing ? "편집" : "미리보기")
+        // 이름은 상태에 따라 바뀐다 — 게다가 "편집"은 뷰어(NoteDetailView)의 버튼과
+        // 겹친다. 컴포저가 뷰어 위에 뜨는 지금(BRU-77) 이름으로 찾으면 어느 쪽을
+        // 잡을지 알 수 없으므로, 검증이 붙잡을 고정 손잡이를 따로 준다.
+        .accessibilityIdentifier("미리보기 전환")
+    }
+
+    /// 툴바 명령을 본문에 적용한다. 무엇을 어디에 끼워 넣을지는 전부
+    /// `DropCore`의 `MarkdownEditor`가 정한다 — 화면은 결과만 받아 든다.
+    private func apply(_ command: MarkdownEditingCommand) {
+        let result = MarkdownEditor.apply(command, to: text, selection: selection)
+        text = result.text
+        selection = result.selection
     }
 
     private var isNew: Bool {

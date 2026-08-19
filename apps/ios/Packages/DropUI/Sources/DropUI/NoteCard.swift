@@ -140,15 +140,23 @@ public struct NoteCard: View {
         .contentShape(Rectangle())
     }
 
+    /// 한 줄 행에 태울 글자. 만드는 일도 기억하는 일도 `MarkdownSummaryCache`가 한다 —
+    /// 여기서 파싱하면 스크롤 한 번에 여러 번 도는 `body`가 곧 파싱이 된다 (BRU-37).
+    @MainActor
+    private var summary: String {
+        MarkdownSummaryCache.summary(for: note.content)
+    }
+
     @ViewBuilder
     private var contentText: some View {
-        if note.content.isEmpty {
+        let summary = summary
+        if summary.isEmpty {
             Text("빈 노트")
                 .font(.subheadline)
                 .foregroundStyle(DropTokens.Colors.textMuted)
                 .lineLimit(1)
         } else {
-            Text(note.content)
+            Text(summary)
                 .font(.subheadline)
                 .foregroundStyle(DropTokens.Colors.textPrimary)
                 .lineLimit(1)
