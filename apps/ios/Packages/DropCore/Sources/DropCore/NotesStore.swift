@@ -99,7 +99,14 @@ public final class NotesStore {
     }
 
     /// - Parameter parentID: 답글이면 부모 노트 id. 넘기지 않으면 최상위 노트가 된다 (BRU-69).
-    public func create(content: String, parentID: String? = nil) async {
+    /// - Returns: 저장된 노트. 실패하면 nil.
+    ///
+    ///   돌려주는 이유는 첨부 때문이다 — 사진·카메라·공유함은 방금 만든 노트에
+    ///   파일을 붙여야 하는데, 호출부가 목록에서 되찾으면 정렬 1순위가 `isPinned`라
+    ///   **고정 노트가 있는 순간 엉뚱한 노트에 붙는다**. 태그·검색 필터가 걸려 있으면
+    ///   빈 노트는 `visibleNotes`에서 아예 걸러져 더 멀리 간다 (BRU-43).
+    @discardableResult
+    public func create(content: String, parentID: String? = nil) async -> Note? {
         // 저장을 기다리지 않고 먼저 끼워 넣는다. 실패하면 걷어낸다 —
         // 남겨 두면 저장되지도 않은 노트가 목록에 남는다.
         //
@@ -119,9 +126,11 @@ public final class NotesStore {
         do {
             let created = try await repository.createNote(content: content, parentID: parentID)
             replace(id: placeholder.id, with: created)
+            return created
         } catch {
             allNotes.removeAll { $0.id == placeholder.id }
             errorMessage = Self.message(for: error)
+            return nil
         }
     }
 

@@ -469,8 +469,9 @@ private extension HomeView {
 
         let attachments = container.makeAttachmentsRepository()
         for item in items {
-            await notes.create(content: item.text)
-            guard let note = notes.visibleNotes.first else { continue }
+            // 만들어진 노트를 그대로 받는다. 목록에서 되찾으면 고정 노트가
+            // 맨 앞이라 남의 노트에 첨부가 붙는다 (BRU-43).
+            guard let note = await notes.create(content: item.text) else { continue }
 
             for fileName in item.fileNames {
                 let url = inbox.fileURL(named: fileName)
@@ -494,8 +495,11 @@ private extension HomeView {
     /// 카메라로 찍은 한 장을 노트로 만든다 (BRU-43).
     /// 보관함에서 고른 사진과 같은 자리로 간다 — 빈 노트 하나에 첨부를 붙인다.
     func addCameraNote(data: Data) async {
-        await notes.create(content: "")
-        guard let container, let note = notes.visibleNotes.first else { return }
+        // 첨부는 **방금 만든 그 노트**에 붙인다. 목록 첫 줄로 되찾던 예전 코드는
+        // 정렬 1순위가 `isPinned`라 고정 노트가 하나만 있어도 사진이 그리로 갔고,
+        // 태그·검색 필터가 켜져 있으면 빈 노트가 `visibleNotes`에서 걸러져
+        // 더 엉뚱한 노트에 붙었다 — 위젯 카메라 바로가기가 딱 그 경로다 (BRU-43).
+        guard let container, let note = await notes.create(content: "") else { return }
 
         do {
             _ = try await container.makeAttachmentsRepository().upload(
@@ -512,8 +516,7 @@ private extension HomeView {
 
     func addPhotoNote(items: [PhotosPickerItem]) async {
         defer { photoSelection = [] }
-        await notes.create(content: "")
-        guard let container, let note = notes.visibleNotes.first else { return }
+        guard let container, let note = await notes.create(content: "") else { return }
 
         let repository = container.makeAttachmentsRepository()
         for item in items {
