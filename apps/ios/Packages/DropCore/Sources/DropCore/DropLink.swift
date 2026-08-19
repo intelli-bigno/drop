@@ -4,10 +4,19 @@ import Foundation
 public enum DropLink: Equatable, Sendable {
     case note(id: String)
     case compose(text: String?)
+    /// 카메라를 열어 사진을 바로 노트로 만든다 (BRU-43).
+    case camera
+    /// 사진 보관함에서 골라 노트로 만든다 (BRU-43).
+    case gallery
 
     /// 위젯이 여는 링크. 앱의 기존 작성 경로를 그대로 탄다 —
     /// 위젯 전용 라우팅을 따로 만들면 두 경로가 어긋난다.
     public static let quickComposeURL = URL(string: "drop://compose")!
+
+    /// 카메라·갤러리 바로가기. 앱의 기존 사진 첨부 경로를 그대로 탄다.
+    /// 녹음(`drop://record`)은 만들지 않는다 — 기능 자체가 BRU-48에서 없어졌다.
+    public static let cameraURL = URL(string: "drop://camera")!
+    public static let galleryURL = URL(string: "drop://gallery")!
 
     /// 위젯에서 특정 노트를 여는 링크.
     public static func noteURL(id: String) -> URL {
@@ -40,6 +49,10 @@ public enum DropLink: Equatable, Sendable {
         case "compose":
             let text = components.queryItems?.first { $0.name == "text" }?.value
             self = .compose(text: text)
+        case "camera":
+            self = .camera
+        case "gallery":
+            self = .gallery
         default:
             return nil
         }
