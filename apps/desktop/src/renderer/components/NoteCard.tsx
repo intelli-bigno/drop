@@ -6,6 +6,7 @@ import { TagList } from './TagList'
 import { TagPopover } from './TagPopover'
 import { TemplatePopover } from './TemplatePopover'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
+import { NoteViewer } from './NoteViewer'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
@@ -22,7 +23,7 @@ import {
   reservedActionsWidth,
 } from '../lib/note-card-trailing'
 import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
-import { isEditorOpen } from '../lib/note-edit-mode'
+import { resolveNoteCardView } from '../lib/note-edit-mode'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop } from '../hooks'
@@ -34,6 +35,8 @@ interface Props {
   isFocused: boolean
   depth?: number
   viewMode?: NoteViewMode
+  /** 목록 전체 펼치기 토글이 켜져 있는가 (BRU-79) */
+  expandAll?: boolean
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
   /**
@@ -57,6 +60,7 @@ export const NoteCard = memo(
         isFocused,
         depth = 0,
         viewMode = 'active',
+        expandAll = false,
         onEscapeFromNormal,
         onReply,
         onTagPopoverOpenChange,
@@ -109,10 +113,12 @@ export const NoteCard = memo(
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
       const isLocked = note.isLocked && !temporarilyUnlockedNoteIds.has(note.id)
 
-      // 상태는 둘뿐이다 — 한 줄(보기) / 펼침(편집).
-      // 포커스는 펼침이 아니다: j/k/클릭으로 카드를 훑어도 한 줄 그대로 남고,
-      // `/`·`i`로 편집에 들어왔을 때만 펼쳐진다 (BRU-53).
-      const isOpen = isEditorOpen({ isFocused, isEditing })
+      // 상태는 셋이다 — 한 줄 / 읽기 전용 viewer / 편집 에디터.
+      // 포커스만 옮겨도 본문은 펼쳐지지만 viewer까지다 (BRU-59): 에디터는
+      // `/`·`i`로 들어왔을 때만 열린다 (BRU-53). 일괄 펼치기(BRU-79)도 viewer까지다.
+      const view = resolveNoteCardView({ isFocused, isEditing, expandAll })
+      const isEditorMounted = view === 'editor'
+      const isOpen = view !== 'one-line'
 
       // 한 줄에 그릴 본문 — 잠긴 노트는 내용을 흘리지 않는다
       const previewText = useMemo(
@@ -179,13 +185,13 @@ export const NoteCard = memo(
         },
       }))
 
-      // 펼쳐진 뒤에 예약된 포커스를 소비한다
+      // 에디터가 마운트된 뒤에 예약된 포커스를 소비한다 (viewer에는 캐럿이 없다)
       useEffect(() => {
-        if (!isOpen) return
+        if (!isEditorMounted) return
         if (!pendingFocusRef.current) return
         pendingFocusRef.current = false
         editorRef.current?.focus()
-      }, [isOpen])
+      }, [isEditorMounted])
 
       const handleChange = useCallback(
         (content: string) => {
@@ -332,7 +338,15 @@ export const NoteCard = memo(
         updateNotePriority(note.id, nextPriority(note.priority))
       }
 
-      const cardClassName = ['note-card', isFocused && 'focused', isDragOver && 'drag-over', depth > 0 && 'note-card-reply', isLocked && 'locked', isOpen ? 'open' : 'one-line']
+      const cardClassName = [
+        'note-card',
+        isFocused && 'focused',
+        isDragOver && 'drag-over',
+        depth > 0 && 'note-card-reply',
+        isLocked && 'locked',
+        isOpen ? 'open' : 'one-line',
+        `note-card-${view}`,
+      ]
         .filter(Boolean)
         .join(' ')
 
@@ -548,25 +562,32 @@ export const NoteCard = memo(
             </div>
             {isOpen &&
               (isLocked ? (
+                // 잠긴 노트는 펼쳐도 본문을 흘리지 않는다 — viewer도 예외가 아니다
                 <LockedNoteOverlay
                   onTemporaryUnlock={handleTemporaryUnlock}
                   onPermanentUnlock={handlePermanentUnlock}
                 />
               ) : (
                 <>
-                  <div className="note-editor" onKeyDown={handleEditorKeyDown}>
-                    <LexicalEditor
-                      key={`${note.id}:${editorEpoch}`}
-                      ref={editorRef}
-                      initialContent={note.content}
-                      onChange={handleChange}
-                      onEscape={handleEditorEscape}
-                      onAddFile={handleAddFile}
-                    />
-                  </div>
+                  {isEditorMounted ? (
+                    <div className="note-editor" onKeyDown={handleEditorKeyDown}>
+                      <LexicalEditor
+                        key={`${note.id}:${editorEpoch}`}
+                        ref={editorRef}
+                        initialContent={note.content}
+                        onChange={handleChange}
+                        onEscape={handleEditorEscape}
+                        onAddFile={handleAddFile}
+                      />
+                    </div>
+                  ) : (
+                    // 읽기 전용 (BRU-59). 저장 경로에 닿는 것이 아무것도 없다.
+                    <NoteViewer content={note.content} />
+                  )}
                   <AttachmentList
                     attachments={note.attachments}
-                    onRemove={handleRemoveAttachment}
+                    // viewer에서는 첨부도 읽기만 한다 — 삭제는 편집 모드의 일이다
+                    onRemove={isEditorMounted ? handleRemoveAttachment : undefined}
                   />
                   <LinkPreviews content={note.content} attachments={note.attachments} />
                 </>

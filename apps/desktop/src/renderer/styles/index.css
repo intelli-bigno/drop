@@ -530,6 +530,129 @@ body {
   padding: 4px 16px 12px;
 }
 
+/* ============================================
+   Note Viewer — 포커스된 노트의 읽기 전용 표현 (BRU-59)
+
+   에디터와 같은 자리, 같은 여백을 쓰되 입력 경로가 하나도 없다.
+   커서 모양까지 text가 아닌 default로 둬서 "여기는 쓰는 곳이 아니다"를 알린다.
+   ============================================ */
+.note-viewer {
+  padding: 4px 16px 12px;
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--text-primary);
+  cursor: default;
+  /* 읽기 전용이어도 본문을 긁어 복사하는 것은 되어야 한다 */
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.note-viewer > *:first-child {
+  margin-top: 0;
+}
+
+.note-viewer > *:last-child {
+  margin-bottom: 0;
+}
+
+.note-viewer-empty {
+  margin: 0;
+  color: var(--text-tertiary);
+}
+
+.note-viewer-paragraph {
+  margin: 0 0 8px;
+  /* 원문의 줄바꿈을 그대로 보여준다 — 노트는 문장보다 줄이 의미인 경우가 많다 */
+  white-space: pre-wrap;
+}
+
+.note-viewer-heading {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+h1.note-viewer-heading {
+  font-size: 1.35em;
+}
+h2.note-viewer-heading {
+  font-size: 1.2em;
+}
+h3.note-viewer-heading {
+  font-size: 1.08em;
+}
+h4.note-viewer-heading,
+h5.note-viewer-heading,
+h6.note-viewer-heading {
+  font-size: 1em;
+  color: var(--text-secondary);
+}
+
+.note-viewer-list {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.note-viewer-list li {
+  margin: 2px 0;
+}
+
+.note-viewer-tasks {
+  list-style: none;
+  padding-left: 2px;
+}
+
+.note-viewer-tasks li.checked {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.note-viewer-checkbox {
+  margin-right: 6px;
+}
+
+.note-viewer-quote {
+  margin: 0 0 8px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--accent-subtle);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.note-viewer-code {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.note-viewer-inline-code {
+  padding: 1px 4px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.9em;
+}
+
+.note-viewer-divider {
+  margin: 12px 0;
+  border: none;
+  border-top: 1px solid var(--border-color, rgba(127, 127, 127, 0.3));
+}
+
+.note-viewer-link {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 /* ============================================
    Lexical Editor - Editorial Typography
