@@ -12,6 +12,12 @@ export const KEYS = {
   replyToFocused: ['Enter'],
   createSibling: ['Enter'],
 
+  // 다중 선택 (BRU-80). Shift+J/K는 영문에서는 대문자로, 한글 입력 상태에서는
+  // ㅓ/ㅏ 그대로 찍히므로 둘 다 별칭으로 둔다.
+  enterVisualSelection: ['v', 'ㅍ'],
+  extendSelectionNext: ['J', 'ㅓ'],
+  extendSelectionPrev: ['K', 'ㅏ'],
+
   // 피드 노트 액션
   deleteFocused: ['Delete', 'Backspace'],
   copyFocused: ['c', 'ㅊ'],
