@@ -41,6 +41,8 @@ function buildFeed({ scrollTop = 0, cardOffsetTop = 0, cardHeight = 100 }: FeedO
   document.body.appendChild(feed)
 
   Object.defineProperty(content, 'clientHeight', { value: VIEWPORT, configurable: true })
+  // 실제로 넘치는 콘텐츠 — 스크롤 컨테이너의 조건이다
+  Object.defineProperty(content, 'scrollHeight', { value: VIEWPORT * 5, configurable: true })
   content.scrollTop = scrollTop
 
   // jsdom은 레이아웃을 하지 않으므로 좌표를 직접 만든다.
@@ -60,6 +62,25 @@ describe('resolveScrollContainer', () => {
   // 예전 코드는 .feed의 scrollTop을 건드려서 아무 일도 일어나지 않았다.
   it('shouldResolveTheScrollableAncestorNotTheFlexWrapper', () => {
     const { content, card } = buildFeed()
+    expect(resolveScrollContainer(card)).toBe(content)
+  })
+
+  /**
+   * overflow-y만 보면 "스크롤하지 않는 auto 조상"에 걸린다 — 그 요소의 scrollTop을
+   * 아무리 바꿔도 화면은 그대로다. BRU-85와 똑같은 증상이 더 가까운 조상에서 재발한다.
+   */
+  it('shouldSkipAnOverflowAncestorThatDoesNotActuallyScroll', () => {
+    const { content, card } = buildFeed()
+
+    const inert = document.createElement('div')
+    inert.style.overflowY = 'auto'
+    Object.defineProperty(inert, 'clientHeight', { value: 200, configurable: true })
+    Object.defineProperty(inert, 'scrollHeight', { value: 200, configurable: true })
+
+    content.removeChild(card)
+    inert.appendChild(card)
+    content.appendChild(inert)
+
     expect(resolveScrollContainer(card)).toBe(content)
   })
 

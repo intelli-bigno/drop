@@ -52,13 +52,17 @@ const SCROLLABLE_OVERFLOW = new Set(['auto', 'scroll', 'overlay'])
  * 않는다 — BRU-85가 정확히 그것이었다. 피드 래퍼(.feed)는 flex 컬럼일 뿐이고
  * overflow-y: auto를 가진 것은 자식(.feed-content)이라, 래퍼의 scrollTop은 늘 0이었다.
  * 그래서 "어느 div에 ref를 걸었나"에 기대지 않고 DOM에서 직접 찾는다.
+ *
+ * overflow-y 선언만으로는 부족하다 — `overflow: auto`인데 콘텐츠가 넘치지 않는 조상은
+ * scrollTop이 언제나 0이라, 거기서 멈추면 BRU-85와 똑같이 아무 일도 일어나지 않는다.
+ * **실제로 넘치는지**(scrollHeight > clientHeight)까지 확인하고 지나간다.
  */
 export function resolveScrollContainer(element: HTMLElement | null): HTMLElement | null {
   let node = element?.parentElement ?? null
 
   while (node) {
     const overflowY = getComputedStyle(node).overflowY
-    if (SCROLLABLE_OVERFLOW.has(overflowY)) return node
+    if (SCROLLABLE_OVERFLOW.has(overflowY) && node.scrollHeight > node.clientHeight) return node
     node = node.parentElement
   }
 
