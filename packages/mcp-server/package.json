@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "description": "MCP server for DROP notes - Access your notes from AI assistants",
+  "description": "MCP server for Braindump notes - Access your notes from AI assistants",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {

@@ -240,7 +240,7 @@ export function UserMenu() {
 
         <div className="user-menu-about">
           <div className="user-menu-version">
-            <span>DROP</span>
+            <span>Braindump</span>
             <span className="user-menu-version-number">{appVersion ? `v${appVersion}` : '…'}</span>
           </div>
           <button

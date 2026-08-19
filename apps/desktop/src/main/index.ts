@@ -1019,7 +1019,7 @@ function createTray(): void {
   }
 
   tray = new Tray(icon)
-  tray.setToolTip('DROP')
+  tray.setToolTip('Braindump')
 
   refreshTrayMenu()
 
@@ -1040,7 +1040,7 @@ function refreshTrayMenu(): void {
       click: () => createQuickCaptureWindow(),
     },
     {
-      label: 'Open DROP',
+      label: 'Open Braindump',
       click: () => showMainWindow(),
     },
     { type: 'separator' },
