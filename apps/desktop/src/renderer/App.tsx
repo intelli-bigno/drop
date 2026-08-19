@@ -15,7 +15,7 @@ const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
 const envLabel = isLocal ? 'LOCAL' : 'REMOTE'
 
 function App() {
-  const { loadNotes, loadTags, subscribeToChanges, createNote } = useNotesStore()
+  const { loadNotes, loadTags, loadProjects, subscribeToChanges, createNote } = useNotesStore()
   const { user, isAuthLoading, initializeAuth } = useAuthStore()
   const loadProfile = useProfileStore((s) => s.loadProfile)
   const [route, setRoute] = useState(() => window.location.hash.replace('#', '') || 'main')
@@ -78,6 +78,7 @@ function App() {
 
     loadNotes()
     loadTags()
+    loadProjects()
     loadProfile()
 
     // Realtime 구독 시작
@@ -86,7 +87,7 @@ function App() {
     return () => {
       unsubscribe()
     }
-  }, [user, loadNotes, loadTags, loadProfile, subscribeToChanges])
+  }, [user, loadNotes, loadTags, loadProjects, loadProfile, subscribeToChanges])
 
   // Quick Capture route - minimal UI, separate window
   if (route === 'quick-capture') {

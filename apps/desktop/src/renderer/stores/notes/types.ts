@@ -1,4 +1,4 @@
-import type { Note, Attachment, Tag, NoteRevision, NoteComment } from '@drop/shared'
+import type { Note, Attachment, Tag, NoteRevision, NoteComment, Project } from '@drop/shared'
 
 // Notes slice
 export interface NotesSlice {
@@ -68,6 +68,19 @@ export interface TagsSlice {
   setFilterTag: (tagName: string | null) => void
   updateTag: (tagId: string, newName: string) => Promise<void>
   deleteTag: (tagId: string) => Promise<void>
+}
+
+// Projects slice — 노트를 묶는 상위 분류 (BRU-83).
+// 노트는 프로젝트 하나에만 속하므로 지정은 notes.project_id 갱신 하나로 끝난다.
+export interface ProjectsSlice {
+  allProjects: Project[]
+  /** null이면 전체, UNASSIGNED_PROJECT_ID면 아직 프로젝트가 없는 노트만 */
+  filterProjectId: string | null
+
+  loadProjects: () => Promise<void>
+  createProject: (name: string) => Promise<Project | null>
+  setNoteProject: (noteId: string, projectId: string | null) => Promise<void>
+  setFilterProject: (projectId: string | null) => void
 }
 
 // Attachments slice
@@ -162,6 +175,7 @@ export interface NotesState
     NotesSlice,
     CommentsSlice,
     TagsSlice,
+    ProjectsSlice,
     AttachmentsSlice,
     InstagramSlice,
     YouTubeSlice,

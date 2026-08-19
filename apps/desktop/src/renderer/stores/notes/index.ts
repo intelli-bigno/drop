@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createNotesSlice } from './notes-slice'
 import { createCommentsSlice } from './comments-slice'
 import { createTagsSlice } from './tags-slice'
+import { createProjectsSlice } from './projects-slice'
 import { createAttachmentsSlice } from './attachments-slice'
 import { createInstagramSlice } from './instagram-slice'
 import { createYouTubeSlice } from './youtube-slice'
@@ -17,6 +18,7 @@ export const useNotesStore = create<NotesState>()((...a) => ({
   ...createNotesSlice(...a),
   ...createCommentsSlice(...a),
   ...createTagsSlice(...a),
+  ...createProjectsSlice(...a),
   ...createAttachmentsSlice(...a),
   ...createInstagramSlice(...a),
   ...createYouTubeSlice(...a),
