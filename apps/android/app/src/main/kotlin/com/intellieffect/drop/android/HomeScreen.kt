@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.intellieffect.drop.core.Attachment
 import com.intellieffect.drop.core.AttachmentType
+import com.intellieffect.drop.core.CommentsStore
 import com.intellieffect.drop.core.Note
 import com.intellieffect.drop.core.NoteDateGrouper
 import com.intellieffect.drop.core.NoteViewMode
@@ -51,6 +52,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     store: NotesStore,
+    commentsStore: CommentsStore,
     userEmail: String?,
     urlCache: SignedUrlCache,
     onSignOut: () -> Unit,
@@ -63,6 +65,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by store.state.collectAsStateWithLifecycle()
+    val commentsState by commentsStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHost = remember { SnackbarHostState() }
     val grouper = remember { NoteDateGrouper() }
@@ -71,6 +74,9 @@ fun HomeScreen(
     var composing by remember {
         mutableStateOf<ComposerTarget?>(if (startComposer) ComposerTarget.New else null)
     }
+
+    // 뱃지 숫자를 한 번에 채운다. 노트마다 세면 화면 하나에 수십 번의 왕복이 생긴다.
+    LaunchedEffect(Unit) { commentsStore.loadCounts() }
 
     // 오류는 한 번 띄우고 지운다. 남겨 두면 다음 동작마다 같은 스낵바가 다시 뜬다.
     LaunchedEffect(state.errorMessage) {
@@ -172,11 +178,15 @@ fun HomeScreen(
                                     note = note,
                                     viewMode = state.viewMode,
                                     isSelected = note.id in state.selectedIds,
+                                    commentCount = commentsState.count(note.id),
                                     onClick = {
                                         if (state.isSelecting) {
+                                            // 선택 모드의 탭은 선택 토글이다 (회귀 금지).
                                             store.toggleSelection(note.id)
                                         } else {
-                                            composing = ComposerTarget.Edit(note)
+                                            // 탭은 **펼치기**다. 편집기는 뷰어 안에서
+                                            // 한 번 더 눌러야 열린다 (BRU-77 / BRU-66).
+                                            composing = ComposerTarget.View(note)
                                         }
                                     },
                                     onLongClick = { store.toggleSelection(note.id) },
@@ -203,6 +213,48 @@ fun HomeScreen(
             },
         )
 
+        is ComposerTarget.View -> {
+            val live = state.allNotes.firstOrNull { it.id == target.note.id }
+            if (live == null) {
+                composing = null
+            } else {
+                // 저장 콜백을 **넘기지 않는다**. NoteViewerSheet 의 인자 목록에 저장이
+                // 아예 없어서, 여기서 실수로 store.update 를 이어 줄 자리가 없다.
+                NoteViewerSheet(
+                    note = live,
+                    viewMode = state.viewMode,
+                    urlCache = urlCache,
+                    commentCount = commentsState.count(live.id),
+                    onDismiss = { composing = null },
+                    onEdit = { composing = ComposerTarget.Edit(live) },
+                    onComments = { composing = ComposerTarget.Comments(live) },
+                    onArchive = {
+                        composing = null
+                        scope.launch { store.archive(live.id) }
+                    },
+                    onTrash = {
+                        composing = null
+                        scope.launch { store.moveToTrash(live.id) }
+                    },
+                )
+            }
+        }
+
+        is ComposerTarget.Comments -> {
+            val live = state.allNotes.firstOrNull { it.id == target.note.id }
+            if (live == null) {
+                composing = null
+            } else {
+                CommentsSheet(
+                    note = live,
+                    store = commentsStore,
+                    // 댓글을 닫으면 노트 뷰어로 돌아온다 — 목록까지 튕겨 나가면
+                    // 보고 있던 자리를 잃는다.
+                    onDismiss = { composing = ComposerTarget.View(live) },
+                )
+            }
+        }
+
         is ComposerTarget.Edit -> {
             // 목록의 최신 노트를 다시 찾아 쓴다. 태그·첨부를 고치면 목록이 다시 불려 오는데,
             // 열 때 복사해 둔 값을 그대로 쓰면 시트만 옛 상태로 남는다.
@@ -228,9 +280,22 @@ fun HomeScreen(
     }
 }
 
+/**
+ * 지금 떠 있는 시트. 뷰어와 편집기를 **다른 상태**로 둔다 (BRU-77) —
+ * 하나의 시트에 "읽기 모드" 플래그를 두면 그 플래그가 언제 뒤집히는지가
+ * 곧 원문 보존의 조건이 되어 버린다. 아예 다른 화면이면 그런 조건이 없다.
+ */
 private sealed interface ComposerTarget {
     data object New : ComposerTarget
+
+    /** 탭으로 열리는 읽기 전용 화면. */
+    data class View(val note: Note) : ComposerTarget
+
+    /** 뷰어에서 "편집"을 누른 뒤에만 만들어진다. */
     data class Edit(val note: Note) : ComposerTarget
+
+    /** 뷰어에서 "댓글"을 누른 뒤. 댓글은 노트를 건드리지 않는다 (BRU-86). */
+    data class Comments(val note: Note) : ComposerTarget
 }
 
 /** 스와이프 동작의 뜻은 뷰모드마다 다르다 (라벨은 `NoteRow`가 같은 규칙으로 그린다). */

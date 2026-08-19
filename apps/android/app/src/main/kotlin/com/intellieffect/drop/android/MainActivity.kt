@@ -83,6 +83,7 @@ private fun RootScreen(
 
             HomeScreen(
                 store = viewModel.notesStore,
+                commentsStore = viewModel.commentsStore,
                 userEmail = current.user.email,
                 urlCache = viewModel.signedUrlCache,
                 onSignOut = { viewModel.signOut() },
