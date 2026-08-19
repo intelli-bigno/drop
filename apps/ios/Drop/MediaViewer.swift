@@ -24,7 +24,9 @@ struct MediaViewer: View {
                 }
             }
             .tabViewStyle(.page)
-            .background(.black)
+            // 여기만 팔레트 밖이다 — 사진 원본 색을 그대로 보여 주는 것이 목적이라
+            // 주변을 중립 검정으로 지운다. 종이색을 깔면 사진이 그 색조에 끌려간다.
+            .background(DropTheme.Media.background)
             .navigationTitle(current.filename ?? "첨부")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -48,7 +50,7 @@ struct MediaViewer: View {
                 ZoomableImage(url: url)
             }
         } else {
-            ProgressView().tint(.white)
+            ProgressView().tint(DropTheme.Media.foreground)
         }
     }
 
@@ -88,7 +90,7 @@ private struct ZoomableImage: View {
             case .failure:
                 ContentUnavailableView("불러오지 못했습니다", systemImage: "photo")
             default:
-                ProgressView().tint(.white)
+                ProgressView().tint(DropTheme.Media.foreground)
             }
         }
     }

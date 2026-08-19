@@ -155,6 +155,10 @@ struct HomeView: View {
             }
         }
         .listStyle(.plain)
+        // List가 스스로 까는 시스템 배경을 걷어내고 웜 페이퍼를 깐다 (BRU-75).
+        // 여기는 콘텐츠 레이어라 유리가 아니라 종이다.
+        .scrollContentBackground(.hidden)
+        .background(DropTheme.Surface.page)
         // 한 줄 행은 기본 최소 높이(44)보다 낮다. 기본값이면 행 사이가 벌어진다.
         .environment(\.defaultMinListRowHeight, 0)
         // 내용이 화면보다 짧아도 당길 수 있어야 한다 — 새로고침이 가장 필요한 곳이
@@ -172,7 +176,7 @@ struct HomeView: View {
             } header: {
                 Text(section.title)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
                     .textCase(nil)
                     .listRowInsets(EdgeInsets(
                         top: DropTheme.Spacing.base,
@@ -223,7 +227,7 @@ struct HomeView: View {
             } label: {
                 Label(note.isPinned ? "고정 해제" : "고정", systemImage: "pin")
             }
-            .tint(.orange)
+            .tint(DropTheme.SwipeAction.pin)
         }
         // 댓글·답글은 왼쪽에서 연다 — 오른쪽(삭제·고정)은 노트 자체를 다루는 자리고,
         // 이 둘은 노트를 건드리지 않고 옆에 덧붙이는 동작이라 방향을 갈라 놓는다.
@@ -234,13 +238,13 @@ struct HomeView: View {
             } label: {
                 Label("댓글", systemImage: "bubble.left")
             }
-            .tint(.blue)
+            .tint(DropTheme.SwipeAction.comment)
             Button {
                 composer = .reply(parent: note)
             } label: {
                 Label("답글", systemImage: "arrowshape.turn.up.left")
             }
-            .tint(.indigo)
+            .tint(DropTheme.SwipeAction.reply)
         }
         .plainListRow(
             insets: EdgeInsets(
@@ -256,13 +260,15 @@ struct HomeView: View {
         VStack(spacing: DropTheme.Spacing.comfortable) {
             Image(systemName: emptyIcon)
                 .font(.largeTitle)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(DropTokens.Colors.textMuted)
             Text(emptyMessage)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DropTokens.Colors.textSecondary)
             if notes.viewMode == .active, notes.searchText.isEmpty {
                 Button("첫 노트 쓰기") { composer = .new }
                     .buttonStyle(.borderedProminent)
+                    .tint(DropTokens.Colors.cta)
+                    .foregroundStyle(DropTokens.Colors.textOnAccent)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -285,9 +291,10 @@ struct HomeView: View {
         }
     }
 
+    /// 필터 줄은 목록 위에 떠 있는 **기능 레이어**라 유리다 —
+    /// 재질은 `NoteFilterBar`가 직접 들고 있다.
     private var filters: some View {
         NoteFilterBar(store: notes)
-            .background(.bar)
     }
 
     @ViewBuilder
@@ -297,37 +304,44 @@ struct HomeView: View {
         } else {
             // 두 버튼을 하나의 떠 있는 묶음으로 둔다.
             // 크기가 제각각인 원이 흩어져 있으면 어느 것이 주 동작인지 읽히지 않는다.
+            // 떠 있는 작성 버튼 묶음 — 콘텐츠 위에 얹히는 **기능 레이어**라 유리다.
+            // `GlassEffectContainer`로 묶어야 두 유리가 서로를 알아보고
+            // 가까워질 때 형태 전이를 공유한다. 따로 두면 각자 튄다.
             HStack(spacing: 0) {
                 Spacer()
 
-                HStack(spacing: DropTheme.Spacing.comfortable) {
-                    PhotosPicker(
-                        selection: $photoSelection,
-                        maxSelectionCount: 5,
-                        matching: .any(of: [.images, .videos])
-                    ) {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 20))
-                            .frame(width: 44, height: 44)
-                            .contentShape(Circle())
-                    }
-                    .foregroundStyle(.primary)
+                GlassEffectContainer(spacing: DropTheme.Spacing.comfortable) {
+                    HStack(spacing: DropTheme.Spacing.comfortable) {
+                        PhotosPicker(
+                            selection: $photoSelection,
+                            maxSelectionCount: 5,
+                            matching: .any(of: [.images, .videos])
+                        ) {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 20))
+                                .frame(width: 48, height: 48)
+                                .contentShape(Circle())
+                        }
+                        .foregroundStyle(DropTokens.Colors.textPrimary)
+                        // 보조 동작이라 tint 없이 맑은 유리로 둔다.
+                        .glassEffect(.regular.interactive(), in: Circle())
 
-                    Button {
-                        composer = .new
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 22, weight: .semibold))
-                            .frame(width: 52, height: 52)
-                            .background(Color.accentColor, in: Circle())
-                            .foregroundStyle(.white)
+                        Button {
+                            composer = .new
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 22, weight: .semibold))
+                                .frame(width: 56, height: 56)
+                                .foregroundStyle(DropTokens.Colors.textOnAccent)
+                        }
+                        // tint는 **액션 버튼에만** 얹는다. 바나 표면에 액센트를
+                        // 물들이면 밝은 배경에서 대비가 무너진다 (BRU-75 함정).
+                        .glassEffect(
+                            .regular.tint(DropTokens.Colors.accent).interactive(),
+                            in: Circle()
+                        )
                     }
                 }
-                .padding(.horizontal, DropTheme.Spacing.base)
-                .padding(.vertical, DropTheme.Spacing.base)
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().stroke(Color.primary.opacity(0.08)))
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
             }
             .padding(.horizontal, DropTheme.Spacing.loose)
             .padding(.bottom, DropTheme.Spacing.base)

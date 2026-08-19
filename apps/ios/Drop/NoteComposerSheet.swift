@@ -29,8 +29,11 @@ struct NoteComposerSheet: View {
 
     var body: some View {
         NavigationStack {
+            // **에디터는 종이다.** 글을 쓰는 자리에 유리를 깔면 뒤에 흐르는
+            // 목록이 글자 사이로 비쳐 읽기가 무너진다 (BRU-75).
             editorOrPreview
                 .padding(.horizontal, DropTheme.Spacing.comfortable)
+                .background(DropTheme.Surface.page)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -53,6 +56,10 @@ struct NoteComposerSheet: View {
                 }
         }
         .presentationDetents([.medium, .large])
+        // 시트의 툴바는 시스템이 유리로 그린다 — 여기서 할 일은 그 아래를
+        // 종이로 두는 것뿐이다.
+        .presentationBackground(DropTheme.Surface.page)
+        .tint(DropTokens.Colors.accent)
         .interactiveDismissDisabled(isSaving)
     }
 
@@ -63,6 +70,7 @@ struct NoteComposerSheet: View {
                 MarkdownText(text)
                     .padding(.vertical, DropTheme.Spacing.base)
             }
+            .scrollContentBackground(.hidden)
         } else {
             // 시트가 뜨자마자 키보드가 올라와야 "던져넣기"가 끊기지 않는다.
             MarkdownSourceEditor(text: $text, selection: $selection, focusesOnAppear: true)

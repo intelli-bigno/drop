@@ -18,12 +18,13 @@ struct TagsView: View {
                     } label: {
                         HStack {
                             Text("#\(entry.tag.name)")
+                                .foregroundStyle(DropTokens.Colors.textPrimary)
                             Spacer()
                             Text("\(entry.count)")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DropTokens.Colors.textSecondary)
                             if store.selectedTagID == entry.tag.id {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(DropTokens.Colors.accent)
                             }
                         }
                     }
@@ -31,6 +32,9 @@ struct TagsView: View {
                 }
             }
         }
+        // 목록은 콘텐츠 레이어 — 종이. 내비게이션 바는 시스템이 유리로 그린다.
+        .scrollContentBackground(.hidden)
+        .background(DropTheme.Surface.page)
         .navigationTitle("태그")
         .toolbar {
             if store.selectedTagID != nil {
