@@ -28,14 +28,18 @@ import { resolveNoteSelectionShortcut } from '../shortcuts/noteSelection'
 import {
   enterVisualSelection,
   extendSelection,
-  isIndexSelected,
-  selectedIndexes,
-  selectionCount,
+  resolveSelectedNotes,
+  selectionScopeKey,
   type VisualSelection,
 } from '../lib/note-selection'
 import { buildBulkDeleteConfirmMessage, type BulkActionId } from '../lib/bulk-actions'
+import { mapWithConcurrency } from '../lib/concurrency'
 import { SelectionActionBar } from './SelectionActionBar'
 import { BulkTagPopover } from './BulkTagPopover'
+
+// 일괄 액션을 한 번에 몇 건까지 동시에 보낼지. 왕복 지연을 감추면서도
+// 노트당 목록 재조회가 한꺼번에 몰리지 않는 선이다.
+const BULK_ACTION_CONCURRENCY = 8
 
 // 피드 상단에서 헤더에 가려지는 높이. 이만큼 여유를 두고 카드를 맞춘다.
 const FEED_TOP_INSET = 60
@@ -104,6 +108,8 @@ export function NoteFeed() {
   // 이벤트 핸들러용 ref (의존성 분리) - 나중에 업데이트됨
   const focusedIndexRef = useRef<number | null>(focusedIndex)
   const selectionRef = useRef<VisualSelection | null>(selection)
+  // 일괄 삭제 확인 다이얼로그가 떠 있는지. Esc가 다이얼로그 대신 선택만 푸는 것을 막는다.
+  const pendingBulkDeleteRef = useRef<typeof pendingBulkDelete>(pendingBulkDelete)
   const orderedNotesRef = useRef<Array<{ note: Note; depth: number }>>([])
   const deleteNoteRef = useRef<(id: string) => void>(deleteNote)
   const requestDeleteNoteRef = useRef<(id: string) => void>(requestDeleteNote)
@@ -206,6 +212,10 @@ export function NoteFeed() {
   }, [selection])
 
   useEffect(() => {
+    pendingBulkDeleteRef.current = pendingBulkDelete
+  }, [pendingBulkDelete])
+
+  useEffect(() => {
     deleteNoteRef.current = deleteNote
   }, [deleteNote])
 
@@ -244,6 +254,9 @@ export function NoteFeed() {
     if (isTextInputTarget(e.target)) return
 
     if (e.key === 'Escape') {
+      // 확인 다이얼로그가 떠 있으면 Esc는 다이얼로그를 닫는다 (ConfirmDialog가 캡처 단계에서
+      // 받아 간다). 여기서 선택을 풀면 "0개 삭제" 문구만 남는다.
+      if (pendingBulkDeleteRef.current) return
       e.preventDefault()
       // 선택 중이면 Esc는 선택만 푼다 — 포커스까지 잃으면 이어서 j/k를 칠 수 없다 (BRU-80)
       if (selectionRef.current) {
@@ -353,17 +366,46 @@ export function NoteFeed() {
   }, [selectedNoteId, noteIndexMap, selectNote])
 
   // ── 일괄 액션 (BRU-80) ──────────────────────────────────────────────
+  // 렌더 순서 그대로의 노트 목록. 선택은 여기에 대고 매번 다시 푼다 —
+  // 액션 바가 보여주는 개수도, 실제로 지워지는 노트도 이 배열 하나에서 나온다.
+  const orderedNoteList = useMemo(() => orderedNotes.map((item) => item.note), [orderedNotes])
+
   const selectedNotes = useMemo(
-    () =>
-      selectedIndexes(selection)
-        .map((index) => orderedNotes[index]?.note)
-        .filter((note): note is Note => Boolean(note)),
-    [selection, orderedNotes]
+    () => resolveSelectedNotes(selection, orderedNoteList),
+    [selection, orderedNoteList]
+  )
+
+  const selectedNoteIdSet = useMemo(
+    () => new Set(selectedNotes.map((note) => note.id)),
+    [selectedNotes]
   )
 
   const clearSelection = useCallback(() => {
     setSelection(null)
     setShowBulkTagPopover(false)
+  }, [])
+
+  // 목록을 바꾸는 축(뷰 모드·태그·카테고리·Inbox·내보냄)이 달라지면 선택을 버린다.
+  // id 기반이라 엉뚱한 노트가 잡히지는 않지만, 남아 있는 "0개 선택" 바도 거짓말이다.
+  // 렌더 중에 맞춘다 — effect로 미루면 한 프레임 동안 옛 선택이 그려진다.
+  const scopeKey = selectionScopeKey({
+    viewMode,
+    filterTag,
+    categoryFilter,
+    inboxOnly,
+    showExported,
+  })
+  const [selectionScope, setSelectionScope] = useState(scopeKey)
+  if (selectionScope !== scopeKey) {
+    setSelectionScope(scopeKey)
+    setSelection(null)
+    setShowBulkTagPopover(false)
+  }
+
+  const runOnTargets = useCallback(async (targets: string[], run: (id: string) => Promise<void>) => {
+    // 직렬 await은 50건이면 왕복 지연이 그대로 쌓여 몇 초간 무반응이 된다.
+    // 그렇다고 전부 동시에 쏘면 목록 재조회가 같이 폭발한다 — 상한을 두고 병렬로 흘린다.
+    await mapWithConcurrency(targets, BULK_ACTION_CONCURRENCY, run)
   }, [])
 
   const handleBulkAction = useCallback(
@@ -383,13 +425,13 @@ export function NoteFeed() {
       const targets = selectedNotes.map((note) => note.id)
       clearSelection()
 
-      for (const id of targets) {
+      await runOnTargets(targets, async (id) => {
         if (action === 'archive') await archiveNote(id)
         else if (action === 'unarchive') await unarchiveNote(id)
         else if (action === 'restore') await restoreNote(id)
-      }
+      })
     },
-    [selectedNotes, clearSelection, archiveNote, unarchiveNote, restoreNote]
+    [selectedNotes, clearSelection, runOnTargets, archiveNote, unarchiveNote, restoreNote]
   )
 
   const confirmBulkDelete = useCallback(async () => {
@@ -398,11 +440,18 @@ export function NoteFeed() {
     setPendingBulkDelete(null)
     clearSelection()
 
-    for (const id of targets) {
+    await runOnTargets(targets, async (id) => {
       if (action === 'deletePermanently') await permanentlyDeleteNote(id)
       else await deleteNote(id)
-    }
-  }, [pendingBulkDelete, selectedNotes, clearSelection, deleteNote, permanentlyDeleteNote])
+    })
+  }, [
+    pendingBulkDelete,
+    selectedNotes,
+    clearSelection,
+    runOnTargets,
+    deleteNote,
+    permanentlyDeleteNote,
+  ])
 
   // 새 노트 생성 후 해당 노트 편집 모드로
   const handleCreateNote = useCallback(async () => {
@@ -625,9 +674,12 @@ export function NoteFeed() {
       const selectionAction = resolveNoteSelectionShortcut(e as unknown as React.KeyboardEvent)
       if (selectionAction) {
         const currentSelection = selectionRef.current
-        const maxIndex = currentOrderedNotes.length - 1
+        const orderedIds = currentOrderedNotes.map((item) => item.note.id)
 
         if (selectionAction === 'exitVisual') {
+          // 확인 다이얼로그가 떠 있으면 Esc는 다이얼로그의 것이다 —
+          // 선택만 풀면 "0개 삭제" 문구가 남은 채 확인해도 아무것도 안 지워진다.
+          if (pendingBulkDeleteRef.current) return
           if (!currentSelection) return
           e.preventDefault()
           setSelection(null)
@@ -638,20 +690,20 @@ export function NoteFeed() {
           e.preventDefault()
           const startIndex = currentFocusedIndex ?? 0
           setFocusedIndex(startIndex)
-          setSelection(enterVisualSelection(startIndex))
+          setSelection(enterVisualSelection(orderedIds[startIndex]))
           return
         }
 
         // 선택에 들어가지 않은 상태의 Shift+J/K는 그 자리에서 선택을 연다
-        const base = currentSelection ?? enterVisualSelection(currentFocusedIndex ?? 0)
+        const base = currentSelection ?? enterVisualSelection(orderedIds[currentFocusedIndex ?? 0])
         const direction = selectionAction === 'extendNext' ? 1 : -1
-        const next = extendSelection(base, direction, maxIndex)
+        const next = extendSelection(base, direction, orderedIds)
         if (!next) return
 
         e.preventDefault()
         setSelection(next)
         // 머리를 따라 포커스도 움직여야 화면이 따라온다 (BRU-85의 스크롤 경로를 그대로 탄다)
-        setFocusedIndex(next.headIndex)
+        setFocusedIndex(orderedIds.indexOf(next.headId))
         return
       }
 
@@ -1051,7 +1103,9 @@ export function NoteFeed() {
               return (
                 <div
                   key={item.note.id}
-                  className={isIndexSelected(selection, globalIndex) ? 'note-row selected' : 'note-row'}
+                  className={
+                    selectedNoteIdSet.has(item.note.id) ? 'note-row selected' : 'note-row'
+                  }
                   ref={(el) => {
                     if (el) cardElementRefs.current.set(item.note.id, el)
                     else cardElementRefs.current.delete(item.note.id)
@@ -1075,7 +1129,9 @@ export function NoteFeed() {
         ))
         )}
       </div>
-      {selection && (
+      {/* 선택이 실제로 가리키는 노트가 있을 때만 띄운다 — realtime 삭제로 범위가 비면
+          "0개 선택" 바만 남는다 */}
+      {selectedNotes.length > 0 && (
         <div className="selection-bar-layer">
           {showBulkTagPopover && (
             <BulkTagPopover
@@ -1084,7 +1140,7 @@ export function NoteFeed() {
             />
           )}
           <SelectionActionBar
-            count={selectionCount(selection)}
+            count={selectedNotes.length}
             viewMode={viewMode}
             onAction={handleBulkAction}
             onClear={clearSelection}
