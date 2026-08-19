@@ -140,19 +140,12 @@ public struct NoteCard: View {
         .contentShape(Rectangle())
     }
 
-    /// 한 줄 행에 태울 글자.
-    ///
-    /// 원문을 그대로 태우면 `## 제목`이 `##`째로 보인다 — 한 줄만 보이는 자리에서는
-    /// 기호가 읽을 수 있는 정보의 절반을 먹는다. 그래서 문법을 걷어낸 평문을 쓴다 (BRU-37).
-    ///
-    /// 앞부분만 잘라 넘기는 것은 목록 성능 때문이다. 어차피 한 줄만 보이는데
-    /// 긴 노트를 통째로 파싱하면 스크롤할 때마다 그 값을 치른다.
+    /// 한 줄 행에 태울 글자. 만드는 일도 기억하는 일도 `MarkdownSummaryCache`가 한다 —
+    /// 여기서 파싱하면 스크롤 한 번에 여러 번 도는 `body`가 곧 파싱이 된다 (BRU-37).
+    @MainActor
     private var summary: String {
-        MarkdownParser().parse(String(note.content.prefix(Self.previewCharacterLimit))).singleLineSummary
+        MarkdownSummaryCache.summary(for: note.content)
     }
-
-    /// 한 줄 미리보기를 만들 때 읽는 원문 길이의 상한.
-    private static let previewCharacterLimit = 300
 
     @ViewBuilder
     private var contentText: some View {
