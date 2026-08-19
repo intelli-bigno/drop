@@ -294,6 +294,7 @@ export type Database = {
           parent_id: string | null
           pinned_at: string | null
           priority: number
+          project_id: string | null
           source: string
           updated_at: string
           user_id: string | null
@@ -317,6 +318,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           priority?: number
+          project_id?: string | null
           source: string
           updated_at?: string
           user_id?: string | null
@@ -340,6 +342,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           priority?: number
+          project_id?: string | null
           source?: string
           updated_at?: string
           user_id?: string | null
@@ -352,7 +355,47 @@ export type Database = {
             referencedRelation: "notes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      projects: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       tags: {
         Row: {

@@ -4,6 +4,7 @@ import { AttachmentList } from './AttachmentList'
 import { LinkPreviews } from './LinkPreviews'
 import { TagList } from './TagList'
 import { TagPopover } from './TagPopover'
+import { ProjectPopover } from './ProjectPopover'
 import { TemplatePopover } from './TemplatePopover'
 import { LockedNoteOverlay } from './LockedNoteOverlay'
 import { NoteViewer } from './NoteViewer'
@@ -41,10 +42,11 @@ interface Props {
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
   /**
-   * 태그 팝오버가 열리고 닫힐 때 알린다 (BRU-50).
-   * Inbox 필터가 태그를 다는 동안 이 노트를 목록에 붙잡아 두는 데 쓴다.
+   * 카드 아래 팝오버가 열리고 닫힐 때 알린다 (BRU-50).
+   * 필터가 팝오버를 쓰는 동안 이 노트를 목록에 붙잡아 두는 데 쓴다 —
+   * 고르는 순간 줄이 사라지면 팝오버가 허공에 뜬다.
    */
-  onTagPopoverOpenChange?: (noteId: string, open: boolean) => void
+  onPopoverOpenChange?: (noteId: string, open: boolean) => void
 }
 
 export interface NoteCardHandle {
@@ -64,7 +66,7 @@ export const NoteCard = memo(
         expandAll = false,
         onEscapeFromNormal,
         onReply,
-        onTagPopoverOpenChange,
+        onPopoverOpenChange,
       },
       ref
     ) => {
@@ -77,6 +79,7 @@ export const NoteCard = memo(
       // `/`·`i`로만 켜지는 편집 상태. 포커스와는 다른 것이다 (BRU-53).
       const [isEditing, setIsEditing] = useState(false)
       const [showTagPopover, setShowTagPopover] = useState(false)
+      const [showProjectPopover, setShowProjectPopover] = useState(false)
       const [showTemplatePopover, setShowTemplatePopover] = useState(false)
       // 템플릿을 넣은 뒤 에디터를 새 본문으로 다시 세우기 위한 세대 번호
       const [editorEpoch, setEditorEpoch] = useState(0)
@@ -104,12 +107,17 @@ export const NoteCard = memo(
         closeHistory,
         historyNoteId,
         clearNoteExport,
+        setFilterProject,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
       // 댓글은 노트가 아니라 별도 슬라이스에 있다 — 카드에는 개수만 온다 (BRU-63)
       const storedCommentCount = useNotesStore((s) => s.commentCountByNote[note.id] ?? 0)
       const commentsNoteId = useNotesStore((s) => s.commentsNoteId)
       const openComments = useNotesStore((s) => s.openComments)
+      // 프로젝트는 카드에 이름만 필요하다 (BRU-83)
+      const project = useNotesStore((s) =>
+        note.projectId ? (s.allProjects.find((p) => p.id === note.projectId) ?? null) : null
+      )
       const closeComments = useNotesStore((s) => s.closeComments)
 
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
@@ -160,24 +168,34 @@ export const NoteCard = memo(
         onDrop: (files) => files.forEach(handleAddFile),
       })
 
-      // 팝오버 상태는 항상 이 함수로 바꾼다 — 피드가 Inbox 이탈을 유예하려면
+      // 팝오버 상태는 항상 이 함수로 바꾼다 — 피드가 목록 이탈을 유예하려면
       // 열림/닫힘을 하나도 놓치지 않고 알아야 한다 (BRU-50)
       const setTagPopoverOpen = useCallback(
         (open: boolean) => {
           setShowTagPopover(open)
-          onTagPopoverOpenChange?.(note.id, open)
+          onPopoverOpenChange?.(note.id, open)
         },
-        [note.id, onTagPopoverOpenChange]
+        [note.id, onPopoverOpenChange]
+      )
+
+      // 프로젝트 팝오버도 같은 유예를 받는다 — 미분류만 보다가 프로젝트를 고르는
+      // 순간 줄이 사라지면 무슨 일이 일어났는지 알 수 없다 (BRU-83)
+      const setProjectPopoverOpen = useCallback(
+        (open: boolean) => {
+          setShowProjectPopover(open)
+          onPopoverOpenChange?.(note.id, open)
+        },
+        [note.id, onPopoverOpenChange]
       )
 
       // 카드가 통째로 사라질 때(삭제·보관 등) 피드에 남은 유예를 걷어낸다
-      const tagPopoverOpenRef = useRef(false)
-      tagPopoverOpenRef.current = showTagPopover
+      const popoverOpenRef = useRef(false)
+      popoverOpenRef.current = showTagPopover || showProjectPopover
       useEffect(() => {
         return () => {
-          if (tagPopoverOpenRef.current) onTagPopoverOpenChange?.(note.id, false)
+          if (popoverOpenRef.current) onPopoverOpenChange?.(note.id, false)
         }
-      }, [note.id, onTagPopoverOpenChange])
+      }, [note.id, onPopoverOpenChange])
 
       useImperativeHandle(ref, () => ({
         focus: () => {
@@ -272,9 +290,10 @@ export const NoteCard = memo(
         if (!isFocused) {
           setIsEditing(false)
           setTagPopoverOpen(false)
+          setProjectPopoverOpen(false)
           setShowTemplatePopover(false)
         }
-      }, [isFocused, setTagPopoverOpen])
+      }, [isFocused, setTagPopoverOpen, setProjectPopoverOpen])
 
       // 템플릿을 넣고 나면 이어서 쓸 수 있게 에디터로 돌아간다
       useEffect(() => {
@@ -413,6 +432,21 @@ export const NoteCard = memo(
                 </span>
               )}
               <div className="note-line-tags">
+                {project && (
+                  // 프로젝트 칩 (BRU-83). 누르면 그 프로젝트만 보는 필터가 걸린다 —
+                  // 태그 칩과 같은 동작이라 따로 배울 것이 없다.
+                  <button
+                    className="project-chip"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setFilterProject(project.id)
+                    }}
+                    title={`${project.name} 프로젝트만 보기`}
+                  >
+                    <Icon name="folder" size={10} />
+                    {project.name}
+                  </button>
+                )}
                 <TagList noteId={note.id} tags={note.tags} />
                 {note.linearIssueUrl && (
                   // 반출 뱃지 (BRU-45). 기본 목록에서는 반출된 노트가 빠지므로
@@ -482,6 +516,16 @@ export const NoteCard = memo(
                           aria-label="답글"
                         >
                           <Icon name="corner-up-left" />
+                        </button>
+                      )}
+                      {!isLocked && (
+                        <button
+                          className={`project-btn ${note.projectId ? 'assigned' : ''}`}
+                          onClick={() => setProjectPopoverOpen(true)}
+                          title={note.projectId ? '프로젝트 바꾸기' : '프로젝트 지정'}
+                          aria-label="프로젝트 지정"
+                        >
+                          <Icon name="folder" />
                         </button>
                       )}
                       {!isLocked && (
@@ -613,6 +657,15 @@ export const NoteCard = memo(
                 noteId={note.id}
                 tags={note.tags}
                 onClose={() => setTagPopoverOpen(false)}
+              />
+            </div>
+          )}
+          {showProjectPopover && !isLocked && (
+            <div className="note-card-popover-anchor">
+              <ProjectPopover
+                noteId={note.id}
+                projectId={note.projectId}
+                onClose={() => setProjectPopoverOpen(false)}
               />
             </div>
           )}

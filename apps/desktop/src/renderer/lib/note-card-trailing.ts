@@ -41,8 +41,9 @@ export const ACTION_BUTTON_GAP = 2
  * 실제로 몇 개가 그려지는지(잠긴 노트는 더 적다)와 무관하게 이 값을 쓴다.
  */
 const MAX_ACTION_BUTTONS: Record<NoteViewMode, number> = {
-  // 고정 · 잠금 · 답글 · 댓글 · 편집 기록 · 보관 · 삭제
-  active: 7,
+  // 고정 · 잠금 · 답글 · 프로젝트 · 댓글 · 편집 기록 · 보관 · 삭제
+  // (프로젝트 버튼은 BRU-83에서 늘었다 — active 뷰에만 붙는다)
+  active: 8,
   // 보관 해제 · 삭제
   archived: 2,
   // 복원 · 영구 삭제

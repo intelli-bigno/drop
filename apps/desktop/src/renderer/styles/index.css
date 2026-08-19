@@ -362,6 +362,78 @@ body {
   overflow: hidden;
 }
 
+/* 프로젝트 칩 (BRU-83) — 태그 칩 왼쪽에 붙는다.
+   태그와 다른 축이므로 모양도 다르게 둔다: 태그는 둥근 알약에 강조색,
+   프로젝트는 각진 모서리에 중립색이다. 한 노트에 하나뿐이라 접기도 없다. */
+.project-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-right: 6px;
+  padding: 2px 7px;
+  max-width: 160px;
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.project-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* 프로젝트가 지정된 노트는 카드 액션의 폴더 아이콘이 켜져 있다 */
+.project-btn.assigned {
+  color: var(--accent);
+}
+
+/* 프로젝트 필터 (BRU-83) — 프로젝트가 하나도 없으면 렌더되지 않는다.
+   태그처럼 칩을 늘어놓지 않고 셀렉트 하나로 둔다: 프로젝트는 소속이 하나라
+   여러 개를 동시에 고를 일이 없고, 개수가 늘어도 헤더 폭이 그대로다. */
+.project-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  -webkit-app-region: no-drag;
+}
+
+.project-filter-icon {
+  display: flex;
+  align-items: center;
+}
+
+.project-filter-select {
+  max-width: 160px;
+  padding: 3px 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.project-filter-select:hover {
+  color: var(--text-secondary);
+}
+
+.project-filter-select:focus-visible {
+  outline: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
 /* Linear 반출 뱃지 (BRU-45) — 태그 옆에 붙는다. 태그와 헷갈리지 않게
    모양(모서리·테두리)을 달리한다: 태그는 사람이 붙이는 분류이고 이 뱃지는
    "이 노트는 이슈가 됐다"는 사실이라 성격이 다르다. */

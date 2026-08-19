@@ -33,8 +33,8 @@ describe('shouldPinStatusStayVisible', () => {
 describe('reservedActionsWidth', () => {
   // BRU-57 — 액션이 태그를 덮지 않으려면 액션이 들어갈 자리를 미리 비워 둬야 한다.
   it('should reserve room for every action the active view can show', () => {
-    // 고정·잠금·답글·댓글·기록·보관·삭제 = 7개
-    expect(reservedActionsWidth('active')).toBe(7 * ACTION_BUTTON_SIZE + 6 * 2)
+    // 고정·잠금·답글·프로젝트·댓글·기록·보관·삭제 = 8개 (프로젝트는 BRU-83에서 늘었다)
+    expect(reservedActionsWidth('active')).toBe(8 * ACTION_BUTTON_SIZE + 7 * 2)
   })
 
   it('should reserve less room in views with fewer actions', () => {

@@ -6,6 +6,7 @@ import { NoteCard, NoteCardHandle } from './NoteCard'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
 import { InboxFilter } from './InboxFilter'
+import { ProjectFilter } from './ProjectFilter'
 import { ExportedFilter } from './ExportedFilter'
 import { ViewModeSelector } from './ViewModeSelector'
 import { SearchDialog } from './SearchDialog'
@@ -65,6 +66,7 @@ export function NoteFeed() {
     createNoteWithYouTube,
     filterTag,
     setFilterTag,
+    filterProjectId,
     categoryFilter,
     inboxOnly,
     setInboxOnly,
@@ -99,8 +101,8 @@ export function NoteFeed() {
   const [showUnlockAllDialog, setShowUnlockAllDialog] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false)
-  // 지금 태그 팝오버가 열려 있는 노트 (Inbox에서 목록 이탈을 유예하는 데 쓴다)
-  const [tagPopoverNoteId, setTagPopoverNoteId] = useState<string | null>(null)
+  // 지금 팝오버가 열려 있는 노트 (필터에서 목록 이탈을 유예하는 데 쓴다)
+  const [popoverNoteId, setPopoverNoteId] = useState<string | null>(null)
   // 목록 전체 펼치기 (BRU-79). 훑어보기용 일시 토글이라 **세션 간 유지하지 않는다** —
   // 스토어가 아니라 여기 로컬 state에 두는 것이 그 결정의 구조적 보장이다.
   const [expandAll, setExpandAll] = useState(false)
@@ -160,8 +162,8 @@ export function NoteFeed() {
   // Inbox에서 태그 팝오버가 열려 있는 노트. 태그를 다는 순간 목록에서 빠지면
   // 팝오버가 허공에 뜨고 두 번째 태그를 달 길이 사라진다 — 닫힐 때까지 자리를 지킨다.
   const retainedNoteIds = useMemo(
-    () => (tagPopoverNoteId ? new Set([tagPopoverNoteId]) : undefined),
-    [tagPopoverNoteId]
+    () => (popoverNoteId ? new Set([popoverNoteId]) : undefined),
+    [popoverNoteId]
   )
 
   const filteredNotes = useMemo(() => {
@@ -169,11 +171,21 @@ export function NoteFeed() {
     return applyNoteFilters(baseNotes, {
       filterTag,
       categoryFilter,
+      filterProjectId,
       inboxOnly,
       showExported,
       retainedNoteIds,
     })
-  }, [viewMode, baseNotes, filterTag, categoryFilter, inboxOnly, showExported, retainedNoteIds])
+  }, [
+    viewMode,
+    baseNotes,
+    filterTag,
+    categoryFilter,
+    filterProjectId,
+    inboxOnly,
+    showExported,
+    retainedNoteIds,
+  ])
 
   // 부모-자식 묶음 (BRU-70). 로직은 lib/note-hierarchy.ts에 있다 — 화면 안에 두면
   // 테스트할 수 없고, 실제로 그래서 "부모가 필터에서 빠지면 답글이 사라지는" 버그를
@@ -242,9 +254,9 @@ export function NoteFeed() {
     togglePinNoteRef.current = togglePinNote
   }, [togglePinNote])
 
-  // 카드가 태그 팝오버를 열고 닫을 때 알려온다 (BRU-50 — Inbox 이탈 유예)
-  const handleTagPopoverOpenChange = useCallback((noteId: string, open: boolean) => {
-    setTagPopoverNoteId((current) => (open ? noteId : current === noteId ? null : current))
+  // 카드가 팝오버를 열고 닫을 때 알려온다 (BRU-50 — 목록 이탈 유예)
+  const handlePopoverOpenChange = useCallback((noteId: string, open: boolean) => {
+    setPopoverNoteId((current) => (open ? noteId : current === noteId ? null : current))
   }, [])
 
   const handleEscapeFromNormal = useCallback((index: number) => {
@@ -1005,6 +1017,8 @@ export function NoteFeed() {
               <InboxFilter />
               <ExportedFilter />
               <div className="feed-header-divider" />
+              <ProjectFilter />
+              <div className="feed-header-divider" />
               <CategoryFilter />
               {filterTag && (
                 <div className="filter-indicator">
@@ -1133,7 +1147,7 @@ export function NoteFeed() {
                     isFocused={focusedIndex === globalIndex}
                     onEscapeFromNormal={() => handleEscapeFromNormal(globalIndex)}
                     onReply={viewMode === 'active' ? handleReply : undefined}
-                    onTagPopoverOpenChange={handleTagPopoverOpenChange}
+                    onPopoverOpenChange={handlePopoverOpenChange}
                   />
                 </div>
               )
