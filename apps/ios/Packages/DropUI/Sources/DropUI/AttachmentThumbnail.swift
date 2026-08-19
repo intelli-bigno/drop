@@ -46,7 +46,9 @@ public struct AttachmentThumbnail: View {
             if attachment.isVideo {
                 Image(systemName: "play.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.white)
+                    // 썸네일 위에 겹치는 표식이라 사진 자체를 배경으로 삼는다 —
+                    // 어떤 사진이 오든 읽혀야 해서 팔레트가 아니라 흰색이다.
+                    .foregroundStyle(DropTheme.Media.foreground)
                     .shadow(radius: 2)
                     .padding(4)
             }
@@ -60,17 +62,17 @@ public struct AttachmentThumbnail: View {
 
     private var placeholder: some View {
         ZStack {
-            Color.secondary.opacity(0.12)
+            DropTheme.Surface.field
             VStack(spacing: 2) {
                 Image(systemName: icon)
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
                 // 한 줄 행에 들어가는 작은 칸에서는 크기 문구가 잘려 나온다 —
                 // 잘린 숫자 조각은 정보가 아니라 얼룩이다.
                 if size >= 44, !attachment.formattedSize.isEmpty {
                     Text(attachment.formattedSize)
                         .font(.system(size: 9))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(DropTokens.Colors.textTertiary)
                 }
             }
         }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 다크의 창 배경. 토큰의 다크 `bg-primary` 와 같은 값이다. -->
+<resources>
+    <color name="drop_window_background">#191919</color>
+</resources>

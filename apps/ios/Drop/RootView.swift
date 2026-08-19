@@ -70,6 +70,8 @@ struct RootView: View {
             // 세션 확인 전에 로그인 화면을 띄우면 이미 로그인한 사용자에게
             // 로그인 화면이 한 번 깜빡인다.
             ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(DropTheme.Surface.page)
         case .signedIn:
             if let container {
                 // 로그인한 사용자가 바뀌면 목록 상태를 처음부터 다시 만든다.

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose가 실제 테마를 그린다. 여기는 스플래시 직전의 창 배경만 잡는다. -->
-    <style name="Theme.Drop" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      Compose가 실제 테마를 그린다 (DropTheme). 여기는 Compose가 첫 프레임을 그리기
+      전에 시스템이 칠하는 창 배경만 잡는다 — 기본값으로 두면 앱을 열 때마다
+      Material 기본 흰 화면이 한 번 번쩍인 뒤 웜 페이퍼로 바뀐다.
+    -->
+    <style name="Theme.Drop" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/drop_window_background</item>
+    </style>
 </resources>
