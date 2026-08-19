@@ -22,6 +22,7 @@ import {
   loadSettings,
   saveSettings,
   withQuickCaptureShortcut,
+  withShortcutNoticeSuppressed,
 } from './settings'
 import {
   registerQuickCaptureShortcut,
@@ -1105,13 +1106,34 @@ function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
  *
  * "아무것도 못 잡았다"와 "고른 조합 대신 기본값이 잡혔다"는 다른 사건이라 문구도 다르다.
  */
-function notifyShortcutRegistrationProblem(result: ShortcutRegistrationResult): void {
+async function notifyShortcutRegistrationProblem(
+  result: ShortcutRegistrationResult
+): Promise<void> {
+  // ⌥Space는 Alfred 같은 앱이 흔히 점유한다 — 매 실행마다 뜨면 상시 나그가 된다.
+  if (appSettings.suppressShortcutNotice) return
+
   const { title, message } =
     result.accelerator && result.preferred
       ? describeFallbackRegistration(result.preferred, result.accelerator, process.platform)
       : describeRegistrationFailure(result.attempted, process.platform)
 
-  void dialog.showMessageBox({ type: 'warning', title, message, buttons: ['확인'] })
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title,
+    message,
+    buttons: ['확인', '다시 보지 않기'],
+    defaultId: 0,
+    cancelId: 0,
+  })
+
+  if (response !== 1) return
+
+  appSettings = withShortcutNoticeSuppressed(appSettings, true)
+  try {
+    saveSettings(app.getPath('userData'), appSettings)
+  } catch (error) {
+    console.warn('[settings] 경고 숨김 설정 저장 실패:', error)
+  }
 }
 
 function createWindow(): void {
@@ -1194,7 +1216,7 @@ app.whenReady().then(() => {
 
   const shortcutResult = applyQuickCaptureShortcut()
   if (!shortcutResult.preferredRegistered) {
-    notifyShortcutRegistrationProblem(shortcutResult)
+    void notifyShortcutRegistrationProblem(shortcutResult)
   }
 
   createWindow()
