@@ -13,9 +13,10 @@ struct AuthView: View {
             VStack(spacing: DropTheme.Spacing.base) {
                 Text("DROP")
                     .font(.system(size: 44, weight: .bold))
+                    .foregroundStyle(DropTokens.Colors.textPrimary)
                 Text("떠오르면 바로 던져넣기")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
             }
 
             Spacer()
@@ -23,7 +24,7 @@ struct AuthView: View {
             if case let .failed(message) = auth.state {
                 Text(message)
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DropTokens.Colors.danger)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, DropTheme.Spacing.loose)
             }
@@ -42,9 +43,13 @@ struct AuthView: View {
                 .padding(.vertical, DropTheme.Spacing.comfortable)
             }
             .buttonStyle(.borderedProminent)
+            .tint(DropTokens.Colors.cta)
+            .foregroundStyle(DropTokens.Colors.textOnAccent)
             .disabled(auth.state == .working)
             .padding(.horizontal, DropTheme.Spacing.loose)
             .padding(.bottom, DropTheme.Spacing.loose)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DropTheme.Surface.page)
     }
 }
