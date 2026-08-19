@@ -9,7 +9,9 @@ struct RootView: View {
 
     var body: some View {
         #if DEBUG
-        if PreviewLaunch.isActive {
+        if PreviewLaunch.usesSeededLocalSession, let container {
+            SeededLocalSessionGate(container: container)
+        } else if PreviewLaunch.isActive {
             HomeView(
                 repository: PreviewLaunch.makeRepository(),
                 commentsRepository: PreviewLaunch.makeCommentsRepository(),
@@ -22,6 +24,44 @@ struct RootView: View {
         authenticatedBody
         #endif
     }
+
+    #if DEBUG
+    /// 로컬 시드 사용자로 붙은 뒤에야 목록을 띄운다 — 세션 없이 먼저 부르면
+    /// RLS에 막혀 빈 목록이 뜨고, 그 빈 화면을 "노트가 없다"로 잘못 읽게 된다.
+    private struct SeededLocalSessionGate: View {
+        let container: DropEnvironmentContainer
+
+        @State private var isReady = false
+        @State private var failure: String?
+
+        var body: some View {
+            Group {
+                if isReady {
+                    HomeView(
+                        repository: container.makeNotesRepository(),
+                        commentsRepository: container.makeCommentsRepository()
+                    )
+                } else if let failure {
+                    ContentUnavailableView(
+                        "로컬 세션을 열지 못했습니다",
+                        systemImage: "bolt.horizontal.circle",
+                        description: Text(failure)
+                    )
+                } else {
+                    ProgressView()
+                }
+            }
+            .task {
+                do {
+                    try await container.signInWithSeededLocalUser()
+                    isReady = true
+                } catch {
+                    failure = "\(error)"
+                }
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var authenticatedBody: some View {
