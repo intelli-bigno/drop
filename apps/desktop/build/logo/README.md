@@ -1,4 +1,4 @@
-# Braindump 아이콘
+# DROP 아이콘
 
 **산출물 생성: `apps/desktop/build/logo/generate.sh`** (macOS 전용, 추가 설치 불필요 — `sips`/`iconutil` 사용)
 

@@ -62,7 +62,7 @@ async function loginWithEmail() {
 
 async function loginWithToken() {
   console.log('\nTo get your refresh token:')
-  console.log('1. Open Braindump Desktop app')
+  console.log('1. Open DROP Desktop app')
   console.log('2. Open DevTools (Cmd+Option+I)')
   console.log('3. Run in Console: (await supabase.auth.getSession()).data.session?.refresh_token')
   console.log('')
@@ -97,7 +97,7 @@ async function loginWithToken() {
 }
 
 async function main() {
-  console.log('Braindump MCP Server - Authentication')
+  console.log('DROP MCP Server - Authentication')
   console.log('=================================')
   console.log(`Supabase URL: ${SUPABASE_URL}`)
   console.log('')

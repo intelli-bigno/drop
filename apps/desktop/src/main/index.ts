@@ -1026,7 +1026,7 @@ function createTray(): void {
   }
 
   tray = new Tray(icon)
-  tray.setToolTip('Braindump')
+  tray.setToolTip('DROP')
 
   refreshTrayMenu()
 
@@ -1047,7 +1047,7 @@ function refreshTrayMenu(): void {
       click: () => createQuickCaptureWindow(),
     },
     {
-      label: 'Open Braindump',
+      label: 'Open DROP',
       click: () => showMainWindow(),
     },
     { type: 'separator' },
@@ -1200,7 +1200,7 @@ function handleOAuthCallback(url: string): void {
 }
 
 // 저장 경로를 표시 이름(productName)에서 떼어 고정한다 — whenReady 이전에 설정해야 함.
-// 기본값은 appData/<app name>이라, 표시 이름을 Braindump로 바꾸면 기존 설치본의
+// 기본값은 appData/<app name>이라, 표시 이름을 DROP로 바꾸면 기존 설치본의
 // 세션·설정이 통째로 다른 경로로 옮겨 가 전원 강제 로그아웃이 된다 (BRU-28).
 // dev 실행은 접미사로 분리해 설치본의 세션/캐시를 건드리지 않는다.
 app.setPath('userData', resolveUserDataDir(app.getPath('appData'), app.isPackaged))

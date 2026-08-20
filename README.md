@@ -1,4 +1,4 @@
-# Braindump
+# DROP
 
 A fast, cross-platform note-taking app for quick capture.
 

@@ -20,7 +20,7 @@ export function AuthScreen() {
             fill="var(--bg-card)"
           />
         </svg>
-        <h1 className="auth-title">Braindump</h1>
+        <h1 className="auth-title">DROP</h1>
         <p className="auth-subtitle">생각을 떨어뜨리는 가장 빠른 곳</p>
 
         <button

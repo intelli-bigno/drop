@@ -1,4 +1,4 @@
-# Braindump 데스크톱 (Electron + React)
+# DROP 데스크톱 (Electron + React)
 
 ## 명령
 

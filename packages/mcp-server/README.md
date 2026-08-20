@@ -1,6 +1,6 @@
 # drop-mcp
 
-MCP server for Braindump notes. Access your notes from AI assistants like Claude.
+MCP server for DROP notes. Access your notes from AI assistants like Claude.
 
 ## Installation
 
@@ -12,14 +12,14 @@ npm install -g @brxce/drop-mcp
 
 ### Getting Your Token
 
-1. Open the Braindump app
+1. Open the DROP app
 2. Go to Profile → Copy MCP Token
 
 ### Environment Variables
 
 The server requires:
 
-- `DROP_TOKEN` - Your MCP token from the Braindump app
+- `DROP_TOKEN` - Your MCP token from the DROP app
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_ANON_KEY` - Your Supabase anon (public) key
 
@@ -132,7 +132,7 @@ pnpm install
 # Build
 pnpm build
 
-# Run locally (get token from Braindump app → Profile → Copy MCP Token)
+# Run locally (get token from DROP app → Profile → Copy MCP Token)
 SUPABASE_URL=https://your-project.supabase.co \
 SUPABASE_ANON_KEY=your-anon-key \
 DROP_TOKEN=your-api-key pnpm start

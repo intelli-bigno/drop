@@ -259,7 +259,7 @@ release-local:
 
 # 최초 1회: 빌드된 앱을 /Applications 에 설치 (이후는 앱 내 자동 업데이트)
 install-local:
-	rm -rf /Applications/Braindump.app
 	rm -rf /Applications/DROP.app
-	cp -R apps/desktop/release/mac-arm64/Braindump.app /Applications/
-	@echo "→ /Applications/Braindump.app 설치 완료"
+	rm -rf /Applications/Braindump.app
+	cp -R apps/desktop/release/mac-arm64/DROP.app /Applications/
+	@echo "→ /Applications/DROP.app 설치 완료"
