@@ -9,6 +9,7 @@ import {
   nativeImage,
   session,
   shell,
+  systemPreferences,
   Tray,
   type ClientRequestConstructorOptions,
 } from 'electron'
@@ -28,6 +29,17 @@ import {
   registerQuickCaptureShortcut,
   type ShortcutRegistrationResult,
 } from './quick-capture-shortcut'
+import {
+  attachDoubleCtrlCapture,
+  type DoubleCtrlAttachResult,
+  type GlobalKeyHook,
+} from './double-ctrl-shortcut'
+import {
+  DOUBLE_CTRL_DISPLAY,
+  describeDoubleCtrlPermissionFallback,
+  describeDoubleCtrlStartFailure,
+  shouldUseDoubleCtrlCapture,
+} from '../shared/double-ctrl'
 import {
   DEFAULT_QUICK_CAPTURE_ACCELERATOR,
   describeFallbackRegistration,
@@ -851,6 +863,9 @@ let quickCaptureWindow: BrowserWindow | null = null
 let appSettings: AppSettings = { ...DEFAULT_SETTINGS }
 /** 지금 실제로 등록돼 있는 전역 조합. 등록에 모두 실패하면 null. */
 let activeQuickCaptureAccelerator: string | null = null
+/** 살아 있는 Ctrl 더블 탭 후킹. accelerator 경로와 동시에 쓰지 않는다 (BRU-103). */
+let doubleCtrlCapture: DoubleCtrlAttachResult | null = null
+let doubleCtrlActive = false
 /** 이번 캡처가 다른 앱에서 불려 왔는가 — 닫을 때 포커스를 돌려줄지 판단한다. */
 let quickCaptureInvokedFromOtherApp = false
 
@@ -1041,7 +1056,8 @@ function refreshTrayMenu(): void {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Quick Capture',
+      // 더블 탭은 accelerator 표기가 안 되므로 라벨에 적는다.
+      label: doubleCtrlActive ? `Quick Capture (${DOUBLE_CTRL_DISPLAY})` : 'Quick Capture',
       // 등록에 실패했으면 조합을 표시하지 않는다 — 눌러도 안 되는 키를 적어 두지 않는다.
       accelerator: activeQuickCaptureAccelerator ?? undefined,
       click: () => createQuickCaptureWindow(),
@@ -1068,7 +1084,96 @@ function refreshTrayMenu(): void {
  * 실제 등록 판단은 `registerQuickCaptureShortcut`에 있다 — 여기서는 Electron 객체를 넘기고
  * 결과를 앱 상태(활성 조합·트레이 메뉴)에 반영하는 일만 한다.
  */
-function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
+interface QuickCaptureApplyOutcome extends ShortcutRegistrationResult {
+  /** Ctrl 더블 탭 후킹이 이번 적용으로 살아 있는지. */
+  doubleCtrl: boolean
+  /** 더블 탭을 쓰려 했으나 못 쓴 이유. 시도 자체를 안 했으면 null. */
+  doubleCtrlFailure: 'permission' | 'start-failed' | 'unavailable' | null
+}
+
+/** uiohook은 네이티브 모듈이라 로드 실패가 앱을 죽이면 안 된다 — 지연 require로 감싼다. */
+function loadUiohook(): { hook: GlobalKeyHook; ctrlKeycodes: number[] } | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
+    return { hook: uIOhook, ctrlKeycodes: [UiohookKey.Ctrl, UiohookKey.CtrlRight] }
+  } catch (error) {
+    console.warn('[doubleCtrl] uiohook 로드 실패:', error)
+    return null
+  }
+}
+
+/**
+ * Ctrl 더블 탭 후킹을 붙인다. 실패 이유를 돌려주고, 성공이면 null.
+ *
+ * 손쉬운 사용 권한이 없으면 start()가 성공한 척하면서 이벤트만 조용히 안 온다 —
+ * 그래서 붙이기 전에 권한을 확인하고, 없으면 시스템 프롬프트를 띄운 뒤 물러선다.
+ */
+function tryAttachDoubleCtrl(): QuickCaptureApplyOutcome['doubleCtrlFailure'] {
+  const loaded = loadUiohook()
+  if (!loaded) return 'unavailable'
+
+  if (process.platform === 'darwin' && !systemPreferences.isTrustedAccessibilityClient(false)) {
+    systemPreferences.isTrustedAccessibilityClient(true)
+    return 'permission'
+  }
+
+  const attached = attachDoubleCtrlCapture({
+    hook: loaded.hook,
+    ctrlKeycodes: loaded.ctrlKeycodes,
+    onTrigger: () => {
+      console.info('[doubleCtrl] 더블 탭 감지 — 퀵캡처 호출')
+      createQuickCaptureWindow({ fromGlobalShortcut: true })
+    },
+  })
+  if (!attached.ok) {
+    console.warn('[doubleCtrl] 전역 키 후킹 시작 실패:', attached.error)
+    return 'start-failed'
+  }
+
+  doubleCtrlCapture = attached
+  return null
+}
+
+function applyQuickCaptureShortcut(): QuickCaptureApplyOutcome {
+  // 이전 후킹은 항상 놓아 준다 — 사용자 지정 조합으로 전환했을 수 있다.
+  doubleCtrlCapture?.dispose()
+  doubleCtrlCapture = null
+  doubleCtrlActive = false
+
+  let doubleCtrlFailure: QuickCaptureApplyOutcome['doubleCtrlFailure'] = null
+
+  if (
+    shouldUseDoubleCtrlCapture({
+      storedAccelerator: appSettings.quickCaptureShortcut,
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      devOptIn: process.env.DROP_DEV_DOUBLE_CTRL === '1',
+    })
+  ) {
+    doubleCtrlFailure = tryAttachDoubleCtrl()
+
+    if (doubleCtrlFailure === null) {
+      if (activeQuickCaptureAccelerator) {
+        globalShortcut.unregister(activeQuickCaptureAccelerator)
+        activeQuickCaptureAccelerator = null
+      }
+      doubleCtrlActive = true
+      console.info(`[doubleCtrl] 퀵캡처 호출 등록: Ctrl 더블 탭`)
+      refreshTrayMenu()
+      return {
+        ok: true,
+        accelerator: null,
+        preferred: null,
+        preferredRegistered: true,
+        attempted: [],
+        doubleCtrl: true,
+        doubleCtrlFailure: null,
+      }
+    }
+    // 더블 탭을 못 쓰면 아래의 accelerator 경로(⌥Space)로 물러선다.
+  }
+
   const preferred = resolveQuickCaptureAccelerator({
     stored: appSettings.quickCaptureShortcut,
     isPackaged: app.isPackaged,
@@ -1098,7 +1203,40 @@ function applyQuickCaptureShortcut(): ShortcutRegistrationResult {
   }
   refreshTrayMenu()
 
-  return result
+  return { ...result, doubleCtrl: false, doubleCtrlFailure }
+}
+
+/**
+ * 더블 탭을 못 쓰고 accelerator로 물러선 사정을 사용자에게 보여 준다.
+ * 등록 실패 알림과 같은 원칙 — 로그만 남기고 넘어가지 않는다.
+ */
+async function notifyDoubleCtrlFallback(outcome: QuickCaptureApplyOutcome): Promise<void> {
+  if (appSettings.suppressShortcutNotice) return
+  if (!outcome.doubleCtrlFailure) return
+
+  const fallback = outcome.accelerator ?? DEFAULT_QUICK_CAPTURE_ACCELERATOR
+  const { title, message } =
+    outcome.doubleCtrlFailure === 'permission'
+      ? describeDoubleCtrlPermissionFallback(fallback, process.platform)
+      : describeDoubleCtrlStartFailure(fallback, process.platform)
+
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title,
+    message,
+    buttons: ['확인', '다시 보지 않기'],
+    defaultId: 0,
+    cancelId: 0,
+  })
+
+  if (response !== 1) return
+
+  appSettings = withShortcutNoticeSuppressed(appSettings, true)
+  try {
+    saveSettings(app.getPath('userData'), appSettings)
+  } catch (error) {
+    console.warn('[settings] 경고 숨김 설정 저장 실패:', error)
+  }
 }
 
 /**
@@ -1215,7 +1353,9 @@ app.whenReady().then(() => {
   createTray()
 
   const shortcutResult = applyQuickCaptureShortcut()
-  if (!shortcutResult.preferredRegistered) {
+  if (shortcutResult.doubleCtrlFailure) {
+    void notifyDoubleCtrlFallback(shortcutResult)
+  } else if (!shortcutResult.preferredRegistered) {
     void notifyShortcutRegistrationProblem(shortcutResult)
   }
 
@@ -1263,8 +1403,10 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
-  // 앱 종료 시 전역 단축키 해제
+  // 앱 종료 시 전역 단축키·키 후킹 해제
   globalShortcut.unregisterAll()
+  doubleCtrlCapture?.dispose()
+  doubleCtrlCapture = null
 })
 
 function setupQuickCaptureHandlers(): void {
@@ -1305,6 +1447,8 @@ interface QuickCaptureShortcutState {
   fallback: string
   /** 등록 성공 여부. */
   registered: boolean
+  /** Ctrl 더블 탭 호출이 살아 있는지 (BRU-103). */
+  doubleCtrl: boolean
 }
 
 function quickCaptureShortcutState(): QuickCaptureShortcutState {
@@ -1312,7 +1456,8 @@ function quickCaptureShortcutState(): QuickCaptureShortcutState {
     accelerator: activeQuickCaptureAccelerator,
     custom: appSettings.quickCaptureShortcut,
     fallback: app.isPackaged ? DEFAULT_QUICK_CAPTURE_ACCELERATOR : DEV_QUICK_CAPTURE_ACCELERATOR,
-    registered: activeQuickCaptureAccelerator !== null,
+    registered: activeQuickCaptureAccelerator !== null || doubleCtrlActive,
+    doubleCtrl: doubleCtrlActive,
   }
 }
 

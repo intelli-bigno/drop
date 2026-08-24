@@ -28,6 +28,9 @@
       "out/**/*",
       "!node_modules/**/*"
     ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
     "nodeGypRebuild": false,
@@ -87,6 +90,7 @@
     "react-dom": "^18.3.1",
     "react-file-icon": "^1.6.0",
     "typescript": "^5.7.2",
+    "uiohook-napi": "^1.5.5",
     "zustand": "^5.0.2"
   }
 }
