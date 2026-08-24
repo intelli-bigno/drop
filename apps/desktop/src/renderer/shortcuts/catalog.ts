@@ -11,7 +11,7 @@ export interface ShortcutCatalogEntry {
   group: string
   scope: ShortcutScope
   /** 함께 눌러야 하는 수식키 */
-  modifier?: 'primary' | 'shift'
+  modifier?: 'primary' | 'shift' | 'primary-shift'
 }
 
 export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
@@ -57,6 +57,13 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   },
   { keyId: 'insertTemplate', label: '템플릿 넣기 (빈 노트에서)', group: '노트 액션', scope: 'note' },
   { keyId: 'copyFocused', label: '내용 복사', group: '노트 액션', scope: 'feed' },
+  {
+    keyId: 'copyFocusedReference',
+    label: '참조 링크 복사 (에이전트용)',
+    group: '노트 액션',
+    scope: 'feed',
+    modifier: 'primary-shift',
+  },
   { keyId: 'togglePin', label: '상단 고정 전환', group: '노트 액션', scope: 'feed' },
   { keyId: 'deleteFocused', label: '휴지통으로', group: '노트 액션', scope: 'feed' },
   { keyId: 'toggleLock', label: '잠금 전환', group: '노트 액션', scope: 'note', modifier: 'primary' },

@@ -20,6 +20,8 @@ import { isToggleLockShortcut } from '../shortcuts/noteLock'
 import { isOpenCommentsShortcut } from '../shortcuts/noteComments'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../shortcuts/noteTrash'
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
+import { shouldYieldToNativeCopy } from '../lib/copy-guard'
+import { buildNoteReference } from '../../shared/note-reference'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { scrollFocusedNoteIntoView } from '../lib/feed-scroll'
@@ -817,12 +819,25 @@ export function NoteFeed() {
         return
       }
 
-      if (action === 'copyFocused') {
+      // 복사 두 갈래 (BRU-104): 내용만 / 에이전트가 MCP로 되짚을 수 있는 참조 링크.
+      if (action === 'copyFocused' || action === 'copyFocusedReference') {
         if (currentFocusedIndex === null) return
+        // 텍스트를 긁어 놓고 ⌘C를 눌렀다면 그건 선택 영역 복사다 — OS에 그대로 넘긴다.
+        if (shouldYieldToNativeCopy({ selectionText: window.getSelection()?.toString() ?? null })) {
+          return
+        }
         e.preventDefault()
         const item = currentOrderedNotes[currentFocusedIndex]
         if (item) {
-          navigator.clipboard.writeText(item.note.content)
+          const text =
+            action === 'copyFocusedReference'
+              ? buildNoteReference({
+                  id: item.note.id,
+                  displayId: item.note.displayId,
+                  content: item.note.content,
+                })
+              : item.note.content
+          navigator.clipboard.writeText(text)
         }
         return
       }

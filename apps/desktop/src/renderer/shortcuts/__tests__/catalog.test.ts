@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SHORTCUT_CATALOG, formatKeyForDisplay } from '../catalog'
+import { SHORTCUT_CATALOG, formatKeyForDisplay, type ShortcutCatalogEntry } from '../catalog'
 import { KEYS } from '../keys'
 import { resolveNoteFeedShortcut } from '../noteFeed'
 import { resolveNoteSelectionShortcut } from '../noteSelection'
@@ -7,6 +7,16 @@ import type { KeyEventLike } from '../types'
 
 function key(k: string, mods: Partial<Omit<KeyEventLike, 'key'>> = {}): KeyEventLike {
   return { key: k, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...mods }
+}
+
+/** 카탈로그가 적어 둔 수식키를 실제 이벤트 플래그로 옮긴다 (⌘⇧ 조합 포함 — BRU-104). */
+function modifiersFor(
+  modifier: ShortcutCatalogEntry['modifier']
+): Partial<Omit<KeyEventLike, 'key'>> {
+  return {
+    metaKey: modifier === 'primary' || modifier === 'primary-shift',
+    shiftKey: modifier === 'shift' || modifier === 'primary-shift',
+  }
 }
 
 describe('SHORTCUT_CATALOG', () => {
@@ -40,10 +50,7 @@ describe('SHORTCUT_CATALOG', () => {
 
     for (const entry of feedEntries) {
       for (const k of KEYS[entry.keyId]) {
-        const event = key(k, {
-          metaKey: entry.modifier === 'primary',
-          shiftKey: entry.modifier === 'shift',
-        })
+        const event = key(k, modifiersFor(entry.modifier))
         expect(resolveNoteFeedShortcut(event)).not.toBeNull()
       }
     }
@@ -75,10 +82,7 @@ describe('SHORTCUT_CATALOG', () => {
 
   it('shouldMapFeedEntriesToTheActionTheyClaim', () => {
     for (const entry of SHORTCUT_CATALOG.filter((e) => e.scope === 'feed')) {
-      const event = key(KEYS[entry.keyId][0], {
-        metaKey: entry.modifier === 'primary',
-        shiftKey: entry.modifier === 'shift',
-      })
+      const event = key(KEYS[entry.keyId][0], modifiersFor(entry.modifier))
       expect(resolveNoteFeedShortcut(event)).toBe(entry.keyId)
     }
   })

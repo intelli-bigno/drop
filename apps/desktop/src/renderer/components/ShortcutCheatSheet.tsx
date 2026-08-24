@@ -62,8 +62,12 @@ export function ShortcutCheatSheet({ onClose }: Props) {
                   <li className="cheatsheet-row" key={`${entry.group}-${entry.keyId}-${entry.modifier ?? ''}`}>
                     <span className="cheatsheet-label">{entry.label}</span>
                     <span className="cheatsheet-keys">
-                      {entry.modifier === 'primary' && <kbd>⌘</kbd>}
-                      {entry.modifier === 'shift' && <kbd>⇧</kbd>}
+                      {(entry.modifier === 'primary' || entry.modifier === 'primary-shift') && (
+                        <kbd>⌘</kbd>
+                      )}
+                      {(entry.modifier === 'shift' || entry.modifier === 'primary-shift') && (
+                        <kbd>⇧</kbd>
+                      )}
                       {keysForEntry(entry).map((k, i) => (
                         <span className="cheatsheet-key-alt" key={k}>
                           {i > 0 && <span className="cheatsheet-or">/</span>}

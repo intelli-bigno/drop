@@ -21,6 +21,9 @@ export const KEYS = {
   // 피드 노트 액션
   deleteFocused: ['Delete', 'Backspace'],
   copyFocused: ['c', 'ㅊ'],
+  // 참조 링크 복사 — ⌘⇧C (BRU-104). Shift가 눌리면 `c`가 `C`로 오므로 대문자로 적는다.
+  // 한글 입력 상태에서는 Shift+ㅊ가 `ㅊ` 그대로 찍힌다.
+  copyFocusedReference: ['C', 'ㅊ'],
   togglePin: ['p', 'ㅔ'],
   setPriority0: ['0'],
   setPriority1: ['1'],
