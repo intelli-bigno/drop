@@ -27,7 +27,7 @@ import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
 import { scrollFocusedNoteIntoView } from '../lib/feed-scroll'
 import { applyNoteFilters } from '../lib/note-filters'
 import { buildNoteRows } from '../lib/note-hierarchy'
-import { resolveNoteSelectionShortcut } from '../shortcuts/noteSelection'
+import { resolveNoteSelectionShortcut, resolveFeedEscape } from '../shortcuts/noteSelection'
 import {
   enterVisualSelection,
   extendSelection,
@@ -271,16 +271,20 @@ export function NoteFeed() {
     if (isTextInputTarget(e.target)) return
 
     if (e.key === 'Escape') {
-      // 확인 다이얼로그가 떠 있으면 Esc는 다이얼로그를 닫는다 (ConfirmDialog가 캡처 단계에서
-      // 받아 간다). 여기서 선택을 풀면 "0개 삭제" 문구만 남는다.
-      if (pendingBulkDeleteRef.current) return
+      // 판단은 resolveFeedEscape 한 군데다 (BRU-109) — 전역 keydown 핸들러도 같은 것을 쓴다.
+      // ConfirmDialog는 캡처 단계에서 Esc를 받아 가므로 여기서는 비켜 준다.
+      const escape = resolveFeedEscape({
+        isConfirmDialogOpen: pendingBulkDeleteRef.current !== null,
+        hasSelection: selectionRef.current !== null,
+        hasFocus: true,
+      })
+      if (escape === 'ignore') return
       e.preventDefault()
       // 선택 중이면 Esc는 선택만 푼다 — 포커스까지 잃으면 이어서 j/k를 칠 수 없다 (BRU-80)
-      if (selectionRef.current) {
+      if (escape === 'clearSelection') {
         setSelection(null)
         return
       }
-      // Escape로 포커스 해제 (피드에 직접 포커스가 있을 때만)
       setFocusedIndex(null)
     }
   }, [])
@@ -689,19 +693,29 @@ export function NoteFeed() {
 
       // 선택 키가 먼저다 — Shift+J/K는 피드 리졸버가 보지 않는 자리다 (BRU-80)
       const selectionAction = resolveNoteSelectionShortcut(e as unknown as React.KeyboardEvent)
+
+      // Esc는 선택 리졸버가 항상 exitVisual로 받아 가지만, 벗길 것이 선택뿐인 것은 아니다.
+      // 예전에는 선택이 없으면 여기서 핸들러를 통째로 끝내 버려 아래 clearFocus로 내려가지
+      // 못했다 — 피드 바깥(body 등)에 포커스가 있으면 Esc가 통째로 죽는 자리였다 (BRU-109).
+      if (selectionAction === 'exitVisual') {
+        const escape = resolveFeedEscape({
+          isConfirmDialogOpen: pendingBulkDeleteRef.current !== null,
+          hasSelection: selectionRef.current !== null,
+          hasFocus: currentFocusedIndex !== null,
+        })
+        if (escape === 'ignore' || escape === 'none') return
+        e.preventDefault()
+        if (escape === 'clearSelection') {
+          setSelection(null)
+        } else {
+          setFocusedIndex(null)
+        }
+        return
+      }
+
       if (selectionAction) {
         const currentSelection = selectionRef.current
         const orderedIds = currentOrderedNotes.map((item) => item.note.id)
-
-        if (selectionAction === 'exitVisual') {
-          // 확인 다이얼로그가 떠 있으면 Esc는 다이얼로그의 것이다 —
-          // 선택만 풀면 "0개 삭제" 문구가 남은 채 확인해도 아무것도 안 지워진다.
-          if (pendingBulkDeleteRef.current) return
-          if (!currentSelection) return
-          e.preventDefault()
-          setSelection(null)
-          return
-        }
 
         if (selectionAction === 'enterVisual') {
           e.preventDefault()

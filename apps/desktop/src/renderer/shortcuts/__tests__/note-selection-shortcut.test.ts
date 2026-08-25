@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveNoteSelectionShortcut } from '../noteSelection'
+import { resolveNoteSelectionShortcut, resolveFeedEscape } from '../noteSelection'
 import { resolveNoteFeedShortcut } from '../noteFeed'
 import type { KeyEventLike } from '../types'
 
@@ -70,5 +70,39 @@ describe('selection and feed resolvers', () => {
   it('shouldBothKnowEscape', () => {
     expect(resolveNoteSelectionShortcut(key('Escape'))).toBe('exitVisual')
     expect(resolveNoteFeedShortcut(key('Escape'))).toBe('clearFocus')
+  })
+})
+
+// Esc 한 번이 무엇을 벗기는지 (BRU-109).
+// 전역 keydown 경로에서 Esc가 선택 해제에만 쓰이고 포커스 해제로는 내려가지 못하던
+// 자리를 순수 함수로 끌어내 못 박는다.
+describe('resolveFeedEscape', () => {
+  const state = (over: Partial<Parameters<typeof resolveFeedEscape>[0]> = {}) => ({
+    isConfirmDialogOpen: false,
+    hasSelection: false,
+    hasFocus: false,
+    ...over,
+  })
+
+  // 확인 다이얼로그가 떠 있으면 Esc는 다이얼로그의 것이다 —
+  // 선택만 풀면 "0개 삭제" 문구가 남은 채 확인해도 아무것도 안 지워진다.
+  it('shouldYieldToTheConfirmDialog', () => {
+    expect(resolveFeedEscape(state({ isConfirmDialogOpen: true, hasSelection: true }))).toBe(
+      'ignore'
+    )
+    expect(resolveFeedEscape(state({ isConfirmDialogOpen: true, hasFocus: true }))).toBe('ignore')
+  })
+
+  it('shouldClearTheSelectionFirst', () => {
+    expect(resolveFeedEscape(state({ hasSelection: true, hasFocus: true }))).toBe('clearSelection')
+  })
+
+  // 회귀: 선택이 없는 Esc는 포커스를 풀어야 한다. 전역 경로가 여기서 끊겨 있었다.
+  it('shouldClearTheFocusWhenNothingIsSelected', () => {
+    expect(resolveFeedEscape(state({ hasFocus: true }))).toBe('clearFocus')
+  })
+
+  it('shouldDoNothingWhenThereIsNeitherSelectionNorFocus', () => {
+    expect(resolveFeedEscape(state())).toBe('none')
   })
 })
