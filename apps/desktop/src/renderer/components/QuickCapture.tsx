@@ -292,7 +292,7 @@ export function QuickCapture() {
       <div className="quick-capture">
         <div className="quick-capture-panel">
           <div className="quick-capture-auth-message">
-            DROP app not logged in. Press ESC to close.
+            DROP에 로그인되어 있지 않습니다. Esc를 눌러 닫으세요.
           </div>
         </div>
       </div>
@@ -318,37 +318,7 @@ export function QuickCapture() {
 
   return (
     <div className="quick-capture">
-      <div
-        className={[
-          'quick-capture-panel',
-          showSuccess ? 'success' : '',
-          pendingAttachments.length > 0 ? 'has-attachments' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        {/* Pending Attachments */}
-        {pendingAttachments.length > 0 && (
-          <div className="quick-capture-attachments">
-            {pendingAttachments.map((attachment, index) => (
-              <div key={index} className="quick-capture-chip">
-                <span>
-                  <Icon name={getAttachmentIconName(attachment.type)} size={12} />
-                </span>
-                <span className="quick-capture-chip-name">{attachment.name}</span>
-                <button
-                  className="quick-capture-chip-remove"
-                  onClick={() => removeAttachment(index)}
-                  disabled={isSubmitting}
-                  title="첨부 삭제"
-                  aria-label="첨부 삭제"
-                >
-                  <Icon name="x" size={10} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className={['quick-capture-panel', showSuccess ? 'success' : ''].filter(Boolean).join(' ')}>
         <div className="quick-capture-input-row">
           <textarea
             ref={inputRef}
@@ -356,16 +326,44 @@ export function QuickCapture() {
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={
-              pendingAttachments.length > 0
-                ? '추가 메모... (Enter to save)'
-                : 'Quick note... (Enter to save, Esc to close)'
-            }
+            placeholder={pendingAttachments.length > 0 ? '추가 메모...' : '빠른 메모...'}
             className="quick-capture-input"
             disabled={isSubmitting}
             rows={1}
           />
           {isSubmitting && <div className="quick-capture-spinner" />}
+        </div>
+        {/* 상태줄 — 힌트는 여기 산다 (placeholder가 겸하면 글자를 치는 순간 사라진다).
+            첨부 칩도 같은 줄을 쓴다: 칩에 줄을 따로 주면 80px 창을 넘긴다 (BRU-112). */}
+        <div className="quick-capture-statusbar">
+          <span className="quick-capture-hint">
+            <span className="quick-capture-key">Enter</span>
+            <span>저장</span>
+            <span className="quick-capture-hint-sep">·</span>
+            <span className="quick-capture-key">Esc</span>
+            <span>닫기</span>
+          </span>
+          {pendingAttachments.length > 0 && (
+            <div className="quick-capture-attachments">
+              {pendingAttachments.map((attachment, index) => (
+                <div key={index} className="quick-capture-chip">
+                  <span>
+                    <Icon name={getAttachmentIconName(attachment.type)} size={12} />
+                  </span>
+                  <span className="quick-capture-chip-name">{attachment.name}</span>
+                  <button
+                    className="quick-capture-chip-remove"
+                    onClick={() => removeAttachment(index)}
+                    disabled={isSubmitting}
+                    title="첨부 삭제"
+                    aria-label="첨부 삭제"
+                  >
+                    <Icon name="x" size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
