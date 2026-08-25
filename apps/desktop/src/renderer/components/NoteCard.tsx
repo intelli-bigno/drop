@@ -23,7 +23,6 @@ import {
   shouldPinStatusStayVisible,
   reservedActionsWidth,
 } from '../lib/note-card-trailing'
-import { shouldOpenTagPopoverOnEditEnd } from '../lib/tag-popover'
 import { resolveNoteCardView } from '../lib/note-edit-mode'
 import { shouldMountNoteBody } from '../lib/note-body-mount'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
@@ -73,8 +72,6 @@ export const NoteCard = memo(
       const cardRef = useRef<HTMLDivElement>(null)
       const editorRef = useRef<LexicalEditorHandle>(null)
       const pendingFocusRef = useRef(false)
-      // 이번 편집 세션에서 본문이 실제로 바뀌었는지 — 팝오버를 열지 판단하는 근거
-      const contentChangedRef = useRef(false)
       const latestContentRef = useRef(note.content)
       // `/`·`i`로만 켜지는 편집 상태. 포커스와는 다른 것이다 (BRU-53).
       const [isEditing, setIsEditing] = useState(false)
@@ -225,27 +222,21 @@ export const NoteCard = memo(
           // 원문과 실질적으로 같으면 원문 바이트를 그대로 둔다 (BRU-66).
           const next = reconcileSerializedMarkdown(note.content, content)
           if (next === note.content) return
-          contentChangedRef.current = true
           latestContentRef.current = next
           updateNote(note.id, next)
         },
         [note.id, note.content, updateNote]
       )
 
-      // 편집에서 빠져나오는 순간(Enter·Esc) 태그 팝오버를 연다.
-      // 카드를 열어보기만 하고 나온 경우에는 열지 않는다 — 넘기는 데 벌이 없어야 한다.
+      // 편집에서 빠져나오는 순간(Enter·Esc)에는 아무것도 열지 않는다.
+      // BRU-44는 여기서 태그 팝오버를 자동으로 열었지만("넘겨도 되는 제안"),
+      // 실사용에서는 한 줄 캡처마다 튀어나오는 마찰이라 BRU-110에서 걷어냈다.
+      // 태그를 다는 길은 `t`(명시적 진입) 하나다 — 다시 넣지 말 것.
       const handleEditorEscape = useCallback(() => {
-        const shouldOpen = shouldOpenTagPopoverOnEditEnd({
-          contentChanged: contentChangedRef.current,
-          content: latestContentRef.current,
-          isLocked,
-        })
-        contentChangedRef.current = false
         // 편집만 빠져나온다 — 포커스는 이 카드에 남는다 (한 줄로 되접힘)
         setIsEditing(false)
-        if (shouldOpen) setTagPopoverOpen(true)
         onEscapeFromNormal()
-      }, [isLocked, onEscapeFromNormal, setTagPopoverOpen])
+      }, [onEscapeFromNormal])
 
       // 빈 노트에서 `/`를 치면 형식 목록이 뜬다. 내용이 있으면 그냥 글자다.
       const handleEditorKeyDown = useCallback(
@@ -270,7 +261,6 @@ export const NoteCard = memo(
       const handleInsertTemplate = useCallback(
         async (template: NoteTemplate) => {
           setShowTemplatePopover(false)
-          contentChangedRef.current = true
           latestContentRef.current = template.content
           try {
             await updateNote(note.id, template.content)

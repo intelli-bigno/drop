@@ -1,7 +1,14 @@
-// 편집 종료 시점 태그 팝오버(BRU-44)의 순수 규칙.
+// 태그 팝오버의 순수 규칙 — 목록을 어떻게 고르고 정렬하고 훑는가.
 //
-// 팝오버는 "지금 정하라"는 다이얼로그가 아니라 넘겨도 되는 제안이다.
-// 그래서 여는 조건도 보수적이다 — 실제로 뭔가 적고 나온 노트에서만 뜬다.
+// 팝오버를 **언제 여는가**는 여기 없다. BRU-44가 "편집 종료 시점"이라는
+// 답을 넣었었다 — 팝오버는 다이얼로그가 아니라 넘겨도 되는 제안이라는
+// 설계였고, 그래서 여는 조건도 보수적이었다(실제로 뭔가 적고 나온 노트에서만).
+// 그 판단은 BRU-110에서 뒤집혔다. 실사용에서 제안은 제안으로 읽히지 않았고
+// 한 줄 캡처마다 튀어나오는 마찰이었다 — 캡처 속도가 이 앱의 존재 이유라
+// 제안 쪽이 졌다. `shouldOpenTagPopoverOnEditEnd()`는 그때 삭제됐다.
+//
+// 지금 팝오버를 여는 길은 `t`(명시적 진입) 하나다. 자동으로 여는 규칙을
+// 여기 다시 만들기 전에 위 두 이슈를 먼저 읽을 것.
 
 import type { Tag } from '@drop/shared'
 
@@ -103,27 +110,4 @@ export function shouldShowCreateOption({
 export function moveSelection(index: number, delta: number, total: number): number {
   if (total <= 0) return 0
   return Math.min(Math.max(index + delta, 0), total - 1)
-}
-
-export interface ShouldOpenTagPopoverInput {
-  /** 이번 편집 세션에서 본문이 실제로 바뀌었는가 */
-  contentChanged: boolean
-  content: string
-  isLocked: boolean
-}
-
-/**
- * 편집에서 빠져나올 때 팝오버를 열지 말지.
- *
- * 카드를 열어보기만 하고 나온 경우·빈 노트·잠긴 노트에서는 열지 않는다.
- * 훑어보는 동작마다 팝오버가 튀어나오면 "넘기는 것에 벌이 없다"가 깨진다.
- */
-export function shouldOpenTagPopoverOnEditEnd({
-  contentChanged,
-  content,
-  isLocked,
-}: ShouldOpenTagPopoverInput): boolean {
-  if (isLocked) return false
-  if (!contentChanged) return false
-  return content.trim().length > 0
 }

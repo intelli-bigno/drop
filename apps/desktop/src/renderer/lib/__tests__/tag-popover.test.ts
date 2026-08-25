@@ -5,7 +5,6 @@ import {
   rankTagSuggestions,
   shouldShowCreateOption,
   moveSelection,
-  shouldOpenTagPopoverOnEditEnd,
 } from '../tag-popover'
 
 function tag(name: string, lastUsedAt: string | null, id = name): Tag {
@@ -120,31 +119,5 @@ describe('moveSelection', () => {
 
   it('목록이 줄어들면 마지막 항목으로 맞춘다', () => {
     expect(moveSelection(5, 0, 3)).toBe(2)
-  })
-})
-
-describe('shouldOpenTagPopoverOnEditEnd', () => {
-  it('편집에서 본문을 바꾸고 나오면 연다', () => {
-    expect(
-      shouldOpenTagPopoverOnEditEnd({ contentChanged: true, content: '메모', isLocked: false })
-    ).toBe(true)
-  })
-
-  it('아무것도 안 고치고 나오면 열지 않는다', () => {
-    expect(
-      shouldOpenTagPopoverOnEditEnd({ contentChanged: false, content: '메모', isLocked: false })
-    ).toBe(false)
-  })
-
-  it('본문이 비어 있으면 열지 않는다', () => {
-    expect(
-      shouldOpenTagPopoverOnEditEnd({ contentChanged: true, content: '  \n ', isLocked: false })
-    ).toBe(false)
-  })
-
-  it('잠긴 노트에서는 열지 않는다', () => {
-    expect(
-      shouldOpenTagPopoverOnEditEnd({ contentChanged: true, content: '메모', isLocked: true })
-    ).toBe(false)
   })
 })
