@@ -7,7 +7,9 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/out/**'],
+    // `.claude/worktrees/`에는 머지 전 브랜치의 체크아웃이 통째로 들어 있다(레포 규약).
+    // 빼지 않으면 남의 브랜치 코드까지 린트한다 — 실측 1585개 중 1384개가 사본이었다.
+    ignores: ['**/dist/**', '**/node_modules/**', '**/out/**', '**/.claude/**'],
   },
   {
     // Node에서 직접 실행하는 스크립트 (빌드·검증용)
