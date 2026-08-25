@@ -6,6 +6,7 @@ import { tagRowToTag, noteRowToNote, attachmentRowToAttachment } from '@drop/sha
 import type { NoteRow, AttachmentRow, TagRow, Attachment, Tag } from '@drop/shared'
 import type { NotesState, NotesSlice } from './types'
 import { calculateNoteCategories } from '../../lib/note-category-utils'
+import { reconcileActiveList } from './active-list'
 
 export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (set, get) => ({
   notes: [],
@@ -349,36 +350,9 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, async (payload) => {
         const { eventType, new: newRow, old: oldRow } = payload
 
-        if (eventType === 'INSERT') {
-          // realtime에서는 연관 데이터(태그, 첨부파일)를 포함하지 않으므로 빈 배열로 초기화
-          const note = noteRowToNote(newRow as NoteRow, [], [])
-          set((state) => {
-            // 이미 존재하면 무시 (로컬에서 생성한 경우)
-            if (state.notes.some((n) => n.id === note.id)) return state
-            return { notes: [note, ...state.notes] }
-          })
-        } else if (eventType === 'UPDATE') {
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
           const row = newRow as NoteRow
-          // 삭제되거나 보관된 노트는 active 목록에서 제거
-          if (row.deleted_at || row.archived_at) {
-            set((state) => ({
-              notes: state.notes.filter((n) => n.id !== row.id),
-            }))
-          } else {
-            set((state) => ({
-              notes: state.notes.map((n) =>
-                n.id === row.id
-                  ? {
-                      ...n,
-                      content: row.content ?? '',
-                      updatedAt: new Date(row.updated_at),
-                      isPinned: row.is_pinned ?? false,
-                      pinnedAt: row.pinned_at ? new Date(row.pinned_at) : null,
-                    }
-                  : n
-              ),
-            }))
-          }
+          set((state) => ({ notes: reconcileActiveList(state.notes, row) }))
         } else if (eventType === 'DELETE') {
           const id = (oldRow as { id: string }).id
           set((state) => ({
