@@ -173,7 +173,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    └─ supabase db reset (오류 없이 완료되어야 함)
 
 4. 타입 생성
-   └─ supabase gen types typescript --local > apps/desktop/src/lib/database.types.ts
+   └─ supabase gen types typescript --local > packages/shared/src/database.types.ts
 
 5. 커밋 (behavioral change)
    └─ git add supabase/migrations/

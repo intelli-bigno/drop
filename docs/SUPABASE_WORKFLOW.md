@@ -104,7 +104,7 @@ supabase migration up
 supabase migration list
 
 # 타입 생성 (TypeScript 프로젝트)
-supabase gen types typescript --local > apps/desktop/src/lib/database.types.ts
+supabase gen types typescript --local > packages/shared/src/database.types.ts
 ```
 
 #### Step 5: 커밋
