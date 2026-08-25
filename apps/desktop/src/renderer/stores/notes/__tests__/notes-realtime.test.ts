@@ -102,4 +102,36 @@ describe('subscribeToChanges', () => {
 
     expect(store.getState().notes.map((n) => n.id)).toEqual(['fresh'])
   })
+
+  // BRU-125 — realtime 페이로드에는 태그·첨부가 없다. 목록에 **새로 들어오는** 노트만
+  // 다시 읽어 채운다. 이미 있는 노트의 갱신까지 매번 다시 읽으면 타이핑 한 번에
+  // 전체 목록을 재조회하게 된다.
+  it('목록에 새로 들어오는 노트는 태그·첨부를 채우러 다시 읽는다', async () => {
+    const store = makeStore()
+    const reload = vi.fn().mockResolvedValue(undefined)
+    store.setState({ loadNotes: reload })
+    store.getState().subscribeToChanges()
+
+    await h.handlers[0]({ eventType: 'INSERT', new: row({ id: 'fresh' }) })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('이미 있는 노트의 갱신으로는 다시 읽지 않는다', async () => {
+    const store = makeStore()
+    const reload = vi.fn().mockResolvedValue(undefined)
+    store.setState({ loadNotes: reload })
+    store.getState().subscribeToChanges()
+
+    await h.handlers[0]({ eventType: 'INSERT', new: row({ id: 'n1' }) })
+    expect(reload).toHaveBeenCalledTimes(1) // 처음 들어올 때 한 번
+
+    await h.handlers[0]({
+      eventType: 'UPDATE',
+      new: row({ id: 'n1', content: '고침', updated_at: '2026-08-25T01:00:00Z' }),
+    })
+
+    expect(reload).toHaveBeenCalledTimes(1) // 갱신으로는 늘지 않는다
+    expect(store.getState().notes[0].content).toBe('고침')
+  })
 })

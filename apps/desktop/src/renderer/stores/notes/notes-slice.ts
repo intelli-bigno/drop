@@ -6,7 +6,7 @@ import { tagRowToTag, noteRowToNote, attachmentRowToAttachment } from '@drop/sha
 import type { NoteRow, AttachmentRow, TagRow, Attachment, Tag } from '@drop/shared'
 import type { NotesState, NotesSlice } from './types'
 import { calculateNoteCategories } from '../../lib/note-category-utils'
-import { reconcileActiveList } from './active-list'
+import { entersActiveList, reconcileActiveList } from './active-list'
 
 export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (set, get) => ({
   notes: [],
@@ -352,7 +352,14 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
 
         if (eventType === 'INSERT' || eventType === 'UPDATE') {
           const row = newRow as NoteRow
+          // 목록에 새로 들어오는 행인지는 반영하기 **전에** 봐야 한다 (BRU-125).
+          const entering = entersActiveList(get().notes, row)
+
           set((state) => ({ notes: reconcileActiveList(state.notes, row) }))
+
+          // realtime 페이로드에는 태그·첨부가 없다. 그대로 두면 태그가 붙어 있던
+          // 노트가 태그 없이 보인다 — unarchiveNote()가 이미 하는 일을 여기서도 한다.
+          if (entering) await get().loadNotes()
         } else if (eventType === 'DELETE') {
           const id = (oldRow as { id: string }).id
           set((state) => ({
