@@ -8,6 +8,7 @@
 | `pnpm dev:remote` | 리모트 Supabase를 보는 개발 실행 |
 | `pnpm build:local` / `build:remote` | 번들 빌드 |
 | `pnpm test:run` (레포 루트) | vitest |
+| `make desktop-browser` (레포 루트) | 렌더러만 브라우저로 (Electron 창 없음, BRU-111) |
 
 구성값은 `apps/desktop/.env.localdev` / `.env.remote`로 흐른다. 실제 값이 든 파일은 커밋되지 않고, 견본 `.env.localdev.example`만 커밋한다.
 
@@ -49,11 +50,63 @@ pnpm dev:local
 
 `.env.localdev`의 `VITE_DROP_PREVIEW=1`이 켜져 있으면 로그인 화면을 건너뛰고 시드 사용자(`preview@drop.local`)로 들어간다.
 
-### 스크린샷 자동 촬영
+> `supabase db reset`은 로컬 DB를 통째로 다시 만든다. 옆에서 다른 작업이 같은 로컬 스택을 쓰고 있으면 그 상태가 지워진다 — 시드 사용자가 이미 있으면 실행하지 않는다.
 
-`pnpm dev:local`이 띄우는 렌더러는 `http://localhost:5173`에서 **브라우저로도** 열린다. 프리뷰 모드는 Electron preload가 심는 `window.api` 자리를 흉내 내므로(`lib/preview-session.ts`) 브라우저에서 앱이 죽지 않고, Playwright 등으로 스크린샷을 찍을 수 있다.
+## 브라우저로 화면 실측하기 (BRU-111)
 
-흉내 내는 것은 모양뿐이다 — 자동 업데이트·빠른 캡처처럼 Electron이 해야 하는 일은 동작하지 않는다. 그 기능을 보려면 Electron 창에서 확인해야 한다.
+Electron 창을 띄우지 않고 **렌더러만 브라우저로** 연다. 앱 재기동이 없어 화면 확인 사이클이 훨씬 짧다.
+
+```bash
+make desktop-browser    # → http://localhost:5173
+```
+
+전제(`.env.localdev`·`VITE_DROP_PREVIEW=1`·로컬 Supabase·시드 사용자)가 하나라도 없으면 **무엇이 없는지와 무엇을 하면 되는지를 찍고 멈춘다.** 시드 사용자 확인은 실제로 로그인 API를 때린다 — DB만 떠 있고 `seed.sql`이 안 들어간 상태가 가장 헷갈리는 실패였다.
+
+`electron-vite dev --rendererOnly`를 쓰지 않는 이유: 이름과 달리 Electron 기동을 건너뛰지 않는다. main·preload 빌드만 건너뛰고 `out/main/index.js`를 찾으러 가서, 없으면 `No electron app entry file found`로 dev 서버까지 함께 죽는다 (2.3.0 실측). 그래서 `vite.browser.config.ts`가 `electron.vite.config.ts`의 renderer 섹션만 떼어 순수 vite로 돌린다 — 설정을 베끼지 않고 가져오므로 alias·plugin이 두 벌이 되지 않는다.
+
+### 검증 도구는 `aside`다 (Playwright 아님)
+
+이 레포에서 브라우저를 **에이전트가 직접 조작하는** 검증은 `aside` repl로 한다. Playwright는 코드로 쓰인 e2e 스위트를 돌릴 때만 쓴다.
+
+```js
+const page = await openTab('http://localhost:5173/')
+console.log((await snapshot(page)).tree)
+await page.screenshot({ path: './artifacts/feed.png' })
+```
+
+콘솔 에러를 놓치지 않으려면 수집기를 심어 두고 화면마다 확인한다. 화면이 죽으면 `#root`가 빈 채 하얘지므로, "스크린샷이 하얗다"가 곧 크래시 신호다.
+
+```js
+await page.evaluate(() => {
+  window.__errs = []
+  window.addEventListener('error', (e) => window.__errs.push(e.message))
+  const ce = console.error.bind(console)
+  console.error = (...a) => { window.__errs.push(a.map(String).join(' ')); ce(...a) }
+})
+// ... 화면 조작 ...
+console.log(await page.evaluate(() => document.getElementById('root').innerHTML !== ''))
+console.log(await page.evaluate(() => window.__errs))
+```
+
+퀵캡처 화면은 별도 창이 아니라 해시 라우트다 — 브라우저에서는 `http://localhost:5173/#quick-capture`로 직접 들어간다.
+
+**브라우저 확장이 키를 가로챈다.** Aside Browser에는 Vimium이 붙어 있어 `?`(단축키 치트시트)를 누르면 Vimium 도움말이 뜬다. 치트시트는 `⌘/`로 연다. 단축키를 실측할 때 "안 먹는다"의 원인이 앱이 아닐 수 있다.
+
+### 브라우저에서 확인한 화면 (2026-08-25 실측)
+
+피드·노트 카드(액션 버튼 줄)·보관함·휴지통·검색·태그 관리·프로젝트 지정·댓글·편집 기록·단축키 치트시트·사용자 메뉴(버전 표시·업데이트 확인·MCP 토큰 복사)·전역 단축키 다이얼로그·퀵캡처 해시 라우트.
+
+### 브라우저에서 **확인할 수 없는** 것
+
+여기서 통과했다고 Electron에서 통과한 것이 아니다. `window.api` shim은 모양만 흉내 내고, 대응물이 없는 자리는 **일부러 실패를 돌려준다**(성공한 척하면 화면이 "됐다"고 표시해 버린다). 아래는 반드시 Electron 창에서 확인한다:
+
+- **전역 퀵캡처 단축키** (Ctrl 더블 탭, BRU-103) — OS 전역 후킹. 설정 화면은 브라우저에서 항상 "등록 안 됨"으로 뜨는 것이 정상이다.
+- **자동 업데이트** — check/download/install 전 과정. 브라우저에서는 이벤트가 오지 않아 "개발 빌드에서는 업데이트를 확인하지 않습니다"만 보인다.
+- **퀵캡처 창** — 별도 BrowserWindow 띄우기·닫기, 닫을 때 원래 앱으로 포커스 복귀.
+- **외부 링크 열기** — `shell.openExternal`. 브라우저에서는 콘솔에 찍기만 한다.
+- **Google 로그인** — `drop://` 커스텀 프로토콜 콜백이 브라우저에는 오지 않는다.
+- **인스타그램 수집** — 숨은 BrowserWindow 경유. 브라우저에서는 CORS로 막힌다.
+- **네이티브 첨부·파일 드롭·트레이 메뉴·창 상태**.
 
 ### 프로덕션에는 들어가지 않는다
 
@@ -76,3 +129,5 @@ rm -rf node_modules/electron/dist
 ln -s <메인체크아웃>/node_modules/electron/dist node_modules/electron/dist
 printf 'Electron.app/Contents/MacOS/Electron' > node_modules/electron/path.txt
 ```
+
+`make desktop-browser`는 Electron 바이너리를 쓰지 않는다 — 위 심볼릭 링크 없이도 워크트리에서 바로 돈다.

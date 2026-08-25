@@ -1,5 +1,5 @@
 .PHONY: help install setup test test-db db-test clean tokens tokens-check \
-        electron-rebuild electron-dev electron-dev-local electron-dev-remote \
+        electron-rebuild electron-dev electron-dev-local electron-dev-remote desktop-browser \
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
         android-config android-config-remote android-test android-build android-install android-clean \
@@ -33,6 +33,7 @@ help:
 	@echo "    make electron-build       - 프로덕션 빌드"
 	@echo "    make electron-build-local - 로컬 Supabase 설정으로 빌드"
 	@echo "    make electron-build-remote - 리모트 Supabase 설정으로 빌드"
+	@echo "    make desktop-browser      - 렌더러만 브라우저로 (aside 실측용, Electron 창 없음)"
 	@echo ""
 	@echo "  iOS (apps/ios)"
 	@echo "    make ios-config           - 환경변수 → Config-*.xcconfig 생성"
@@ -86,6 +87,8 @@ clean:
 # Electron (Desktop)
 # ============================================
 
+DESKTOP_DIR := apps/desktop
+
 # better-sqlite3를 Electron용으로 재빌드
 electron-rebuild:
 	cd node_modules/better-sqlite3 && \
@@ -117,6 +120,43 @@ electron-build-local:
 # 빌드 (리모트 Supabase 설정)
 electron-build-remote:
 	pnpm build:remote
+
+# ============================================
+# 브라우저로 렌더러만 띄우기 (BRU-111) — aside repl 실측 경로
+# ============================================
+# Electron 창을 띄우지 않고 렌더러만 vite로 서빙한다. 화면 변경을 눈으로 확인하는
+# 사이클이 Electron 재기동보다 훨씬 빠르다.
+#
+# 여기서 통과한 것이 Electron에서 통과한 것은 아니다 — 전역 단축키(Ctrl 더블 탭)·
+# 자동 업데이트·퀵캡처 창·네이티브 첨부는 브라우저에 대응물이 없다.
+# 무엇이 검증되지 않는지는 apps/desktop/README.md에 적어 두었다.
+#
+# `electron-vite dev --rendererOnly`를 쓰지 않는 이유: 이름과 달리 Electron 기동을
+# 건너뛰지 않아 out/main/index.js가 없으면 dev 서버까지 함께 죽는다 (2.3.0 실측).
+desktop-browser:
+	@test -f $(DESKTOP_DIR)/.env.localdev || { \
+		echo "✗ $(DESKTOP_DIR)/.env.localdev 가 없습니다."; \
+		echo "  → cp $(DESKTOP_DIR)/.env.localdev.example $(DESKTOP_DIR)/.env.localdev"; \
+		exit 1; }
+	@grep -q '^VITE_DROP_PREVIEW=1' $(DESKTOP_DIR)/.env.localdev || { \
+		echo "✗ $(DESKTOP_DIR)/.env.localdev 에 VITE_DROP_PREVIEW=1 이 없습니다."; \
+		echo "  → 없으면 로그인 화면에서 멈춘다 (브라우저에는 Google OAuth 콜백이 오지 않는다)."; \
+		exit 1; }
+	@supabase status >/dev/null 2>&1 || { \
+		echo "✗ 로컬 Supabase가 떠 있지 않습니다."; \
+		echo "  → supabase start"; \
+		exit 1; }
+	@API=$$(grep '^VITE_SUPABASE_URL=' $(DESKTOP_DIR)/.env.localdev | cut -d= -f2-); \
+	ANON=$$(grep '^VITE_SUPABASE_ANON_KEY=' $(DESKTOP_DIR)/.env.localdev | cut -d= -f2-); \
+	CODE=$$(curl -s -o /dev/null -w '%{http_code}' -X POST "$$API/auth/v1/token?grant_type=password" \
+		-H "apikey: $$ANON" -H 'Content-Type: application/json' \
+		-d '{"email":"preview@drop.local","password":"drop-preview-password"}'); \
+	test "$$CODE" = "200" || { \
+		echo "✗ 시드 사용자(preview@drop.local)로 로그인할 수 없습니다 (HTTP $$CODE)."; \
+		echo "  → supabase db reset  # 마이그레이션 + seed.sql 을 다시 넣는다 (로컬 DB 내용은 지워진다)"; \
+		exit 1; }
+	@echo "→ http://localhost:5173 (Electron 창은 뜨지 않는다)"
+	pnpm exec vite --config $(DESKTOP_DIR)/vite.browser.config.ts --mode localdev
 
 # ============================================
 # iOS (apps/ios) — SwiftUI 네이티브. Flutter 앱은 BRU-22에서 제거됐다.
