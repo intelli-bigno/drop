@@ -1,0 +1,17 @@
+name: drop_core
+description: >-
+  DROP 도메인 로직 — Flutter SDK 의존 0. apps/ios/Packages/DropCore 의 Dart 판.
+  에뮬레이터 없이 `dart test`로 도는 상태가 이 레포 TDD 사이클의 전제다.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  http: ^1.2.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

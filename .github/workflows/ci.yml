@@ -141,3 +141,32 @@ jobs:
           xcrun simctl boot "$SIM_ID" || true
           xcrun simctl install "$SIM_ID" \
             build/Build/Products/Debug-localdev-iphonesimulator/Drop.app
+
+  # Mobile — Flutter (apps/mobile, BRU-152 재구축 트랙)
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 로컬(Mac Studio)과 같은 버전으로 핀 — 자동 업그레이드로 CI가 흔들리지 않게.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      # 도메인 로직 테스트. 에뮬레이터가 필요 없어 가장 빠른 신호다 (DropCore와 같은 규율).
+      - name: drop_core tests
+        working-directory: apps/mobile/packages/drop_core
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
+
+      - name: App tests
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test

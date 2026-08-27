@@ -3,7 +3,8 @@
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
         android-config android-config-remote android-test android-build android-install android-clean \
-        ios-uitest
+        ios-uitest \
+        mobile-config mobile-test mobile-analyze mobile-build mobile-dev mobile-dev-remote mobile-clean
 
 .DEFAULT_GOAL := help
 
@@ -53,6 +54,15 @@ help:
 	@echo "    make android-build        - 디버그 APK 빌드"
 	@echo "    make android-install      - 연결된 기기·에뮬레이터에 설치"
 	@echo "    make android-clean        - 생성물 정리"
+	@echo ""
+	@echo "  Mobile — Flutter (apps/mobile, BRU-152 재구축 트랙)"
+	@echo "    make mobile-config        - 환경변수 → .config/{local,remote}.json 생성"
+	@echo "    make mobile-test          - drop_core dart test + 앱 위젯 테스트 (에뮬레이터 불필요)"
+	@echo "    make mobile-analyze       - dart analyze (drop_core + 앱)"
+	@echo "    make mobile-dev           - 시뮬레이터에서 실행 (로컬 Supabase)"
+	@echo "    make mobile-dev-remote    - 시뮬레이터에서 실행 (리모트 Supabase)"
+	@echo "    make mobile-build         - iOS 시뮬레이터용 빌드"
+	@echo "    make mobile-clean         - 생성물 정리"
 
 # ============================================
 # 기본 설정
@@ -268,6 +278,38 @@ android-install:
 
 android-clean:
 	cd $(ANDROID_DIR) && ./gradlew clean
+
+# ============================================
+# Mobile — Flutter (BRU-152 재구축 트랙. iOS 구현 상태가 스펙)
+# ============================================
+
+MOBILE_DIR := apps/mobile
+
+mobile-config:
+	./scripts/mobile-config.sh
+
+# 에뮬레이터 없이 도는 빠른 피드백이 TDD 사이클의 전제다 (ios-test와 같은 규율).
+mobile-test:
+	cd $(MOBILE_DIR)/packages/drop_core && dart test
+	cd $(MOBILE_DIR) && flutter test
+
+mobile-analyze:
+	cd $(MOBILE_DIR)/packages/drop_core && dart analyze --fatal-infos
+	cd $(MOBILE_DIR) && flutter analyze
+
+mobile-dev:
+	@test -f $(MOBILE_DIR)/.config/local.json || { echo "❌ .config/local.json이 없습니다 → make mobile-config"; exit 1; }
+	cd $(MOBILE_DIR) && flutter run --dart-define-from-file=.config/local.json
+
+mobile-dev-remote:
+	@test -f $(MOBILE_DIR)/.config/remote.json || { echo "❌ .config/remote.json이 없습니다 → make mobile-config"; exit 1; }
+	cd $(MOBILE_DIR) && flutter run --dart-define-from-file=.config/remote.json
+
+mobile-build:
+	cd $(MOBILE_DIR) && flutter build ios --simulator
+
+mobile-clean:
+	cd $(MOBILE_DIR) && flutter clean
 
 # ============================================
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
