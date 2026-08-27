@@ -26,6 +26,26 @@ apps/mobile/
 | `make mobile-build` | iOS 시뮬레이터용 빌드 |
 | `make mobile-clean` | 생성물 정리 |
 
+## 자격증명 없이 띄우기 — 프리뷰 모드
+
+```
+flutter run --dart-define=DROP_PREVIEW=true
+```
+
+`.config/*.json`(자격증명) 없이 뜬다 — 인증을 건너뛰고 인메모리 표본(`lib/preview/preview_launch.dart`, iOS `PreviewLaunch.swift` 포팅)을 쓴다. iOS의 `-dropPreview` 실행 인자 대응. **화면 확인·UI 이슈(BRU-156~)의 실측 경로가 이것이다** — 네트워크·DB 없음.
+
+## 구성값이 흐르는 경로
+
+```
+.env.local → make mobile-config → .config/{local,remote}.json
+  → flutter run --dart-define-from-file=.config/local.json
+  → lib/config.dart (String.fromEnvironment)
+  → drop_core DropConfiguration (검증 — 누락·스킴 잘림·웹=iOS 클라이언트 ID 중복을 즉시 실패)
+  → lib/environment/bootstrap.dart → DropEnvironmentContainer (Riverpod 주입)
+```
+
+구성이 틀리면 시작 시점에 즉시 죽는다 — 잘못된 구성으로 실행을 이어가면 "로그인이 안 된다" 같은 엉뚱한 증상으로 나타난다 (iOS와 같은 규율).
+
 ## 주의
 
 - **번들 ID `com.intellieffect.drop.mobile`** — 과거 Flutter 앱 시절의 App Store Connect 레코드·TestFlight를 그대로 승계한다. 빌드 번호는 그 시절보다 커야 하므로 시간 기반.
