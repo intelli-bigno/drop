@@ -40,10 +40,6 @@ importers:
         version: 2.1.9(@types/node@25.0.3)(jsdom@27.3.0)
 
   apps/desktop:
-    dependencies:
-      uiohook-napi:
-        specifier: ^1.5.5
-        version: 1.5.5
     devDependencies:
       '@drop/shared':
         specifier: workspace:*
@@ -114,6 +110,9 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+      uiohook-napi:
+        specifier: ^1.5.5
+        version: 1.5.5
       zustand:
         specifier: ^5.0.2
         version: 5.0.9(@types/react@18.3.27)(react@18.3.1)
