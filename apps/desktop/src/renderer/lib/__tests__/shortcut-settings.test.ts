@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
-import { describeShortcutState, isDefaultShortcut } from '../shortcut-settings'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  describeShortcutState,
+  handleShortcutSettingsEscape,
+  isDefaultShortcut,
+} from '../shortcut-settings'
 
 const registered = {
   accelerator: 'Alt+Space',
@@ -60,5 +64,40 @@ describe('isDefaultShortcut', () => {
 
   it('is false once the user picked their own', () => {
     expect(isDefaultShortcut({ ...registered, custom: 'Command+Shift+K' })).toBe(false)
+  })
+})
+
+function keyEvent(key: string) {
+  return {
+    key,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+  }
+}
+
+// Esc 한 겹 (BRU-126). 이 다이얼로그가 이미 받은 Esc가 피드 전역 핸들러까지
+// 내려가면 포커스까지 같이 풀린다. 호출부가 preventDefault·stopPropagation을
+// 빠뜨리지 못하게, 소비 계약은 여기 순수 함수에 둔다.
+describe('handleShortcutSettingsEscape', () => {
+  it('shouldConsumeEscapeSoTheFeedDoesNotAlsoClearFocus', () => {
+    const event = keyEvent('Escape')
+    expect(handleShortcutSettingsEscape(event, false)).toBe('close')
+    expect(event.preventDefault).toHaveBeenCalledOnce()
+    expect(event.stopPropagation).toHaveBeenCalledOnce()
+  })
+
+  // 녹음 중 Esc는 다이얼로그를 닫지 않는다 — 한 번에 한 겹 (BRU-109).
+  it('shouldCancelRecordingBeforeClosingTheDialog', () => {
+    const event = keyEvent('Escape')
+    expect(handleShortcutSettingsEscape(event, true)).toBe('cancelRecording')
+    expect(event.preventDefault).toHaveBeenCalledOnce()
+    expect(event.stopPropagation).toHaveBeenCalledOnce()
+  })
+
+  it('shouldLeaveOtherKeysToTheCaller', () => {
+    const event = keyEvent('j')
+    expect(handleShortcutSettingsEscape(event, false)).toBeNull()
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(event.stopPropagation).not.toHaveBeenCalled()
   })
 })

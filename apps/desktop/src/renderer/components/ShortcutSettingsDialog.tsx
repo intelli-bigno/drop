@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { acceleratorFromKeyEvent, formatAccelerator } from '../../shared/shortcuts'
 import {
   describeShortcutState,
+  handleShortcutSettingsEscape,
   isDefaultShortcut,
   type QuickCaptureShortcutState,
 } from '../lib/shortcut-settings'
@@ -36,17 +37,22 @@ export function ShortcutSettingsDialog({ onClose }: Props) {
     }
   }, [])
 
-  // 녹음 중에는 키 입력을 전부 가로챈다 — 다른 단축키가 먼저 먹으면 조합을 못 잡는다.
+  // Esc는 포커스가 다이얼로그 안에 없어도 이 다이얼로그의 것이다 — SearchDialog와
+  // 같이 캡처 단계에서 먹고, NoteFeed 전역 핸들러까지 내려가지 않게 한다 (BRU-126).
+  // 녹음 중에는 나머지 키도 가로챈다 — 다른 단축키가 먼저 먹으면 조합을 못 잡는다.
   useEffect(() => {
-    if (!recording) return
-
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
+      const escape = handleShortcutSettingsEscape(event, recording)
+      if (escape === 'cancelRecording') {
         setRecording(false)
         setPending(null)
         return
       }
+      if (escape === 'close') {
+        onClose()
+        return
+      }
+      if (!recording) return
 
       event.preventDefault()
       event.stopPropagation()
@@ -69,7 +75,7 @@ export function ShortcutSettingsDialog({ onClose }: Props) {
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [recording, apply])
+  }, [recording, apply, onClose])
 
   const handleBackdropClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget) onClose()
@@ -80,12 +86,7 @@ export function ShortcutSettingsDialog({ onClose }: Props) {
 
   return (
     <div className="tag-management-backdrop" onClick={handleBackdropClick}>
-      <div
-        className="tag-management-dialog shortcut-settings-dialog"
-        onKeyDown={(event) => {
-          if (event.key === 'Escape' && !recording) onClose()
-        }}
-      >
+      <div className="tag-management-dialog shortcut-settings-dialog">
         <div className="tag-management-header">
           <h2 className="tag-management-title">전역 단축키</h2>
           <button className="tag-management-close" onClick={onClose} aria-label="닫기">
