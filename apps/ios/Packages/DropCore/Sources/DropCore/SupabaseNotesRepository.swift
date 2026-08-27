@@ -49,7 +49,7 @@ public struct SupabaseNotesRepository: NotesRepository {
     }
 
     public func moveToTrash(id: String) async throws {
-        // 보관 해제를 함께 하지 않으면 휴지통과 보관함 양쪽에 나타난다.
+        // Rule B (BRU-115): 복원은 받은편지함으로. 보관을 남기면 휴지통·보관함 양쪽에 나타난다.
         try await update(id: id, values: [
             "is_deleted": .bool(true),
             "deleted_at": .string(nowTimestamp()),
@@ -58,7 +58,11 @@ public struct SupabaseNotesRepository: NotesRepository {
     }
 
     public func restoreFromTrash(id: String) async throws {
-        try await update(id: id, values: ["is_deleted": .bool(false), "deleted_at": .null])
+        try await update(id: id, values: [
+            "is_deleted": .bool(false),
+            "deleted_at": .null,
+            "archived_at": .null,
+        ])
     }
 
     public func archive(id: String) async throws {

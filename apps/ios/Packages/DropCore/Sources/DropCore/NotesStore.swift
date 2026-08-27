@@ -141,13 +141,14 @@ public final class NotesStore {
     }
 
     public func moveToTrash(id: String) async {
+        // Rule B (BRU-115): 복원은 받은편지함으로 되돌리기다. 보관을 남기면 보관함으로 간다.
         await mutate(id: id, optimistic: { $0.replacing(archivedAt: Optional<Date>.none, deletedAt: Date()) }) {
             try await repository.moveToTrash(id: id)
         }
     }
 
     public func restore(id: String) async {
-        await mutate(id: id, optimistic: { $0.replacing(deletedAt: Optional<Date>.none) }) {
+        await mutate(id: id, optimistic: { $0.replacing(archivedAt: Optional<Date>.none, deletedAt: Optional<Date>.none) }) {
             try await repository.restoreFromTrash(id: id)
         }
     }

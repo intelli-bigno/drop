@@ -79,9 +79,11 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
   },
 
   restoreNote: async (noteId) => {
+    // Rule B (BRU-115): 복원은 받은편지함으로. 예전 행이 archived_at을
+    // 갖고 있어도 보관함으로 되살리지 않는다.
     const { error } = await supabase
       .from('notes')
-      .update({ deleted_at: null, is_deleted: false })
+      .update({ deleted_at: null, is_deleted: false, archived_at: null })
       .eq('id', noteId)
 
     if (error) {
@@ -98,7 +100,6 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
       trashedNotes: state.trashedNotes.filter((n) => n.id !== noteId),
     }))
 
-    // active/보관 노트 목록 새로고침 (보관된 노트를 복원한 경우 보관함으로 돌아감)
     get().loadNotes()
     get().loadArchived()
   },

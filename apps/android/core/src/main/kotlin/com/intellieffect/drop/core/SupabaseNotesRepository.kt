@@ -71,7 +71,7 @@ class SupabaseNotesRepository(
         buildJsonObject {
             put("is_deleted", true)
             put("deleted_at", nowTimestamp())
-            // 보관 해제를 함께 하지 않으면 휴지통과 보관함 양쪽에 나타난다.
+            // Rule B (BRU-115): 복원은 받은편지함으로. 보관을 남기면 휴지통·보관함 양쪽에 나타난다.
             put("archived_at", JsonNull)
         },
     )
@@ -81,6 +81,7 @@ class SupabaseNotesRepository(
         buildJsonObject {
             put("is_deleted", false)
             put("deleted_at", JsonNull)
+            put("archived_at", JsonNull)
         },
     )
 

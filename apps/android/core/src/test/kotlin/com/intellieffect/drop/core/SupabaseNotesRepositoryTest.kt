@@ -186,7 +186,7 @@ class SupabaseNotesRepositoryTest {
         assertFailsWith<NotesRepositoryException.NotAuthenticated> { repository.createNote("x") }
     }
 
-    /** 휴지통으로 보낼 때 보관을 함께 풀지 않으면 양쪽 목록에 다 나타난다. */
+    /** 휴지통으로 보낼 때 보관을 함께 풀지 않으면 양쪽 목록에 다 나타난다. Rule B (BRU-115). */
     @Test
     fun `휴지통으로 보내면 보관도 함께 해제한다`() = runTest {
         val repository = repository { json("[]") }
@@ -200,6 +200,18 @@ class SupabaseNotesRepositoryTest {
         assertTrue(body.contains("\"is_deleted\":true"), body)
         assertTrue(body.contains("\"archived_at\":null"), body)
         assertTrue(body.contains(PostgresTimestamp.format(now)), body)
+    }
+
+    @Test
+    fun `복원해도 보관을 다시 살리지 않는다`() = runTest {
+        val repository = repository { json("[]") }
+
+        repository.restoreFromTrash("n1")
+
+        val body = requests.single().bodyText()
+        assertTrue(body.contains("\"is_deleted\":false"), body)
+        assertTrue(body.contains("\"deleted_at\":null"), body)
+        assertTrue(body.contains("\"archived_at\":null"), body)
     }
 
     @Test

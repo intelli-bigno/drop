@@ -45,7 +45,8 @@ class InMemoryNotesRepository(notes: List<Note> = emptyList()) : NotesRepository
     override suspend fun moveToTrash(id: String) =
         mutate(id) { it.copy(archivedAt = null, deletedAt = Instant.now()) }
 
-    override suspend fun restoreFromTrash(id: String) = mutate(id) { it.copy(deletedAt = null) }
+    override suspend fun restoreFromTrash(id: String) =
+        mutate(id) { it.copy(deletedAt = null, archivedAt = null) }
 
     override suspend fun archive(id: String) = mutate(id) { it.copy(archivedAt = Instant.now()) }
 

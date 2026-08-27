@@ -57,7 +57,7 @@ public final class InMemoryNotesRepository: NotesRepository, @unchecked Sendable
     }
 
     public func restoreFromTrash(id: String) async throws {
-        try mutate(id: id) { $0.replacing(deletedAt: Optional<Date>.none) }
+        try mutate(id: id) { $0.replacing(archivedAt: Optional<Date>.none, deletedAt: Optional<Date>.none) }
     }
 
     public func archive(id: String) async throws {

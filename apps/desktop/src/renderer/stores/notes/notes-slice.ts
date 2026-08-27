@@ -272,9 +272,11 @@ export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (s
         selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
       }))
 
+      // Rule B (BRU-115): 복원은 받은편지함으로 되돌리기다. 보관을 남기면
+      // 휴지통에서 나올 때 보관함으로 돌아가 데스크톱·iOS가 갈라진다.
       const { error } = await supabase
         .from('notes')
-        .update({ deleted_at: new Date().toISOString(), is_deleted: true })
+        .update({ deleted_at: new Date().toISOString(), is_deleted: true, archived_at: null })
         .eq('id', id)
 
       if (error) {

@@ -63,13 +63,14 @@ class NotesStore(private val repository: NotesRepository) {
             repository.updateNote(id, content)
         }
 
+    // Rule B (BRU-115): 복원은 받은편지함으로 되돌리기다. 보관을 남기면 보관함으로 간다.
     suspend fun moveToTrash(id: String) =
         mutate(id, { it.copy(archivedAt = null, deletedAt = Instant.now()) }) {
             repository.moveToTrash(id)
         }
 
     suspend fun restore(id: String) =
-        mutate(id, { it.copy(deletedAt = null) }) { repository.restoreFromTrash(id) }
+        mutate(id, { it.copy(deletedAt = null, archivedAt = null) }) { repository.restoreFromTrash(id) }
 
     suspend fun archive(id: String) =
         mutate(id, { it.copy(archivedAt = Instant.now()) }) { repository.archive(id) }

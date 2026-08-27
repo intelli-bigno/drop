@@ -178,6 +178,38 @@ class NotesStoreTest {
         assertEquals(listOf("a"), store.state.value.visibleNotes.map { it.id })
     }
 
+    /** Rule B (BRU-115): 복원은 받은편지함으로 되돌리기다. */
+    @Test
+    fun `보관한 노트를 휴지통에 넣었다 복원하면 활성 목록으로 온다`() = runTest {
+        val (store, _) = store(listOf(note("a", archived = true)))
+        store.load()
+
+        store.moveToTrash("a")
+        store.setViewMode(NoteViewMode.TRASH)
+        assertEquals(listOf("a"), store.state.value.visibleNotes.map { it.id })
+
+        store.restore("a")
+
+        store.setViewMode(NoteViewMode.ACTIVE)
+        assertEquals(listOf("a"), store.state.value.visibleNotes.map { it.id })
+        store.setViewMode(NoteViewMode.ARCHIVED)
+        assertTrue(store.state.value.visibleNotes.isEmpty())
+    }
+
+    /** 예전 데스크톱이 archived_at을 남긴 이중 플래그 행도 복원하면 활성이다. */
+    @Test
+    fun `휴지통에 남은 보관 흔적도 복원하면 지워진다`() = runTest {
+        val (store, _) = store(listOf(note("a", archived = true, trashed = true)))
+        store.load()
+
+        store.restore("a")
+
+        store.setViewMode(NoteViewMode.ACTIVE)
+        assertEquals(listOf("a"), store.state.value.visibleNotes.map { it.id })
+        store.setViewMode(NoteViewMode.ARCHIVED)
+        assertTrue(store.state.value.visibleNotes.isEmpty())
+    }
+
     @Test
     fun `보관하면 활성 목록에서 빠지고 보관함에 들어간다`() = runTest {
         val (store, _) = store(listOf(note("a")))

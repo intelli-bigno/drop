@@ -418,6 +418,38 @@ struct NotesStoreTests {
         #expect(store.visibleNotes.map(\.id) == ["b"])
     }
 
+    /// Rule B (BRU-115): 복원은 받은편지함으로 되돌리기다.
+    @Test("보관한 노트를 휴지통에 넣었다 복원하면 활성 목록으로 온다")
+    func trashingArchivedNoteRestoresToActive() async {
+        let (store, _) = store([note("a", archived: true)])
+        await store.load()
+
+        await store.moveToTrash(id: "a")
+        store.viewMode = .trash
+        #expect(store.visibleNotes.map(\.id) == ["a"])
+
+        await store.restore(id: "a")
+
+        store.viewMode = .active
+        #expect(store.visibleNotes.map(\.id) == ["a"])
+        store.viewMode = .archived
+        #expect(store.visibleNotes.isEmpty)
+    }
+
+    /// 예전 데스크톱이 archived_at을 남긴 이중 플래그 행도 복원하면 활성이다.
+    @Test("휴지통에 남은 보관 흔적도 복원하면 지워진다")
+    func restoreFromTrashAlwaysReturnsToActive() async {
+        let (store, _) = store([note("a", archived: true, trashed: true)])
+        await store.load()
+
+        await store.restore(id: "a")
+
+        store.viewMode = .active
+        #expect(store.visibleNotes.map(\.id) == ["a"])
+        store.viewMode = .archived
+        #expect(store.visibleNotes.isEmpty)
+    }
+
     @Test("삭제가 실패하면 노트가 목록으로 돌아온다")
     func trashRollsBackOnFailure() async {
         let (store, repository) = store([note("a")])
