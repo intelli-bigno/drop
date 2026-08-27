@@ -14,13 +14,13 @@
   - **실측하지 못한 것은 못 했다고 쓴다.** 상태명·라벨명의 정본은 INT 팀 문서 "이슈 컨벤션 — 라이프사이클 게이트"(slugId `fc050897a60d`) — 여기에 복제하지 않는다.
 - **팀 위키** wiki.intellieffect.com은 팀 열람실이다. 회의록·레퍼런스·결정 등 wiki-native 문서는 Supabase `wiki_pages`가 SoT — 읽기는 `wiki-read`, 쓰기는 `wiki-add` 스킬. 이 레포 문서를 위키로 옮기지 않는다.
 
-# MOBILE — 네이티브 두 트랙 (iOS · Android)
+# MOBILE — Flutter 재구축 트랙 (BRU-152, 2026-08-27 전환)
 
-모바일 앱은 `apps/ios`(SwiftUI)와 `apps/android`(Jetpack Compose) 둘이다. Flutter 앱 `apps/mobile`은 **BRU-22에서 제거됐다** — 코드는 삭제 커밋 이전 git 히스토리에 그대로 있어 복원 가능하다. 구조·명령·설계 규칙의 정본은 각각 `apps/ios/README.md` · `apps/android/README.md`.
+모바일의 현재 트랙은 **Flutter 앱 `apps/mobile`** 이다 — BRU-33(네이티브 채택)을 번복하고 재구축했다(3중 구현 유지비, BRU-115 실증). 옛 Flutter 앱(BRU-22 제거)의 복원이 아니라 **당시 `apps/ios` 구현 상태를 스펙으로** 처음부터 다시 지었다. 경위·원칙의 정본은 Linear 프로젝트 「DROP Flutter 재구축」, 구조·명령은 `apps/mobile/README.md`.
 
-**Android는 BRU-36 트랙에서 네이티브(Compose)로 재개했다** (BRU-33의 KMP vs 네이티브 vs Flutter 부활 논의 결론). 아직 스캐폴드 단계이고 배포는 BRU-42다.
+`apps/ios`(SwiftUI)·`apps/android`(Compose)는 **Flutter가 패리티에 도달할 때까지 유지**된다 — iOS가 도메인 규칙(DropCore 테스트)의 스펙 원본이고, Android는 스캐폴드 단계에서 동결(BRU-36·42는 BRU-161에서 정리).
 
-**도메인 로직은 플랫폼 SDK 없이 도는 모듈에 둔다** — iOS는 `Packages/DropCore`, Android는 `core`. 시뮬레이터·에뮬레이터 없이 `make ios-test` / `make android-test`가 도는 상태가 TDD 사이클의 전제다.
+**도메인 로직은 플랫폼 SDK 없이 도는 모듈에 둔다** — Flutter는 `apps/mobile/packages/drop_core`(순수 Dart), iOS는 `Packages/DropCore`, Android는 `core`. 시뮬레이터·에뮬레이터 없이 `make mobile-test` / `make ios-test` / `make android-test`가 도는 상태가 TDD 사이클의 전제다.
 
 # MOBILE (iOS) 주의사항
 

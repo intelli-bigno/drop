@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import 'screens/note_detail_screen.dart';
 import 'screens/root_view.dart';
+import 'screens/tags_screen.dart';
+import 'theme/drop_theme.dart';
 
 /// 앱 껍데기 — 라우터와 테마의 조립만 (iOS `DropApp.swift` 대응).
 /// 인증 게이트는 루트 라우트의 `RootView`가 상태로 가른다.
@@ -26,7 +28,12 @@ class _DropAppState extends State<DropApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(title: 'DROP', routerConfig: _router);
+    return MaterialApp.router(
+      title: 'DROP',
+      theme: DropTheme.light,
+      darkTheme: DropTheme.dark,
+      routerConfig: _router,
+    );
   }
 }
 
@@ -40,6 +47,13 @@ GoRouter createRouter() => GoRouter(
         noteId: state.pathParameters['id']!,
         userId: state.extra as String?,
       ),
+    ),
+    GoRoute(
+      path: '/tags',
+      // 홈과 같은 목록 상태를 보도록 사용자 ID를 쿼리로 받는다:
+      // `/tags?user=<id>` (프리뷰는 `preview`).
+      builder: (context, state) =>
+          TagsScreen(userId: state.uri.queryParameters['user']),
     ),
   ],
 );

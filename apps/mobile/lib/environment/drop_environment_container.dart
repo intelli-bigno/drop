@@ -6,6 +6,8 @@
 /// Riverpod `dropContainerProvider`로 흘려보낸다.
 library;
 
+
+
 import 'package:drop_core/drop_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -23,6 +25,7 @@ class DropEnvironmentContainer {
 
   final NotesRepository notesRepository;
   final CommentsRepository commentsRepository;
+  final AttachmentsRepository attachmentsRepository;
   final AuthenticationGateway authenticationGateway;
   final GoogleIdentityProvider identityProvider;
 
@@ -31,6 +34,7 @@ class DropEnvironmentContainer {
     required this.isPreview,
     required this.notesRepository,
     required this.commentsRepository,
+    required this.attachmentsRepository,
     required this.authenticationGateway,
     required this.identityProvider,
   });
@@ -41,6 +45,7 @@ class DropEnvironmentContainer {
         isPreview: true,
         notesRepository: PreviewLaunch.makeNotesRepository(),
         commentsRepository: PreviewLaunch.makeCommentsRepository(),
+        attachmentsRepository: InMemoryAttachmentsRepository(),
         authenticationGateway: const _PreviewAuthenticationGateway(),
         identityProvider: const _PreviewIdentityProvider(),
       );
@@ -63,11 +68,15 @@ class DropEnvironmentContainer {
       isPreview: false,
       notesRepository: SupabaseNotesRepository(client: restClient),
       commentsRepository: SupabaseCommentsRepository(client: restClient),
+      attachmentsRepository: SupabaseAttachmentsRepository(client: restClient),
       authenticationGateway: SupabaseAuthenticationGateway(auth),
       identityProvider: GoogleSignInIdentityProvider(configuration: configuration),
     );
   }
 }
+
+/// 프리뷰에는 스토리지가 없다 — 서명 URL을 만들 수 없으므로 실패를 던지고,
+/// 화면은 그 실패를 자리표시(아이콘·불러오지 못했습니다)로 그린다.
 
 /// 프리뷰에서 인증 게이트는 아예 그려지지 않지만, AuthStore 조립 자체는
 /// 무해하게 성립해야 한다 — 고정 사용자를 돌려준다.

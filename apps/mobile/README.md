@@ -34,6 +34,14 @@ flutter run --dart-define=DROP_PREVIEW=true
 
 `.config/*.json`(자격증명) 없이 뜬다 — 인증을 건너뛰고 인메모리 표본(`lib/preview/preview_launch.dart`, iOS `PreviewLaunch.swift` 포팅)을 쓴다. iOS의 `-dropPreview` 실행 인자 대응. **화면 확인·UI 이슈(BRU-156~)의 실측 경로가 이것이다** — 네트워크·DB 없음.
 
+## 디자인 토큰·테마 (BRU-159)
+
+색·간격·타이포의 정본은 `design-system/drop/tokens.json` 하나다. `make tokens`(레포 루트)가 `lib/theme/drop_tokens.g.dart`를 생성한다 — **생성물은 커밋한다** (빌드가 Node에 의존하지 않게, iOS Swift·Android Kotlin과 같은 규율. CI는 `make tokens-check`).
+
+- `lib/theme/drop_tokens.g.dart` — 생성물. 라이트·다크 색 한 벌씩(`DropTokenColors.light/.dark`) + 간격·모서리·글자 크기. **직접 고치지 마라.**
+- `lib/theme/drop_theme.dart` — 손으로 쓰는 의미 계층 (iOS `DropUI/DropTheme.swift` 대응). 토큰 → `ThemeData`(웜 페이퍼), `DropColors.of(context)`(현재 모드의 토큰), `DropSpacing`·`DropRadius`, 표면 역할(`surfacePage`·`surfaceCard`·`surfaceSelected`·`surfaceField`).
+- **화면에 리터럴 색(`Colors.*`, `Color(0x…)`)을 적지 않는다.** `test/design_system_audit_test.dart`(iOS `DesignSystemAuditTests` 포팅)가 소스를 읽어 잡는다.
+
 ## 구성값이 흐르는 경로
 
 ```

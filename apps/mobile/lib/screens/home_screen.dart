@@ -79,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
           ? null
           : FloatingActionButton(
               tooltip: '새 노트',
-              // 진짜 컴포저는 BRU-158 — 이 한 줄만 갈아끼우면 된다.
+              // 편집·답글 타깃은 뷰어(BRU-157)가 같은 입구로 연다.
               onPressed: () => showComposerSheet(context, notes),
               child: const Icon(Icons.add),
             ),

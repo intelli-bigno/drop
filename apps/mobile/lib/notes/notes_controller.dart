@@ -62,10 +62,16 @@ class NotesController extends ChangeNotifier {
     return created;
   }
 
+  /// 컴포저의 "노트 편집" 저장 경로 (BRU-158). id는 그대로, 본문만 바뀐다.
+  Future<void> update({required String id, required String content}) =>
+      _tracked(store.update(id: id, content: content));
+
   Future<void> archive(String id) => _tracked(store.archive(id));
   Future<void> unarchive(String id) => _tracked(store.unarchive(id));
   Future<void> moveToTrash(String id) => _tracked(store.moveToTrash(id));
   Future<void> restore(String id) => _tracked(store.restore(id));
+  Future<void> deletePermanently(String id) =>
+      _tracked(store.deletePermanently(id));
 
   /// 일괄 동작 (SelectionActionBar). 스토어에 없는 조합은 iOS와 같은 방식으로
   /// — 선택 목록을 먼저 복사하고 하나씩 — 처리한다.
@@ -94,6 +100,12 @@ class NotesController extends ChangeNotifier {
   Future<void> _tracked(Future<void> task) async {
     notifyListeners();
     await task;
+    notifyListeners();
+  }
+
+  /// 태그 필터 선택·해제 (iOS `store.selectedTagID = ...` 대응).
+  void selectTag(String? tagId) {
+    store.selectedTagId = tagId;
     notifyListeners();
   }
 }

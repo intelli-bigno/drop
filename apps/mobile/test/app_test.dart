@@ -1,3 +1,5 @@
+
+
 import 'package:drop_core/drop_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +35,8 @@ class FakeAuthenticationGateway implements AuthenticationGateway {
   }
 }
 
+/// 스토리지 없는 첨부 대역 — 서명 URL을 만들 수 없고, 화면은 자리표시로 그린다.
+
 class FakeIdentityProvider implements GoogleIdentityProvider {
   GoogleIdentity? result;
 
@@ -55,6 +59,7 @@ DropEnvironmentContainer testContainer({
       isPreview: false,
       notesRepository: InMemoryNotesRepository(notes: notes),
       commentsRepository: InMemoryCommentsRepository(),
+      attachmentsRepository: InMemoryAttachmentsRepository(),
       authenticationGateway: FakeAuthenticationGateway(storedUser: storedUser),
       identityProvider: FakeIdentityProvider(result: identity),
     );

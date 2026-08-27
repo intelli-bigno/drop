@@ -11,6 +11,7 @@ export 'src/comments_store.dart';
 export 'src/composer_media.dart';
 export 'src/drop_configuration.dart';
 export 'src/drop_json.dart';
+export 'src/in_memory_attachments_repository.dart';
 export 'src/in_memory_comments_repository.dart';
 export 'src/in_memory_notes_repository.dart';
 export 'src/markdown/markdown_document.dart';

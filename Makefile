@@ -23,7 +23,7 @@ help:
 	@echo "    make clean                - 빌드 산출물 및 node_modules 정리"
 	@echo ""
 	@echo "  디자인 토큰"
-	@echo "    make tokens               - tokens.json → 데스크톱 CSS · iOS Swift · Android Kotlin 생성"
+	@echo "    make tokens               - tokens.json → 데스크톱 CSS · iOS Swift · Android Kotlin · Flutter Dart 생성"
 	@echo "    make tokens-check         - 생성물이 정본과 맞는지 검사 (CI용)"
 	@echo ""
 	@echo "  Electron (Desktop)"
@@ -238,8 +238,9 @@ ios-clean:
 # ============================================
 # 디자인 토큰 (design-system/drop/tokens.json)
 # ============================================
-# 색·간격·타이포의 정본은 JSON 하나다. 여기서 세 앱의 토큰 파일이 생성된다:
+# 색·간격·타이포의 정본은 JSON 하나다. 여기서 네 앱의 토큰 파일이 생성된다:
 #   apps/desktop/.../styles/tokens.css · DropUI/DropTokens.swift · android/.../DropTokens.kt
+#   · apps/mobile/lib/theme/drop_tokens.g.dart
 #
 # 생성물은 커밋한다 — iOS·Android 빌드가 Node에 의존하면 안 되기 때문이다.
 # CI는 tokens-check로 "재생성하면 diff가 없는지"만 본다.

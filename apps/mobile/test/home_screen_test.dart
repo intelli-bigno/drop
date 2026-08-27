@@ -162,13 +162,15 @@ void main() {
     expect(find.text('영구 삭제'), findsOneWidget);
   });
 
-  testWidgets('FAB 컴포저 스텁으로 노트를 만들면 목록 맨 위에 뜬다', (tester) async {
+  testWidgets('FAB 컴포저로 노트를 만들면 목록 맨 위에 뜬다', (tester) async {
     await pumpPreview(tester);
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, '새로 적은 노트');
-    await tester.tap(find.text('저장'));
+    await tester.pump();
+    // 새 노트 타깃의 제출 버튼은 '추가'다 (BRU-158, iOS와 같은 이름).
+    await tester.tap(find.text('추가'));
     await tester.pumpAndSettle();
 
     expect(find.text('새로 적은 노트'), findsOneWidget);

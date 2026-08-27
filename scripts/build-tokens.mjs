@@ -5,6 +5,7 @@
  *   데스크톱  apps/desktop/src/renderer/styles/tokens.css   (CSS 변수)
  *   iOS       apps/ios/Packages/DropUI/Sources/DropUI/DropTokens.swift
  *   Android   apps/android/app/src/main/kotlin/com/intellieffect/drop/android/DropTokens.kt
+ *   Flutter   apps/mobile/lib/theme/drop_tokens.g.dart
  *
  * 왜 Style Dictionary가 아니라 이 스크립트인가:
  * 산출 형식 셋이 전부 이 레포 전용이다 — CSS는 기존 변수명을 글자 그대로 지켜야 하고,
@@ -342,6 +343,66 @@ function buildKotlin() {
   return lines.join('\n');
 }
 
+// ── 생성: Dart ──────────────────────────────────────────────────────────────
+
+/**
+ * Dart 식별자. `2xl` 같은 숫자 시작 이름은 camel이 `_2xl`을 만드는데,
+ * Dart에서 선행 밑줄은 **라이브러리 프라이빗**이라 밖에서 못 읽는다 — `x`를 앞에 붙인다.
+ */
+const dartIdent = (path) => camel(path).replace(/^_/, 'x');
+
+function buildDart() {
+  const colorField = (color) => dartIdent(color.path);
+
+  const lines = [
+    `// generated — do not edit, run \`make tokens\``,
+    ...BANNER_LINES.map((line) => `// ${line}`),
+    ``,
+    `import 'dart:ui';`,
+    ``,
+    `/// 생성된 색 토큰 — 라이트·다크 한 벌씩. 화면은 이 값(을 나르는 DropTheme)만`,
+    `/// 쓴다 — 리터럴 색을 위젯에 적으면 네 앱의 색이 다시 갈라진다.`,
+    `///`,
+    `/// Swift처럼 스스로 모드를 갈아타는 Color가 Flutter엔 없으므로 두 벌을 다`,
+    `/// 내보내고, 모드 판정은 lib/theme/drop_theme.dart(ThemeData)가 한다.`,
+    `class DropTokenColors {`,
+    `  const DropTokenColors._({`,
+    ...colors.map((color) => `    required this.${colorField(color)},`),
+    `  });`,
+    ``,
+    ...colors.map((color) => `  final Color ${colorField(color)};`),
+  ];
+
+  for (const mode of MODES) {
+    lines.push(``, `  static const DropTokenColors ${mode} = DropTokenColors._(`);
+    for (const color of colors) {
+      lines.push(
+        `    ${colorField(color)}: Color(${toArgbHex(valueFor(color.value, mode))}),`,
+      );
+    }
+    lines.push(`  );`);
+  }
+
+  lines.push(`}`, ``, `abstract final class DropTokenSpace {`);
+  for (const [key, value] of Object.entries(tokens.space)) {
+    if (isMeta(key)) continue;
+    lines.push(`  static const double x${key} = ${value};`);
+  }
+  lines.push(`}`, ``, `abstract final class DropTokenRadius {`);
+  for (const [key, value] of Object.entries(tokens.radius)) {
+    if (isMeta(key)) continue;
+    lines.push(`  static const double ${dartIdent([key])} = ${value};`);
+  }
+  lines.push(`}`, ``, `abstract final class DropTokenTextSize {`);
+  for (const [key, value] of Object.entries(tokens['text-size'])) {
+    if (isMeta(key)) continue;
+    lines.push(`  static const double ${dartIdent([key])} = ${value};`);
+  }
+  lines.push(`}`, ``);
+
+  return lines.join('\n');
+}
+
 // ── 쓰기 ────────────────────────────────────────────────────────────────────
 
 const OUTPUTS = [
@@ -351,6 +412,7 @@ const OUTPUTS = [
     path: 'apps/android/app/src/main/kotlin/com/intellieffect/drop/android/DropTokens.kt',
     build: buildKotlin,
   },
+  { path: 'apps/mobile/lib/theme/drop_tokens.g.dart', build: buildDart },
 ];
 
 let stale = false;
