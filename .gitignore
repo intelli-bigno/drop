@@ -2,6 +2,8 @@ node_modules
 dist
 out
 release
+# 위 `release`는 산출물용인데 디렉토리 이름이 같은 Android 릴리스 소스셋까지 삼킨다 (BRU-136 실측).
+!apps/android/app/src/release/
 .DS_Store
 *.log
 .env
