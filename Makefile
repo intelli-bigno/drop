@@ -243,6 +243,12 @@ tokens-check:
 
 ANDROID_DIR := apps/android
 
+# JDK. Gradle 8.14 + AGP는 JDK 25에서 시작조차 못 한다 (2026-08-27 실측: "What went wrong: 25.0.2").
+# JAVA_HOME이 없으면 Android Studio 내장 JBR(21)을 쓴다 — IOS_DEVELOPER_DIR과 같은 판단.
+ANDROID_JBR := /Applications/Android Studio.app/Contents/jbr/Contents/Home
+ANDROID_JAVA_HOME := $(if $(JAVA_HOME),$(JAVA_HOME),$(ANDROID_JBR))
+ANDROID_GRADLE := JAVA_HOME="$(ANDROID_JAVA_HOME)" ./gradlew
+
 # 환경변수 → apps/android/local.properties (커밋되지 않는다)
 # 필요한 값: SUPABASE_URL_LOCAL / SUPABASE_ANON_KEY_LOCAL (iOS 타겟과 같은 이름)
 android-config:
@@ -253,17 +259,17 @@ android-config-remote:
 
 # 도메인 로직 테스트 — Android SDK도 에뮬레이터도 필요 없다 (ios-test와 같은 자리)
 android-test:
-	cd $(ANDROID_DIR) && ./gradlew :core:test
+	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) :core:test
 
 # 디버그 APK. Android SDK 경로는 ANDROID_HOME 또는 local.properties 의 sdk.dir 에서 온다.
 android-build:
-	cd $(ANDROID_DIR) && ./gradlew :app:assembleDebug
+	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) :app:assembleDebug
 
 android-install:
-	cd $(ANDROID_DIR) && ./gradlew :app:installDebug
+	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) :app:installDebug
 
 android-clean:
-	cd $(ANDROID_DIR) && ./gradlew clean
+	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) clean
 
 # ============================================
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
