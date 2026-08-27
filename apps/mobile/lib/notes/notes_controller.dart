@@ -1,5 +1,8 @@
 /// drop_core `NotesStore`(순수 상태 전이)를 화면이 구독할 수 있게 감싼다.
-/// 진짜 피드는 BRU-156 — 여기는 목록을 읽는 최소한만 있다.
+///
+/// 스토어는 Swift `@Observable`이 하던 알림을 하지 않으므로, 상태를 건드리는
+/// 모든 경로가 여기를 지나며 `notifyListeners`를 낸다. 낙관 갱신은 스토어가
+/// 첫 await 전에 동기로 반영하므로 **호출 직후 한 번, 완료 후 한 번** 알린다.
 library;
 
 import 'package:drop_core/drop_core.dart';
@@ -10,9 +13,85 @@ class NotesController extends ChangeNotifier {
 
   NotesController(this.store);
 
-  Future<void> load() async {
-    final task = store.load();
-    // NotesStore는 첫 await 전에 동기적으로 isLoading이 되므로 즉시 한 번 알린다.
+  Future<void> load() => _tracked(store.load());
+
+  // 필터·보기 상태
+
+  void setViewMode(NoteViewMode mode) {
+    store.viewMode = mode;
+    // 남은 선택이 다음 뷰의 일괄 동작에 걸리면 엉뚱한 노트가 지워진다.
+    store.clearSelection();
+    notifyListeners();
+  }
+
+  void setCategory(NoteCategory category) {
+    store.category = category;
+    notifyListeners();
+  }
+
+  /// 같은 태그를 다시 고르면 필터를 푼다 — iOS `NoteFilterBar`와 같은 규칙.
+  void toggleTag(String tagId) {
+    store.selectedTagId = store.selectedTagId == tagId ? null : tagId;
+    notifyListeners();
+  }
+
+  void setSearchText(String text) {
+    store.searchText = text;
+    notifyListeners();
+  }
+
+  // 선택 모드
+
+  void toggleSelection(String id) {
+    store.toggleSelection(id);
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    store.clearSelection();
+    notifyListeners();
+  }
+
+  // 노트 변경
+
+  Future<Note?> create({required String content, String? parentId}) async {
+    final task = store.create(content: content, parentId: parentId);
+    notifyListeners();
+    final created = await task;
+    notifyListeners();
+    return created;
+  }
+
+  Future<void> archive(String id) => _tracked(store.archive(id));
+  Future<void> unarchive(String id) => _tracked(store.unarchive(id));
+  Future<void> moveToTrash(String id) => _tracked(store.moveToTrash(id));
+  Future<void> restore(String id) => _tracked(store.restore(id));
+
+  /// 일괄 동작 (SelectionActionBar). 스토어에 없는 조합은 iOS와 같은 방식으로
+  /// — 선택 목록을 먼저 복사하고 하나씩 — 처리한다.
+  Future<void> archiveSelected() => _forEachSelected(store.archive);
+  Future<void> unarchiveSelected() => _forEachSelected(store.unarchive);
+  Future<void> restoreSelected() => _forEachSelected(store.restore);
+  Future<void> trashSelected() => _tracked(store.trashSelected());
+  Future<void> deleteSelectedPermanently() =>
+      _tracked(store.deleteSelectedPermanently());
+
+  void dismissError() {
+    store.dismissError();
+    notifyListeners();
+  }
+
+  Future<void> _forEachSelected(Future<void> Function(String id) body) async {
+    final targets = [...store.selectedIds];
+    store.clearSelection();
+    notifyListeners();
+    for (final id in targets) {
+      await body(id);
+    }
+    notifyListeners();
+  }
+
+  Future<void> _tracked(Future<void> task) async {
     notifyListeners();
     await task;
     notifyListeners();

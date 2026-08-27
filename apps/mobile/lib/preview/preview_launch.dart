@@ -29,12 +29,16 @@ class PreviewLaunch {
         Duration(milliseconds: (minutesAgo * 60 * 1000).round()),
       );
       return NoteComment(
-          id: id, noteId: note, body: body, createdAt: at, updatedAt: at);
+        id: id,
+        noteId: note,
+        body: body,
+        createdAt: at,
+        updatedAt: at,
+      );
     }
 
     return [
-      comment('c1',
-          note: '1', body: 'M3까지는 왔는데 위젯이 아직 남았다.', minutesAgo: 90),
+      comment('c1', note: '1', body: 'M3까지는 왔는데 위젯이 아직 남았다.', minutesAgo: 90),
       comment('c2', note: '1', body: '위젯은 BRU-35에서 따로 본다.', minutesAgo: 40),
       comment('c3', note: '1', body: '확인.', minutesAgo: 5),
       comment('c4', note: '2', body: '원두는 지난번 것으로.', minutesAgo: 30),
@@ -102,7 +106,8 @@ class PreviewLaunch {
       Note(
         id: '6',
         displayId: 14,
-        content: '긴 본문은 한 줄에서 잘려야 한다 — 목록은 훑는 자리이고 다 읽는 자리는 컴포저다. '
+        content:
+            '긴 본문은 한 줄에서 잘려야 한다 — 목록은 훑는 자리이고 다 읽는 자리는 컴포저다. '
             '이 문장이 두 줄로 내려가면 한 화면에 들어오는 노트 수가 다시 줄어든다.',
         tags: [tag('설계'), tag('iOS'), tag('BRU-49')],
         createdAt: now.subtract(const Duration(seconds: 5400)),
@@ -115,7 +120,8 @@ class PreviewLaunch {
       Note(
         id: '9',
         displayId: 20,
-        content: '# 이번 주 정리\n'
+        content:
+            '# 이번 주 정리\n'
             '\n'
             '**굵게**와 *기울임*, 그리고 `인라인 코드`.\n'
             '\n'
@@ -211,6 +217,17 @@ class PreviewLaunch {
         updatedAt: now,
         source: NoteSource.web,
         archivedAt: now.subtract(const Duration(seconds: 100000)),
+      ),
+      // 휴지통 뷰(BRU-156)를 눈으로 확인하기 위한 표본.
+      Note(
+        id: '10',
+        displayId: 8,
+        content: '버린 초안 — 휴지통에서만 보인다',
+        createdAt: now.subtract(const Duration(seconds: 500000)),
+        updatedAt: now,
+        source: NoteSource.mobile,
+        deletedAt: now.subtract(const Duration(seconds: 50000)),
+        isDeleted: true,
       ),
     ];
   }
