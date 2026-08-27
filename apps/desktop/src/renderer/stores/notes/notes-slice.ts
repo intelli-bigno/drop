@@ -6,371 +6,387 @@ import { tagRowToTag, noteRowToNote, attachmentRowToAttachment } from '@drop/sha
 import type { NoteRow, AttachmentRow, TagRow, Attachment, Tag } from '@drop/shared'
 import type { NotesState, NotesSlice } from './types'
 import { calculateNoteCategories } from '../../lib/note-category-utils'
-import { entersActiveList, reconcileActiveList } from './active-list'
+import { entersActiveList, reconcileActiveList, restoreNoteInList } from './active-list'
 
-export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (set, get) => ({
-  notes: [],
-  selectedNoteId: null,
-  isLoading: false,
-  pendingDeleteNoteId: null,
+export const createNotesSlice: StateCreator<NotesState, [], [], NotesSlice> = (set, get) => {
+  let loadGeneration = 0
 
-  // 삭제는 항상 확인을 거친다 — 단축키든 버튼이든 여기로 모인다 (BRU-24)
-  requestDeleteNote: (id) => set({ pendingDeleteNoteId: id }),
+  return {
+    notes: [],
+    selectedNoteId: null,
+    isLoading: false,
+    pendingDeleteNoteId: null,
 
-  cancelDeleteNote: () => set({ pendingDeleteNoteId: null }),
+    // 삭제는 항상 확인을 거친다 — 단축키든 버튼이든 여기로 모인다 (BRU-24)
+    requestDeleteNote: (id) => set({ pendingDeleteNoteId: id }),
 
-  confirmDeleteNote: async () => {
-    const id = get().pendingDeleteNoteId
-    if (!id) return
-    set({ pendingDeleteNoteId: null })
-    await get().deleteNote(id)
-  },
+    cancelDeleteNote: () => set({ pendingDeleteNoteId: null }),
 
-  loadNotes: async () => {
-    set({ isLoading: true })
-    try {
-      // 노트 로드
-      const { data: noteRows, error: notesError } = await supabase
-        .from('notes')
-        .select('*')
-        .is('deleted_at', null)
-        .is('archived_at', null)
-        .order('is_pinned', { ascending: false })
-        .order('pinned_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
+    confirmDeleteNote: async () => {
+      const id = get().pendingDeleteNoteId
+      if (!id) return
+      set({ pendingDeleteNoteId: null })
+      await get().deleteNote(id)
+    },
 
-      if (notesError) throw notesError
-
-      // 모든 첨부파일 로드
-      const noteIds = noteRows?.map((n) => n.id) ?? []
-      let attachmentRows: AttachmentRow[] = []
-
-      if (noteIds.length > 0) {
-        const { data, error: attachmentsError } = await supabase
-          .from('attachments')
+    loadNotes: async () => {
+      const generation = ++loadGeneration
+      set({ isLoading: true })
+      try {
+        // 노트 로드
+        const { data: noteRows, error: notesError } = await supabase
+          .from('notes')
           .select('*')
-          .in('note_id', noteIds)
-          .order('created_at', { ascending: true })
+          .is('deleted_at', null)
+          .is('archived_at', null)
+          .order('is_pinned', { ascending: false })
+          .order('pinned_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
 
-        if (attachmentsError) throw attachmentsError
-        attachmentRows = (data ?? []) as AttachmentRow[]
-      }
+        if (notesError) throw notesError
 
-      // 모든 태그 관계 로드
-      interface NoteTagWithTag {
-        note_id: string
-        tag_id: string
-        tags: TagRow
-      }
-      let noteTagRows: NoteTagWithTag[] = []
-      if (noteIds.length > 0) {
-        const { data, error: noteTagsError } = await supabase
-          .from('note_tags')
-          .select('note_id, tag_id, tags(*)')
-          .in('note_id', noteIds)
+        // 모든 첨부파일 로드
+        const noteIds = noteRows?.map((n) => n.id) ?? []
+        let attachmentRows: AttachmentRow[] = []
 
-        if (noteTagsError) throw noteTagsError
-        noteTagRows = (data ?? []) as unknown as NoteTagWithTag[]
-      }
+        if (noteIds.length > 0) {
+          const { data, error: attachmentsError } = await supabase
+            .from('attachments')
+            .select('*')
+            .in('note_id', noteIds)
+            .order('created_at', { ascending: true })
 
-      // 첨부파일을 노트별로 그룹화
-      const attachmentsByNote = new Map<string, Attachment[]>()
-      for (const row of attachmentRows) {
-        const attachment = attachmentRowToAttachment(row)
-        const existing = attachmentsByNote.get(attachment.noteId) ?? []
-        existing.push(attachment)
-        attachmentsByNote.set(attachment.noteId, existing)
-      }
+          if (attachmentsError) throw attachmentsError
+          attachmentRows = (data ?? []) as AttachmentRow[]
+        }
 
-      // 태그를 노트별로 그룹화
-      const tagsByNote = new Map<string, Tag[]>()
-      for (const row of noteTagRows) {
-        const tag = tagRowToTag(row.tags)
-        const existing = tagsByNote.get(row.note_id) ?? []
-        existing.push(tag)
-        tagsByNote.set(row.note_id, existing)
-      }
+        // 모든 태그 관계 로드
+        interface NoteTagWithTag {
+          note_id: string
+          tag_id: string
+          tags: TagRow
+        }
+        let noteTagRows: NoteTagWithTag[] = []
+        if (noteIds.length > 0) {
+          const { data, error: noteTagsError } = await supabase
+            .from('note_tags')
+            .select('note_id, tag_id, tags(*)')
+            .in('note_id', noteIds)
 
-      // 노트와 첨부파일, 태그 결합
-      const notes = (noteRows ?? []).map((row) =>
-        noteRowToNote(
-          row as NoteRow,
-          attachmentsByNote.get(row.id) ?? [],
-          tagsByNote.get(row.id) ?? []
+          if (noteTagsError) throw noteTagsError
+          noteTagRows = (data ?? []) as unknown as NoteTagWithTag[]
+        }
+
+        // 첨부파일을 노트별로 그룹화
+        const attachmentsByNote = new Map<string, Attachment[]>()
+        for (const row of attachmentRows) {
+          const attachment = attachmentRowToAttachment(row)
+          const existing = attachmentsByNote.get(attachment.noteId) ?? []
+          existing.push(attachment)
+          attachmentsByNote.set(attachment.noteId, existing)
+        }
+
+        // 태그를 노트별로 그룹화
+        const tagsByNote = new Map<string, Tag[]>()
+        for (const row of noteTagRows) {
+          const tag = tagRowToTag(row.tags)
+          const existing = tagsByNote.get(row.note_id) ?? []
+          existing.push(tag)
+          tagsByNote.set(row.note_id, existing)
+        }
+
+        // 노트와 첨부파일, 태그 결합
+        const notes = (noteRows ?? []).map((row) =>
+          noteRowToNote(
+            row as NoteRow,
+            attachmentsByNote.get(row.id) ?? [],
+            tagsByNote.get(row.id) ?? []
+          )
         )
-      )
 
-      set({ notes, isLoading: false })
+        if (generation !== loadGeneration) return
 
-      // 카드 뱃지에 쓸 댓글 *개수*만 함께 읽는다 — 본문은 패널을 열 때 읽는다.
-      // 댓글은 노트가 아니므로 `notes` 배열에는 들어가지 않는다 (BRU-63).
-      void get().loadCommentCounts(noteIds)
-    } catch (error) {
-      console.error('Failed to load notes:', error)
-      set({ isLoading: false })
-      useToastStore.getState().showToast({
-        message: '노트를 불러오지 못했습니다',
-        variant: 'error',
-        actionLabel: '재시도',
-        onAction: () => {
-          get().loadNotes()
-        },
-      })
-    }
-  },
+        set({ notes, isLoading: false })
 
-  createNote: async (initialContent = '', parentId?: string) => {
-    // Get cached user from auth store (no network request!)
-    const user = useAuthStore.getState().user
-    if (!user) {
-      console.error('[notes] createNote: user not authenticated')
-      return {
-        id: '',
-        displayId: 0,
-        content: '',
-        parentId: null,
+        // 카드 뱃지에 쓸 댓글 *개수*만 함께 읽는다 — 본문은 패널을 열 때 읽는다.
+        // 댓글은 노트가 아니므로 `notes` 배열에는 들어가지 않는다 (BRU-63).
+        void get().loadCommentCounts(noteIds)
+      } catch (error) {
+        if (generation !== loadGeneration) return
+        console.error('Failed to load notes:', error)
+        set({ isLoading: false })
+        useToastStore.getState().showToast({
+          message: '노트를 불러오지 못했습니다',
+          variant: 'error',
+          actionLabel: '재시도',
+          onAction: () => {
+            get().loadNotes()
+          },
+        })
+      }
+    },
+
+    createNote: async (initialContent = '', parentId?: string) => {
+      // Get cached user from auth store (no network request!)
+      const user = useAuthStore.getState().user
+      if (!user) {
+        console.error('[notes] createNote: user not authenticated')
+        return {
+          id: '',
+          displayId: 0,
+          content: '',
+          parentId: null,
+          attachments: [],
+          tags: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'desktop' as const,
+          isDeleted: false,
+          hasLink: false,
+          hasMedia: false,
+          hasFiles: false,
+          isLocked: false,
+          deletedAt: null,
+          archivedAt: null,
+          priority: 0,
+          isPinned: false,
+          pinnedAt: null,
+          linearIssueUrl: null,
+          linearIssueKey: null,
+          linearExportedAt: null,
+          projectId: null,
+        }
+      }
+
+      const id = crypto.randomUUID()
+      const now = new Date()
+      const categories = calculateNoteCategories(initialContent, [])
+      // displayId는 DB에서 트리거로 생성되므로 optimistic 노트에는 임시로 가장 높은 값 + 1 사용
+      const maxDisplayId = Math.max(0, ...get().notes.map((n) => n.displayId))
+      const optimisticNote = {
+        id,
+        displayId: maxDisplayId + 1,
+        content: initialContent,
+        parentId: parentId ?? null,
         attachments: [],
         tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         source: 'desktop' as const,
         isDeleted: false,
-        hasLink: false,
-        hasMedia: false,
-        hasFiles: false,
+        hasLink: categories.hasLink,
+        hasMedia: categories.hasMedia,
+        hasFiles: categories.hasFiles,
         isLocked: false,
         deletedAt: null,
         archivedAt: null,
         priority: 0,
         isPinned: false,
         pinnedAt: null,
+        // 새 노트는 당연히 아직 반출되지 않았다 (BRU-45)
         linearIssueUrl: null,
         linearIssueKey: null,
         linearExportedAt: null,
+        // 새 노트는 아직 프로젝트가 없다 (BRU-83)
         projectId: null,
       }
-    }
 
-    const id = crypto.randomUUID()
-    const now = new Date()
-    const categories = calculateNoteCategories(initialContent, [])
-    // displayId는 DB에서 트리거로 생성되므로 optimistic 노트에는 임시로 가장 높은 값 + 1 사용
-    const maxDisplayId = Math.max(0, ...get().notes.map((n) => n.displayId))
-    const optimisticNote = {
-      id,
-      displayId: maxDisplayId + 1,
-      content: initialContent,
-      parentId: parentId ?? null,
-      attachments: [],
-      tags: [],
-      createdAt: now,
-      updatedAt: now,
-      source: 'desktop' as const,
-      isDeleted: false,
-      hasLink: categories.hasLink,
-      hasMedia: categories.hasMedia,
-      hasFiles: categories.hasFiles,
-      isLocked: false,
-      deletedAt: null,
-      archivedAt: null,
-      priority: 0,
-      isPinned: false,
-      pinnedAt: null,
-      // 새 노트는 당연히 아직 반출되지 않았다 (BRU-45)
-      linearIssueUrl: null,
-      linearIssueKey: null,
-      linearExportedAt: null,
-      // 새 노트는 아직 프로젝트가 없다 (BRU-83)
-      projectId: null,
-    }
-
-    set((state) => ({
-      notes: [optimisticNote, ...state.notes],
-      selectedNoteId: id,
-    }))
-    console.info('[notes] createNote optimistic', { id, parentId })
-
-    const { data, error } = await supabase
-      .from('notes')
-      .insert({
-        id,
-        content: initialContent,
-        parent_id: parentId ?? null,
-        source: 'desktop',
-        user_id: user.id,
-        has_link: categories.hasLink,
-        has_media: categories.hasMedia,
-        has_files: categories.hasFiles,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('[notes] createNote supabase error', error)
       set((state) => ({
-        notes: state.notes.filter((note) => note.id !== id),
+        notes: [optimisticNote, ...state.notes],
+        selectedNoteId: id,
+      }))
+      console.info('[notes] createNote optimistic', { id, parentId })
+
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          id,
+          content: initialContent,
+          parent_id: parentId ?? null,
+          source: 'desktop',
+          user_id: user.id,
+          has_link: categories.hasLink,
+          has_media: categories.hasMedia,
+          has_files: categories.hasFiles,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('[notes] createNote supabase error', error)
+        set((state) => ({
+          notes: state.notes.filter((note) => note.id !== id),
+          selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
+        }))
+        throw error
+      }
+
+      const note = noteRowToNote(data as NoteRow)
+      set((state) => ({
+        notes: state.notes.map((item) => (item.id === id ? note : item)),
+      }))
+      console.info('[notes] createNote confirmed', { id })
+      return note
+    },
+
+    updateNote: async (id, content) => {
+      const existingNote = get().notes.find((n) => n.id === id)
+      if (!existingNote) return
+
+      // 카테고리 재계산 (has_link만 content에 영향받음)
+      const categories = calculateNoteCategories(content, existingNote.attachments)
+      const updateData: Record<string, unknown> = { content }
+
+      // has_link가 변경된 경우에만 업데이트
+      if (existingNote.hasLink !== categories.hasLink) {
+        updateData.has_link = categories.hasLink
+      }
+
+      const { data, error } = await supabase
+        .from('notes')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      set((state) => ({
+        notes: state.notes.map((n) =>
+          n.id === id
+            ? { ...n, content, hasLink: categories.hasLink, updatedAt: new Date(data.updated_at) }
+            : n
+        ),
+      }))
+    },
+
+    deleteNote: async (id) => {
+      // Optimistic: 목록에서 먼저 제거하고, 실패 시 해당 노트만 롤백 (BRU-114)
+      const prevNote = get().notes.find((n) => n.id === id)
+      const prevArchivedNote = get().archivedNotes.find((n) => n.id === id)
+      const prevSelectedNoteId = get().selectedNoteId
+
+      set((state) => ({
+        notes: state.notes.filter((n) => n.id !== id),
+        archivedNotes: state.archivedNotes.filter((n) => n.id !== id),
         selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
       }))
-      throw error
-    }
 
-    const note = noteRowToNote(data as NoteRow)
-    set((state) => ({
-      notes: state.notes.map((item) => (item.id === id ? note : item)),
-    }))
-    console.info('[notes] createNote confirmed', { id })
-    return note
-  },
+      const { error } = await supabase
+        .from('notes')
+        .update({ deleted_at: new Date().toISOString(), is_deleted: true })
+        .eq('id', id)
 
-  updateNote: async (id, content) => {
-    const existingNote = get().notes.find((n) => n.id === id)
-    if (!existingNote) return
+      if (error) {
+        console.error('[notes] deleteNote failed', error)
+        set((state) => ({
+          notes: prevNote ? restoreNoteInList(state.notes, prevNote) : state.notes,
+          archivedNotes:
+            prevArchivedNote && !state.archivedNotes.some((n) => n.id === prevArchivedNote.id)
+              ? [prevArchivedNote, ...state.archivedNotes]
+              : state.archivedNotes,
+          selectedNoteId:
+            state.selectedNoteId ?? (prevSelectedNoteId === id ? id : state.selectedNoteId),
+        }))
+        useToastStore.getState().showToast({
+          message: '노트를 삭제하지 못했습니다',
+          variant: 'error',
+        })
+        return
+      }
 
-    // 카테고리 재계산 (has_link만 content에 영향받음)
-    const categories = calculateNoteCategories(content, existingNote.attachments)
-    const updateData: Record<string, unknown> = { content }
-
-    // has_link가 변경된 경우에만 업데이트
-    if (existingNote.hasLink !== categories.hasLink) {
-      updateData.has_link = categories.hasLink
-    }
-
-    const { data, error } = await supabase
-      .from('notes')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-
-    set((state) => ({
-      notes: state.notes.map((n) =>
-        n.id === id
-          ? { ...n, content, hasLink: categories.hasLink, updatedAt: new Date(data.updated_at) }
-          : n
-      ),
-    }))
-  },
-
-  deleteNote: async (id) => {
-    // Optimistic: 목록에서 먼저 제거하고, 실패 시 롤백 (보관함 뷰에서의 삭제도 포함)
-    const prevNotes = get().notes
-    const prevArchivedNotes = get().archivedNotes
-    const prevSelectedNoteId = get().selectedNoteId
-
-    set((state) => ({
-      notes: state.notes.filter((n) => n.id !== id),
-      archivedNotes: state.archivedNotes.filter((n) => n.id !== id),
-      selectedNoteId: state.selectedNoteId === id ? null : state.selectedNoteId,
-    }))
-
-    const { error } = await supabase
-      .from('notes')
-      .update({ deleted_at: new Date().toISOString(), is_deleted: true })
-      .eq('id', id)
-
-    if (error) {
-      console.error('[notes] deleteNote failed', error)
-      set({
-        notes: prevNotes,
-        archivedNotes: prevArchivedNotes,
-        selectedNoteId: prevSelectedNoteId,
-      })
       useToastStore.getState().showToast({
-        message: '노트를 삭제하지 못했습니다',
-        variant: 'error',
+        message: '노트가 삭제되었습니다',
+        actionLabel: '실행 취소',
+        onAction: () => {
+          get().restoreNote(id)
+        },
       })
-      return
-    }
+    },
 
-    useToastStore.getState().showToast({
-      message: '노트가 삭제되었습니다',
-      actionLabel: '실행 취소',
-      onAction: () => {
-        get().restoreNote(id)
-      },
-    })
-  },
+    selectNote: (id) => {
+      set({ selectedNoteId: id })
+    },
 
-  selectNote: (id) => {
-    set({ selectedNoteId: id })
-  },
+    updateNotePriority: async (id, priority) => {
+      const { error } = await supabase.from('notes').update({ priority }).eq('id', id)
 
-  updateNotePriority: async (id, priority) => {
-    const { error } = await supabase.from('notes').update({ priority }).eq('id', id)
+      if (error) {
+        console.error('[notes] updateNotePriority failed', error)
+        useToastStore.getState().showToast({
+          message: '우선순위를 변경하지 못했습니다',
+          variant: 'error',
+        })
+        return
+      }
 
-    if (error) {
-      console.error('[notes] updateNotePriority failed', error)
-      useToastStore.getState().showToast({
-        message: '우선순위를 변경하지 못했습니다',
-        variant: 'error',
-      })
-      return
-    }
+      set((state) => ({
+        notes: state.notes.map((n) => (n.id === id ? { ...n, priority } : n)),
+      }))
+    },
 
-    set((state) => ({
-      notes: state.notes.map((n) => (n.id === id ? { ...n, priority } : n)),
-    }))
-  },
+    togglePinNote: async (id) => {
+      const note = get().notes.find((n) => n.id === id)
+      if (!note) return
 
-  togglePinNote: async (id) => {
-    const note = get().notes.find((n) => n.id === id)
-    if (!note) return
+      const newPinned = !note.isPinned
+      const pinnedAt = newPinned ? new Date().toISOString() : null
 
-    const newPinned = !note.isPinned
-    const pinnedAt = newPinned ? new Date().toISOString() : null
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_pinned: newPinned, pinned_at: pinnedAt })
+        .eq('id', id)
 
-    const { error } = await supabase
-      .from('notes')
-      .update({ is_pinned: newPinned, pinned_at: pinnedAt })
-      .eq('id', id)
+      if (error) {
+        console.error('[notes] togglePinNote failed', error)
+        useToastStore.getState().showToast({
+          message: newPinned ? '노트를 고정하지 못했습니다' : '고정을 해제하지 못했습니다',
+          variant: 'error',
+        })
+        return
+      }
 
-    if (error) {
-      console.error('[notes] togglePinNote failed', error)
-      useToastStore.getState().showToast({
-        message: newPinned ? '노트를 고정하지 못했습니다' : '고정을 해제하지 못했습니다',
-        variant: 'error',
-      })
-      return
-    }
+      set((state) => ({
+        notes: state.notes.map((n) =>
+          n.id === id
+            ? { ...n, isPinned: newPinned, pinnedAt: pinnedAt ? new Date(pinnedAt) : null }
+            : n
+        ),
+      }))
+    },
 
-    set((state) => ({
-      notes: state.notes.map((n) =>
-        n.id === id
-          ? { ...n, isPinned: newPinned, pinnedAt: pinnedAt ? new Date(pinnedAt) : null }
-          : n
-      ),
-    }))
-  },
+    subscribeToChanges: () => {
+      const channel = supabase
+        .channel('notes-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'notes' },
+          async (payload) => {
+            const { eventType, new: newRow, old: oldRow } = payload
 
-  subscribeToChanges: () => {
-    const channel = supabase
-      .channel('notes-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, async (payload) => {
-        const { eventType, new: newRow, old: oldRow } = payload
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const row = newRow as NoteRow
+              // 목록에 새로 들어오는 행인지는 반영하기 **전에** 봐야 한다 (BRU-125).
+              const entering = entersActiveList(get().notes, row)
 
-        if (eventType === 'INSERT' || eventType === 'UPDATE') {
-          const row = newRow as NoteRow
-          // 목록에 새로 들어오는 행인지는 반영하기 **전에** 봐야 한다 (BRU-125).
-          const entering = entersActiveList(get().notes, row)
+              set((state) => ({ notes: reconcileActiveList(state.notes, row) }))
 
-          set((state) => ({ notes: reconcileActiveList(state.notes, row) }))
+              // realtime 페이로드에는 태그·첨부가 없다. 그대로 두면 태그가 붙어 있던
+              // 노트가 태그 없이 보인다 — unarchiveNote()가 이미 하는 일을 여기서도 한다.
+              if (entering) await get().loadNotes()
+            } else if (eventType === 'DELETE') {
+              const id = (oldRow as { id: string }).id
+              set((state) => ({
+                notes: state.notes.filter((n) => n.id !== id),
+              }))
+            }
+          }
+        )
+        .subscribe()
 
-          // realtime 페이로드에는 태그·첨부가 없다. 그대로 두면 태그가 붙어 있던
-          // 노트가 태그 없이 보인다 — unarchiveNote()가 이미 하는 일을 여기서도 한다.
-          if (entering) await get().loadNotes()
-        } else if (eventType === 'DELETE') {
-          const id = (oldRow as { id: string }).id
-          set((state) => ({
-            notes: state.notes.filter((n) => n.id !== id),
-          }))
-        }
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  },
-})
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    },
+  }
+}

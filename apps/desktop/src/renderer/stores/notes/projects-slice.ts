@@ -5,6 +5,7 @@ import { useToastStore } from '../toast'
 import { projectRowToProject } from '@drop/shared'
 import type { ProjectRow } from '@drop/shared'
 import type { NotesState, ProjectsSlice } from './types'
+import { restoreNoteFields } from './active-list'
 
 /**
  * 프로젝트 (BRU-83) — 노트를 묶는 상위 분류.
@@ -64,9 +65,9 @@ export const createProjectsSlice: StateCreator<NotesState, [], [], ProjectsSlice
   },
 
   setNoteProject: async (noteId, projectId) => {
-    const prevNotes = get().notes
+    const prevNote = get().notes.find((n) => n.id === noteId)
 
-    // 낙관적 갱신 — 고른 즉시 카드에 뜨고, 실패하면 되돌린다
+    // 낙관적 갱신 — 고른 즉시 카드에 뜨고, 실패하면 해당 노트만 되돌린다 (BRU-114)
     set((state) => ({
       notes: state.notes.map((note) => (note.id === noteId ? { ...note, projectId } : note)),
     }))
@@ -78,7 +79,9 @@ export const createProjectsSlice: StateCreator<NotesState, [], [], ProjectsSlice
 
     if (error) {
       console.error('[projects] setNoteProject failed', error)
-      set({ notes: prevNotes })
+      set((state) => ({
+        notes: prevNote ? restoreNoteFields(state.notes, prevNote) : state.notes,
+      }))
       useToastStore.getState().showToast({
         message: projectId ? '프로젝트를 지정하지 못했습니다' : '프로젝트를 해제하지 못했습니다',
         variant: 'error',

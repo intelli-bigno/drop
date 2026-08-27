@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand'
 import { supabase } from '../../lib/supabase'
 import { useToastStore } from '../toast'
 import type { NotesState, ExportSlice } from './types'
+import { restoreNoteFields } from './active-list'
 
 /**
  * Linear 반출 표시 (BRU-45).
@@ -19,9 +20,9 @@ export const createExportSlice: StateCreator<NotesState, [], [], ExportSlice> = 
   setShowExported: (showExported) => set({ showExported }),
 
   clearNoteExport: async (noteId) => {
-    const prevNotes = get().notes
+    const prevNote = get().notes.find((n) => n.id === noteId)
 
-    // 낙관적 갱신 — 표시를 먼저 걷어낸다. 실패하면 되돌린다.
+    // 낙관적 갱신 — 표시를 먼저 걷어낸다. 실패하면 해당 노트만 되돌린다 (BRU-114)
     set((state) => ({
       notes: state.notes.map((note) =>
         note.id === noteId
@@ -37,7 +38,9 @@ export const createExportSlice: StateCreator<NotesState, [], [], ExportSlice> = 
 
     if (error) {
       console.error('[export] clearNoteExport failed', error)
-      set({ notes: prevNotes })
+      set((state) => ({
+        notes: prevNote ? restoreNoteFields(state.notes, prevNote) : state.notes,
+      }))
       useToastStore.getState().showToast({
         message: '반출 표시를 지우지 못했습니다',
         variant: 'error',

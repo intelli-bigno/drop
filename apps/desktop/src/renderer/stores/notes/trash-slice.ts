@@ -4,6 +4,7 @@ import { useToastStore } from '../toast'
 import type { NotesState, TrashSlice } from './types'
 import type { NoteRow, Note, AttachmentRow, TagRow } from '@drop/shared'
 import { noteRowToNote, attachmentRowToAttachment, tagRowToTag } from '@drop/shared'
+import { restoreNoteInList } from './active-list'
 
 export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (set, get) => ({
   viewMode: 'active',
@@ -103,10 +104,7 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
   },
 
   permanentlyDeleteNote: async (noteId) => {
-    const { error } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', noteId)
+    const { error } = await supabase.from('notes').delete().eq('id', noteId)
 
     if (error) {
       console.error('[trash] permanentlyDeleteNote failed', error)
@@ -127,10 +125,7 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
     if (trashedNotes.length === 0) return
 
     const noteIds = trashedNotes.map((n) => n.id)
-    const { error } = await supabase
-      .from('notes')
-      .delete()
-      .in('id', noteIds)
+    const { error } = await supabase.from('notes').delete().in('id', noteIds)
 
     if (error) {
       console.error('[trash] emptyTrash failed', error)
@@ -203,8 +198,8 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
   },
 
   archiveNote: async (noteId) => {
-    // Optimistic: active 목록에서 먼저 제거하고, 실패 시 롤백
-    const prevNotes = get().notes
+    // Optimistic: active 목록에서 먼저 제거하고, 실패 시 해당 노트만 롤백 (BRU-114)
+    const prevNote = get().notes.find((n) => n.id === noteId)
 
     set((state) => ({
       notes: state.notes.filter((n) => n.id !== noteId),
@@ -217,7 +212,9 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
 
     if (error) {
       console.error('[archive] archiveNote failed', error)
-      set({ notes: prevNotes })
+      set((state) => ({
+        notes: prevNote ? restoreNoteInList(state.notes, prevNote) : state.notes,
+      }))
       useToastStore.getState().showToast({
         message: '노트를 보관하지 못했습니다',
         variant: 'error',
@@ -235,10 +232,7 @@ export const createTrashSlice: StateCreator<NotesState, [], [], TrashSlice> = (s
   },
 
   unarchiveNote: async (noteId) => {
-    const { error } = await supabase
-      .from('notes')
-      .update({ archived_at: null })
-      .eq('id', noteId)
+    const { error } = await supabase.from('notes').update({ archived_at: null }).eq('id', noteId)
 
     if (error) {
       console.error('[archive] unarchiveNote failed', error)

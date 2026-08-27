@@ -104,3 +104,30 @@ export function reconcileActiveList(notes: Note[], row: NoteRow): Note[] {
 export function entersActiveList(notes: Note[], row: NoteRow): boolean {
   return belongsInActiveList(row) && !notes.some((n) => n.id === row.id)
 }
+
+function noteBelongsInActiveList(note: Note): boolean {
+  return !note.deletedAt && !note.archivedAt
+}
+
+/**
+ * 실패 롤백 — 빠진 노트만 피드 순서 제자리에 되넣는다 (BRU-114).
+ *
+ * 배열 통째 스냅샷을 씌우면 그 사이 realtime·다른 낙관적 갱신이 사라진다.
+ * 보관·삭제된 노트는 들이지 않는다. 관문은 여전히 여기 하나다.
+ */
+export function restoreNoteInList(notes: Note[], note: Note): Note[] {
+  if (!noteBelongsInActiveList(note)) return notes
+  if (notes.some((n) => n.id === note.id)) return notes
+  return insertInFeedOrder(notes, note)
+}
+
+/**
+ * 실패 롤백 — 아직 목록에 있는 노트만 스냅샷으로 되돌린다 (BRU-114).
+ *
+ * 그 사이 빠진 노트는 되넣지 않는다. 필드만 고친 낙관적 갱신(프로젝트·반출)의
+ * 실패 경로가 쓴다.
+ */
+export function restoreNoteFields(notes: Note[], note: Note): Note[] {
+  if (!notes.some((n) => n.id === note.id)) return notes
+  return notes.map((n) => (n.id === note.id ? note : n))
+}

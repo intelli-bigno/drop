@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Note, NoteRow } from '@drop/shared'
 import { noteRowToNote } from '@drop/shared'
-import { reconcileActiveList } from '../active-list'
+import { reconcileActiveList, restoreNoteFields, restoreNoteInList } from '../active-list'
 
 function row(overrides: Partial<NoteRow> = {}): NoteRow {
   return {
@@ -110,5 +110,67 @@ describe('reconcileActiveList — 들이는 것', () => {
     const next = reconcileActiveList([], row({ id: 'n1', archived_at: null }))
 
     expect(ids(next)).toEqual(['n1'])
+  })
+})
+
+describe('restoreNoteInList — 실패 롤백 (BRU-114)', () => {
+  it('빠진 노트를 피드 순서 제자리에 되넣는다', () => {
+    const existing = [
+      noteRowToNote(row({ id: 'today', created_at: '2026-08-25T00:00:00Z' })),
+      noteRowToNote(row({ id: 'jul01', created_at: '2026-07-01T00:00:00Z' })),
+    ]
+    const missing = noteRowToNote(row({ id: 'aug10', created_at: '2026-08-10T00:00:00Z' }))
+
+    expect(ids(restoreNoteInList(existing, missing))).toEqual(['today', 'aug10', 'jul01'])
+  })
+
+  it('이미 있는 노트는 두 번 넣지 않는다', () => {
+    const existing = [noteRowToNote(row({ id: 'n1' }))]
+
+    expect(ids(restoreNoteInList(existing, noteRowToNote(row({ id: 'n1' }))))).toEqual(['n1'])
+  })
+
+  it('보관된 노트는 활성 목록에 되넣지 않는다', () => {
+    const archived = noteRowToNote(row({ id: 'n1', archived_at: '2026-08-25T01:00:00Z' }))
+
+    expect(ids(restoreNoteInList([], archived))).toEqual([])
+  })
+
+  it('삭제된 노트는 활성 목록에 되넣지 않는다', () => {
+    const deleted = noteRowToNote(row({ id: 'n1', deleted_at: '2026-08-25T01:00:00Z' }))
+
+    expect(ids(restoreNoteInList([], deleted))).toEqual([])
+  })
+})
+
+describe('restoreNoteFields — 실패 롤백 (BRU-114)', () => {
+  it('목록에 있는 노트만 스냅샷으로 되돌린다', () => {
+    const original = noteRowToNote(row({ id: 'n1', project_id: null }))
+    const mutated = [{ ...original, projectId: 'p1' }, noteRowToNote(row({ id: 'n2' }))]
+
+    const next = restoreNoteFields(mutated, original)
+
+    expect(next[0].projectId).toBeNull()
+    expect(ids(next)).toEqual(['n1', 'n2'])
+  })
+
+  it('그 사이 빠진 노트는 되넣지 않는다', () => {
+    const original = noteRowToNote(row({ id: 'n1' }))
+    const remaining = [noteRowToNote(row({ id: 'n2' }))]
+
+    expect(ids(restoreNoteFields(remaining, original))).toEqual(['n2'])
+  })
+
+  it('다른 노트의 동시 변경은 유지한다', () => {
+    const originalA = noteRowToNote(row({ id: 'a', project_id: null }))
+    const current = [
+      { ...originalA, projectId: 'p1' },
+      noteRowToNote(row({ id: 'b', content: '동시 갱신' })),
+    ]
+
+    const next = restoreNoteFields(current, originalA)
+
+    expect(next[0].projectId).toBeNull()
+    expect(next[1].content).toBe('동시 갱신')
   })
 })
