@@ -134,6 +134,10 @@ electron-build-remote:
 # `electron-vite dev --rendererOnly`를 쓰지 않는 이유: 이름과 달리 Electron 기동을
 # 건너뛰지 않아 out/main/index.js가 없으면 dev 서버까지 함께 죽는다 (2.3.0 실측).
 desktop-browser:
+	@test -x node_modules/.bin/vite || { \
+		echo "✗ vite가 없습니다 (node_modules/.bin/vite)."; \
+		echo "  → pnpm install"; \
+		exit 1; }
 	@test -f $(DESKTOP_DIR)/.env.localdev || { \
 		echo "✗ $(DESKTOP_DIR)/.env.localdev 가 없습니다."; \
 		echo "  → cp $(DESKTOP_DIR)/.env.localdev.example $(DESKTOP_DIR)/.env.localdev"; \

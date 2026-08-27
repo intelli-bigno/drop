@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
     renderer: {
       resolve: {
         alias: {
-          '@renderer': resolve('src/renderer'),
+          '@renderer': resolve(__dirname, 'src/renderer'),
         },
       },
       plugins: [react()],

@@ -23,6 +23,6 @@ export default defineConfig(async (env: ConfigEnv): Promise<UserConfig> => {
     root: resolve(__dirname, 'src/renderer'),
     // .env.localdev / .env.remote는 패키지 루트에 있다 (root가 src/renderer이므로 명시 필요).
     envDir: __dirname,
-    server: { port: 5173, strictPort: false },
+    server: { port: 5173, strictPort: true },
   } satisfies UserConfig)
 })
