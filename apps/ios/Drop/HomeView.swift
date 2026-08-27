@@ -2,6 +2,7 @@ import DropCore
 import DropUI
 import PhotosUI
 import SwiftUI
+import UIKit
 
 /// `screens/home_screen.dart` 대응. 앱 사용 시간의 대부분이 여기다.
 struct HomeView: View {
@@ -119,15 +120,8 @@ struct HomeView: View {
                     message: { Text("이 기기에서는 카메라를 열 수 없습니다. 사진 보관함에서 골라 주세요.") }
                 )
                 .sheet(item: $composer) { target in
-                    NoteComposerSheet(target: target) { content in
-                        switch target {
-                        case .new, .newWithText:
-                            await notes.create(content: content)
-                        case let .existing(note):
-                            await notes.update(id: note.id, content: content)
-                        case let .reply(parent):
-                            await notes.create(content: content, parentID: parent.id)
-                        }
+                    NoteComposerSheet(target: target) { content, pending in
+                        await submitComposer(target: target, content: content, pending: pending)
                     }
                 }
                 // 펼치기(뷰어). 읽기 전용 경로다 — 여기서는 저장이 일어나지 않는다 (BRU-77).
@@ -138,7 +132,10 @@ struct HomeView: View {
                             commentCount: comments.count(for: note.id),
                             comments: comments,
                             attachmentURL: attachmentURL,
-                            onSubmitEdit: { content in await notes.update(id: note.id, content: content) },
+                            onSubmitEdit: { content, pending in
+                                await notes.update(id: note.id, content: content)
+                                await attach(pending, to: note.id)
+                            },
                             onStateAction: { action in await perform(action, on: note) }
                         )
                     }
@@ -261,14 +258,10 @@ struct HomeView: View {
         )
         // 탭은 **펼치기**다. 편집기는 뷰어에서 "편집"을 한 번 더 눌러야 열린다 —
         // 열어 보려던 동작이 저장 경로를 건드리면 안 된다 (BRU-77 / BRU-66).
-        // 선택 모드에서는 그대로 선택 토글.
-        .onTapGesture {
-            if notes.isSelecting {
-                notes.toggleSelection(id: note.id)
-            } else {
-                detailTarget = NoteDetailTarget(id: note.id)
-            }
-        }
+        // 더블탭은 본문 복사 (BRU-129). count: 2를 먼저 두면 싱글 탭을 먹지 않는다.
+        // 선택 모드에서는 둘 다 토글만 — 복사는 하지 않는다.
+        .onTapGesture(count: 2) { handleNoteTap(note, count: 2) }
+        .onTapGesture { handleNoteTap(note, count: 1) }
         // 롱프레스는 선택 모드 하나만 쓴다. 예전에는 같은 롱프레스를
         // contextMenu(스와이프 대체)가 함께 노려 어느 쪽이 뜰지 들쭉날쭉했다.
         .onLongPressGesture {
@@ -440,6 +433,58 @@ struct HomeView: View {
 }
 
 private extension HomeView {
+    /// 싱글 탭은 뷰어, 더블탭은 복사. 선택 모드에서는 둘 다 토글만 (BRU-129).
+    func handleNoteTap(_ note: Note, count: Int) {
+        if notes.isSelecting {
+            notes.toggleSelection(id: note.id)
+            return
+        }
+        if count == 2, NoteCopying.shouldCopyOnDoubleTap(isSelecting: false) {
+            UIPasteboard.general.string = NoteCopying.clipboardString(for: note)
+            return
+        }
+        detailTarget = NoteDetailTarget(id: note.id)
+    }
+
+    /// 컴포저가 본문과 대기 첨부를 넘긴다. 첨부는 노트 id가 생긴 뒤에만 올린다 (BRU-131).
+    func submitComposer(target: ComposerTarget, content: String, pending: [PendingAttachment]) async {
+        let destination = ComposerAttachmentRouting.destination(editingNoteID: target.editingNoteID)
+        let createdID: String?
+        switch target {
+        case .new, .newWithText:
+            createdID = await notes.create(content: content)?.id
+        case let .existing(note):
+            await notes.update(id: note.id, content: content)
+            createdID = nil
+        case let .reply(parent):
+            createdID = await notes.create(content: content, parentID: parent.id)?.id
+        }
+        guard !pending.isEmpty else { return }
+        guard let noteID = ComposerAttachmentRouting.noteIDToAttach(
+            destination: destination,
+            createdNoteID: createdID
+        ) else { return }
+        await attach(pending, to: noteID)
+    }
+
+    func attach(_ pending: [PendingAttachment], to noteID: String) async {
+        guard let container, !pending.isEmpty else { return }
+        let repository = container.makeAttachmentsRepository()
+        for item in pending {
+            do {
+                _ = try await repository.upload(
+                    data: item.data,
+                    fileName: item.fileName,
+                    type: item.type,
+                    toNote: noteID
+                )
+            } catch {
+                notes.report(error: error)
+            }
+        }
+        await notes.load()
+    }
+
     /// 뷰어에서 고른 상태 변경을 목록의 저장소로 넘긴다 (BRU-77).
     /// **본문은 여기서 다루지 않는다** — 뷰어에서 본문이 나가는 길은 편집기뿐이다.
     func perform(_ action: NoteViewerAction, on note: Note) async {
@@ -575,5 +620,11 @@ enum ComposerTarget: Identifiable {
         case let .existing(note): note.id
         case let .reply(parent): "답글-\(parent.id)"
         }
+    }
+
+    /// 이미 있는 노트를 고치는 중이면 그 id. 새 노트·답글은 nil — 만들고 나서 붙인다.
+    var editingNoteID: String? {
+        if case let .existing(note) = self { return note.id }
+        return nil
     }
 }

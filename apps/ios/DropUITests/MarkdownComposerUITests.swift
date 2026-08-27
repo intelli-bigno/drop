@@ -112,4 +112,35 @@ final class MarkdownComposerUITests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
     }
+
+    /// 닫기·미리보기·추가/저장은 상단이 아니라 키보드 위 하단에 있다 (BRU-132).
+    /// 이미지·영상 선택도 같은 시트에 있다 (BRU-131). 미리보기 중에는 툴바만 걷힌다.
+    func testComposerActionsSitAtTheBottom() throws {
+        _ = openComposer()
+
+        XCTAssertTrue(app.buttons["미리보기 전환"].waitForExistence(timeout: 3), "미리보기가 없다")
+        XCTAssertTrue(app.buttons["저장"].exists, "하단 저장이 없다")
+        XCTAssertTrue(app.buttons["닫기"].exists, "하단 닫기가 없다")
+        XCTAssertTrue(app.buttons["사진 첨부"].exists, "시트에 사진 선택이 없다")
+        XCTAssertTrue(app.buttons["체크박스"].exists, "마크다운 툴바가 사라졌다")
+
+        app.buttons["미리보기 전환"].tap()
+        XCTAssertTrue(app.staticTexts["이번 주 정리"].waitForExistence(timeout: 3), "미리보기로 넘어가지 않았다")
+        XCTAssertFalse(app.buttons["체크박스"].exists, "미리보기인데 툴바가 남아 있다")
+        XCTAssertTrue(app.buttons["저장"].exists, "미리보기에서 저장이 사라졌다")
+        XCTAssertTrue(app.buttons["닫기"].exists, "미리보기에서 닫기가 사라졌다")
+        XCTAssertTrue(app.buttons["사진 첨부"].exists, "미리보기에서 사진 선택이 사라졌다")
+    }
+
+    /// 새 노트 시트에도 추가·사진 선택이 있다 — 빈 노트를 홈에서 따로 만들지 않는다.
+    func testNewComposerHasAddAndMediaPicker() throws {
+        _ = markdownRow()
+        app.buttons["plus"].tap()
+
+        XCTAssertTrue(app.buttons["추가"].waitForExistence(timeout: 3), "하단 추가가 없다")
+        XCTAssertTrue(app.buttons["미리보기 전환"].exists, "미리보기가 없다")
+        XCTAssertTrue(app.buttons["닫기"].exists, "하단 닫기가 없다")
+        XCTAssertTrue(app.buttons["사진 첨부"].exists, "새 노트 시트에 사진 선택이 없다")
+        XCTAssertTrue(app.buttons["체크박스"].exists, "마크다운 툴바가 사라졌다")
+    }
 }

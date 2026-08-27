@@ -96,6 +96,7 @@ struct DesignSystemAuditTests {
             "Drop/HomeView.swift", // 작성 FAB
             "Drop/NoteFilterBar.swift", // 목록 위에 뜨는 필터 줄
             "Drop/SelectionActionBar.swift", // 선택 모드 하단 바
+            "Drop/NoteComposerSheet.swift", // 키보드 위 닫기·미리보기·추가
         ]
         for relativePath in chrome {
             let url = Self.iosRoot.appending(path: relativePath)

@@ -1,5 +1,6 @@
 import DropCore
 import DropUI
+import PhotosUI
 import SwiftUI
 
 /// `widgets/note_composer_sheet.dart` 대응. DROP의 핵심 동선 — 빠르게 던져넣기.
@@ -8,7 +9,7 @@ import SwiftUI
 /// 목록은 한 줄만 보여 주므로 노트를 다 읽는 자리도 결국 이 시트다 (BRU-37, BRU-49).
 struct NoteComposerSheet: View {
     let target: ComposerTarget
-    let onSubmit: (String) async -> Void
+    let onSubmit: (String, [PendingAttachment]) async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var text: String
@@ -16,8 +17,11 @@ struct NoteComposerSheet: View {
     @State private var selection = NSRange(location: 0, length: 0)
     @State private var isPreviewing = false
     @State private var isSaving = false
+    @State private var pickerItems: [PhotosPickerItem] = []
+    /// 노트 id가 생기기 전에 고른 파일. 제출 때 함께 넘긴다 (BRU-131).
+    @State private var pending: [PendingAttachment] = []
 
-    init(target: ComposerTarget, onSubmit: @escaping (String) async -> Void) {
+    init(target: ComposerTarget, onSubmit: @escaping (String, [PendingAttachment]) async -> Void) {
         self.target = target
         self.onSubmit = onSubmit
         switch target {
@@ -36,23 +40,20 @@ struct NoteComposerSheet: View {
                 .background(DropTheme.Surface.page)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("닫기") { dismiss() }
-                    }
-                    ToolbarItemGroup(placement: .topBarTrailing) {
-                        previewToggle
-                        Button(isNew ? "추가" : "저장") { submit() }
-                            // 저장 중 중복 탭을 막지 않으면 노트가 두 번 만들어진다.
-                            .disabled(isSaving || trimmed.isEmpty)
-                            .fontWeight(.semibold)
+                // 닫기·미리보기·추가/저장은 키보드 위 하단으로 옮겼다 (BRU-132).
+                // 상단은 제목만 남긴다.
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        // 툴바는 키보드 위에 붙는다. 미리보기 중에는 칠 것이 없으니 걷는다.
+                        if !isPreviewing {
+                            MarkdownToolbar(onCommand: apply)
+                        }
+                        composerActions
                     }
                 }
-                // 툴바는 키보드 위에 붙는다. 미리보기 중에는 칠 것이 없으니 걷는다.
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !isPreviewing {
-                        MarkdownToolbar(onCommand: apply)
-                    }
+                .onChange(of: pickerItems) { _, items in
+                    guard !items.isEmpty else { return }
+                    Task { await ingest(items) }
                 }
         }
         .presentationDetents([.medium, .large])
@@ -77,6 +78,54 @@ struct NoteComposerSheet: View {
         }
     }
 
+    /// 닫기 / 미리보기 / 사진 / 추가(저장). 키보드 바로 위, 마크다운 툴바 옆 (BRU-132).
+    private var composerActions: some View {
+        HStack(spacing: DropTheme.Spacing.base) {
+            Button("닫기") { dismiss() }
+                .accessibilityIdentifier("닫기")
+                .disabled(isSaving)
+
+            previewToggle
+
+            PhotosPicker(
+                selection: $pickerItems,
+                maxSelectionCount: 5,
+                matching: .any(of: [.images, .videos])
+            ) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.subheadline)
+                    .frame(width: 40, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(DropTokens.Colors.textPrimary)
+            .accessibilityLabel("사진 첨부")
+            .accessibilityIdentifier("사진 첨부")
+            .disabled(isSaving)
+
+            if !pending.isEmpty {
+                Text("첨부 \(pending.count)")
+                    .font(.caption)
+                    .foregroundStyle(DropTokens.Colors.textSecondary)
+                    .accessibilityIdentifier("대기 첨부")
+            }
+
+            Spacer()
+
+            Button(isNew ? "추가" : "저장") { submit() }
+                // 저장 중 중복 탭을 막지 않으면 노트가 두 번 만들어진다.
+                // 본문이 비어도 고른 파일이 있으면 제출할 수 있다 (BRU-131).
+                .disabled(isSaving || !canSubmit)
+                .fontWeight(.semibold)
+                .accessibilityIdentifier(isNew ? "추가" : "저장")
+        }
+        .padding(.horizontal, DropTheme.Spacing.comfortable)
+        .padding(.vertical, DropTheme.Spacing.tight)
+        .frame(minHeight: 44)
+        // 키보드 위 액션 줄은 기능 레이어라 유리다 (BRU-75).
+        .glassEffect(.regular, in: Rectangle())
+    }
+
     /// 편집↔미리보기 전환.
     ///
     /// **미리보기는 읽기만 한다.** 이 버튼은 화면 상태(`isPreviewing`)만 바꾸고
@@ -93,6 +142,7 @@ struct NoteComposerSheet: View {
         // 겹친다. 컴포저가 뷰어 위에 뜨는 지금(BRU-77) 이름으로 찾으면 어느 쪽을
         // 잡을지 알 수 없으므로, 검증이 붙잡을 고정 손잡이를 따로 준다.
         .accessibilityIdentifier("미리보기 전환")
+        .disabled(isSaving)
     }
 
     /// 툴바 명령을 본문에 적용한다. 무엇을 어디에 끼워 넣을지는 전부
@@ -101,6 +151,19 @@ struct NoteComposerSheet: View {
         let result = MarkdownEditor.apply(command, to: text, selection: selection)
         text = result.text
         selection = result.selection
+    }
+
+    private func ingest(_ items: [PhotosPickerItem]) async {
+        defer { pickerItems = [] }
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            let isVideo = item.supportedContentTypes.contains { $0.conforms(to: .movie) }
+            pending.append(PendingAttachment(
+                data: data,
+                fileName: item.itemIdentifier ?? (isVideo ? "video.mp4" : "image.jpg"),
+                type: isVideo ? .video : .image
+            ))
+        }
     }
 
     private var isNew: Bool {
@@ -122,12 +185,17 @@ struct NoteComposerSheet: View {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var canSubmit: Bool {
+        !trimmed.isEmpty || !pending.isEmpty
+    }
+
     private func submit() {
-        guard !isSaving else { return }
+        guard !isSaving, canSubmit else { return }
         isSaving = true
         let content = trimmed
+        let attachments = pending
         Task {
-            await onSubmit(content)
+            await onSubmit(content, attachments)
             isSaving = false
             dismiss()
         }

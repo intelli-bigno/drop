@@ -18,7 +18,7 @@ struct NoteDetailView: View {
     let comments: CommentsStore
     let attachmentURL: (Attachment) async -> URL?
     /// 편집기에서 **저장을 눌렀을 때만** 불린다. 뷰어를 열고 닫는 것만으로는 불리지 않는다.
-    let onSubmitEdit: (String) async -> Void
+    let onSubmitEdit: (String, [PendingAttachment]) async -> Void
     /// 보관·휴지통 같은 상태 변경. 본문은 건드리지 않는다.
     let onStateAction: (NoteViewerAction) async -> Void
 

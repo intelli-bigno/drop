@@ -86,4 +86,28 @@ final class NoteViewerUITests: XCTestCase {
             "탭으로 선택이 풀리지 않았다"
         )
     }
+
+    /// 더블탭은 뷰어를 열지 않는다 — 싱글 탭만 펼치기다 (BRU-129 / BRU-77).
+    func testDoubleTapDoesNotOpenViewer() throws {
+        waitForList().doubleTap()
+
+        XCTAssertFalse(
+            app.navigationBars[sampleNoteTitle].waitForExistence(timeout: 1),
+            "더블탭이 뷰어를 열었다"
+        )
+        XCTAssertFalse(app.navigationBars["노트 편집"].exists, "더블탭이 편집기를 열었다")
+    }
+
+    /// 선택 모드 더블탭은 복사 대신 토글만 — 뷰어가 열리면 선택이 깨진다.
+    func testDoubleTapInSelectionDoesNotOpenViewer() throws {
+        let note = waitForList()
+        note.press(forDuration: 1.0)
+        XCTAssertTrue(
+            app.navigationBars["1개 선택됨"].waitForExistence(timeout: 3),
+            "롱프레스로 선택 모드에 들어가지 않았다"
+        )
+
+        note.doubleTap()
+        XCTAssertFalse(app.navigationBars[sampleNoteTitle].exists, "선택 모드 더블탭이 뷰어를 열었다")
+    }
 }
