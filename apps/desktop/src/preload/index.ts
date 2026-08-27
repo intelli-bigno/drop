@@ -43,6 +43,9 @@ const api = {
       ipcRenderer.invoke('quickCapture:submit', content),
     /** QuickCapture에서 직접 저장 후 메인 윈도우에 refresh 알림 */
     notifyRefresh: (): Promise<void> => ipcRenderer.invoke('quickCapture:notifyRefresh'),
+    /** 렌더러가 잰 카드 높이. main이 창 높이만 맞춘다 (BRU-116). */
+    setHeight: (cardHeight: number): Promise<void> =>
+      ipcRenderer.invoke('quickCapture:setHeight', cardHeight),
     onNoteCreated: (callback: (content: string) => void): (() => void) => {
       const handler = (_event: Electron.IpcRendererEvent, content: string) => callback(content)
       ipcRenderer.on('quickCapture:noteCreated', handler)

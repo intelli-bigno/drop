@@ -9,18 +9,19 @@
    색·간격·타이포는 전부 design-system/drop/tokens.json 에서 온다.
    여기에 색·간격을 새로 적지 않는다 — 토큰을 고치고 `make tokens`.
 
-   높이 예산: 창은 600×80 고정이다 (main/index.ts, BRU-112 범위 밖).
-   바깥 여백 8이면 카드는 64px까지다 — 실측 59.4(첨부 없음)·63.2(첨부 있음).
-   여백이나 줄을 늘리면 그대로 창 밖으로 잘려 나간다.
+   높이: 렌더러가 카드 높이를 재고 main이 창 높이만 맞춘다 (BRU-116).
+   위치는 위 가장자리 고정(top-stable) — 가운데 재정렬은 창이 위아래로 튄다.
+   상한은 QUICK_CAPTURE_WINDOW_MAX_HEIGHT. 넘으면 카드 안에서 스크롤.
    ============================================ */
 
 .quick-capture {
   display: flex;
-  align-items: center;
+  /* 남는 공간은 아래로. 위 가장자리가 창과 같이 움직이게 (top-stable). */
+  align-items: flex-start;
   justify-content: center;
   width: 100%;
   height: 100vh;
-  /* 카드 둘레로 보이는 웜 캔버스의 테두리. 창 높이가 고정이라 여기가 예산이다. */
+  /* 카드 둘레로 보이는 웜 캔버스의 테두리. --space-2 = 8px, 상하 합 16. */
   padding: var(--space-2);
   /* 캔버스는 body(--bg-primary)가 칠한다 — 여기서 덮지 않는다. */
   background: transparent;
@@ -34,8 +35,10 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 상태줄이 카드 라운드 안쪽으로 잘려 들어가게 한다. */
-  overflow: hidden;
+  /* 창 상한에 걸리면 카드 안에서 스크롤. 가로만 숨겨 라운드를 지킨다. */
+  max-height: calc(100vh - var(--space-2) * 2);
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   background: var(--bg-card);
@@ -77,8 +80,8 @@
 /* --------------------------------------------
    첨부 칩 — 상태줄 오른쪽에 산다.
 
-   칩에 줄을 따로 주면 (입력 줄 + 칩 줄 + 상태줄) 카드가 92.2px가 되어 64px
-   예산을 28px 넘긴다 (실측). 상태줄과 한 줄을 나눠 쓰면 63.2px로 들어온다.
+   칩에 줄을 따로 주면 (입력 줄 + 칩 줄 + 상태줄) 카드가 커진다.
+   창 높이가 따라가므로 두 줄이 되어도 잘리지 않는다 (BRU-116).
    -------------------------------------------- */
 
 .quick-capture-attachments {
@@ -99,7 +102,7 @@
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  /* 세로 패딩 대신 행간으로 높이를 만든다 — 창 높이 예산이 빠듯하다. */
+  /* 세로 패딩 대신 행간으로 높이를 만든다. */
   line-height: 1.6;
 }
 

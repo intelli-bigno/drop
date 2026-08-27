@@ -41,6 +41,11 @@ import {
   shouldUseDoubleCtrlCapture,
 } from '../shared/double-ctrl'
 import {
+  QUICK_CAPTURE_WINDOW_MIN_HEIGHT,
+  QUICK_CAPTURE_WINDOW_WIDTH,
+  nextQuickCaptureBounds,
+} from '../shared/quick-capture-bounds'
+import {
   DEFAULT_QUICK_CAPTURE_ACCELERATOR,
   describeFallbackRegistration,
   formatAccelerator,
@@ -939,8 +944,8 @@ function createQuickCaptureWindow(options: { fromGlobalShortcut?: boolean } = {}
   }
 
   quickCaptureWindow = new BrowserWindow({
-    width: 600,
-    height: 80,
+    width: QUICK_CAPTURE_WINDOW_WIDTH,
+    height: QUICK_CAPTURE_WINDOW_MIN_HEIGHT,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -989,6 +994,8 @@ function createQuickCaptureWindow(options: { fromGlobalShortcut?: boolean } = {}
 function hideQuickCaptureWindow(): void {
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
     quickCaptureWindow.hide()
+    // 다음 show가 직전 첨부 높이로 시작하지 않게 숨긴 뒤에만 되돌린다.
+    resetQuickCaptureWindowHeight()
   }
 
   // 다른 앱에서 불러온 캡처였다면 그 앱으로 포커스를 돌려준다 (BRU-84).
@@ -1003,6 +1010,22 @@ function hideQuickCaptureWindow(): void {
   }
 
   quickCaptureInvokedFromOtherApp = false
+}
+
+/**
+ * 렌더러가 잰 카드 높이로 창 높이만 맞춘다 (BRU-116).
+ * 가로·x·y는 유지(top-stable). 계산 결과가 지금과 같으면 setBounds를 부르지 않는다.
+ */
+function applyQuickCaptureCardHeight(cardHeight: unknown): void {
+  if (!quickCaptureWindow || quickCaptureWindow.isDestroyed()) return
+  if (typeof cardHeight !== 'number' || !Number.isFinite(cardHeight) || cardHeight < 0) return
+  const next = nextQuickCaptureBounds(quickCaptureWindow.getBounds(), cardHeight)
+  if (!next) return
+  quickCaptureWindow.setBounds(next)
+}
+
+function resetQuickCaptureWindowHeight(): void {
+  applyQuickCaptureCardHeight(0)
 }
 
 function showMainWindow(): void {
@@ -1434,6 +1457,10 @@ function setupQuickCaptureHandlers(): void {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('quickCapture:refresh')
     }
+  })
+
+  ipcMain.handle('quickCapture:setHeight', (_event, cardHeight: unknown) => {
+    applyQuickCaptureCardHeight(cardHeight)
   })
 }
 

@@ -105,6 +105,8 @@ function createPreviewApi(): Api {
       // `handledByMainWindow: false`가 사실이다.
       submit: async () => ({ success: false, handledByMainWindow: false }),
       notifyRefresh: async () => {},
+      // [Electron 전용] 별도 창 setBounds. 브라우저에는 창이 없다.
+      setHeight: async () => {},
       onNoteCreated: unsubscribe,
       onRefresh: unsubscribe,
     },

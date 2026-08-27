@@ -23,6 +23,7 @@ export function QuickCapture() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([])
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const { user, initializeAuth } = useAuthStore()
   const { createNote, addAttachment, createNoteWithInstagram, createNoteWithYouTube, updateNote } =
     useNotesStore()
@@ -43,6 +44,29 @@ export function QuickCapture() {
     console.log('[QuickCapture] Initializing auth...')
     initializeAuth()
   }, [initializeAuth])
+
+  // 카드 높이가 실제로 바뀌었을 때만 main에 알린다 (BRU-116).
+  // 글자마다 IPC하지 않는다 — ResizeObserver가 레이아웃 변화가 있을 때만 오고,
+  // 같은 픽셀이면 setHeight도 건너뛴다.
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const setHeight = window.api?.quickCapture?.setHeight
+    if (typeof setHeight !== 'function') return
+
+    let lastCardHeight: number | null = null
+    const report = () => {
+      const cardHeight = Math.round(panel.getBoundingClientRect().height)
+      if (lastCardHeight === cardHeight) return
+      lastCardHeight = cardHeight
+      void setHeight(cardHeight)
+    }
+
+    const observer = new ResizeObserver(report)
+    observer.observe(panel)
+    report()
+    return () => observer.disconnect()
+  }, [user])
 
   // Auto focus on mount and whenever window regains visibility
   // Also reset state when window becomes visible (since window is hidden, not destroyed)
@@ -290,7 +314,7 @@ export function QuickCapture() {
   if (!user) {
     return (
       <div className="quick-capture">
-        <div className="quick-capture-panel">
+        <div ref={panelRef} className="quick-capture-panel">
           <div className="quick-capture-auth-message">
             DROP에 로그인되어 있지 않습니다. Esc를 눌러 닫으세요.
           </div>
@@ -318,7 +342,10 @@ export function QuickCapture() {
 
   return (
     <div className="quick-capture">
-      <div className={['quick-capture-panel', showSuccess ? 'success' : ''].filter(Boolean).join(' ')}>
+      <div
+        ref={panelRef}
+        className={['quick-capture-panel', showSuccess ? 'success' : ''].filter(Boolean).join(' ')}
+      >
         <div className="quick-capture-input-row">
           <textarea
             ref={inputRef}
@@ -334,7 +361,7 @@ export function QuickCapture() {
           {isSubmitting && <div className="quick-capture-spinner" />}
         </div>
         {/* 상태줄 — 힌트는 여기 산다 (placeholder가 겸하면 글자를 치는 순간 사라진다).
-            첨부 칩도 같은 줄을 쓴다: 칩에 줄을 따로 주면 80px 창을 넘긴다 (BRU-112). */}
+            첨부 칩도 같은 줄을 쓴다. 두 줄이 되면 창 높이가 따라간다 (BRU-116). */}
         <div className="quick-capture-statusbar">
           <span className="quick-capture-hint">
             <span className="quick-capture-key">Enter</span>

@@ -48,6 +48,7 @@ describe('installPreviewApiShim', () => {
     const api = shim()
 
     await expect(api.quickCapture.open()).resolves.not.toThrow()
+    await expect(api.quickCapture.setHeight(86)).resolves.not.toThrow()
     await expect(api.updater.download()).resolves.not.toThrow()
     await expect(api.updater.install()).resolves.not.toThrow()
     await expect(api.updater.check()).resolves.not.toThrow()
