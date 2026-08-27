@@ -78,6 +78,20 @@ class InMemoryNotesRepository(notes: List<Note> = emptyList()) : NotesRepository
         hasFiles: Boolean,
     ) = mutate(id) { it.copy(hasLink = hasLink, hasMedia = hasMedia, hasFiles = hasFiles) }
 
+    /**
+     * 한 노트를 통째로 바꾼다. 태그·첨부처럼 노트에 실려 다니는 것을 다른 인메모리
+     * 리포지토리([InMemoryTagsRepository] 등)가 고칠 때 쓰는 손잡이 — 화면 계약
+     * ([NotesRepository])에는 없는 메서드라 실제 화면 코드는 부를 수 없다.
+     */
+    suspend fun replace(id: String, transform: (Note) -> Note) = mutex.withLock {
+        notes = notes.map { if (it.id == id) transform(it) else it }
+    }
+
+    /** 모든 노트에 같은 변환을 적용한다 (태그 이름 바꾸기·태그 삭제). */
+    suspend fun replaceAll(transform: (Note) -> Note) = mutex.withLock {
+        notes = notes.map(transform)
+    }
+
     private suspend fun mutate(id: String, transform: (Note) -> Note) {
         mutationError?.let { throw it }
         mutex.withLock {
