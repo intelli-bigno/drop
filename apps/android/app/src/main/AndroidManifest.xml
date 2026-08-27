@@ -6,13 +6,13 @@
     <application
         android:name=".DropApplication"
         android:allowBackup="false"
-        android:label="DROP"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Drop">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="DROP"
+            android:label="@string/app_name"
             android:theme="@style/Theme.Drop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -55,7 +55,7 @@
         <receiver
             android:name=".DropWidgetReceiver"
             android:exported="true"
-            android:label="DROP">
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
