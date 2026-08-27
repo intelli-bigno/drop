@@ -67,6 +67,9 @@ android {
             "GOOGLE_WEB_CLIENT_ID",
             "\"${configValue("GOOGLE_WEB_CLIENT_ID")}\"",
         )
+        // 프리뷰(인메모리) 조립 스위치. 기본은 꺼짐이고 debug 빌드 타입만 켤 수 있다 —
+        // 아래 buildTypes.debug 참조. 릴리스는 값이 항상 false이고 코드 자체도 없다.
+        buildConfigField("Boolean", "DROP_PREVIEW", "false")
     }
 
     buildFeatures {
@@ -99,6 +102,22 @@ android {
     }
 
     buildTypes {
+        // `-PdropPreview=true`(= `make android-preview`)면 로그인·Supabase 없이 인메모리 표본으로
+        // 화면·위젯을 띄운다 (BRU-136). 실기기는 로컬 Supabase(10.0.2.2)를 못 보고 디버그
+        // SHA-1은 Google에 미등록이라, 이게 없으면 UI 작업도 리모트 DB에 붙어야 한다.
+        debug {
+            val preview = (project.findProperty("dropPreview") as String?)?.toBoolean() ?: false
+            buildConfigField("Boolean", "DROP_PREVIEW", preview.toString())
+            if (preview) {
+                // 실기기에는 보통 실사용 릴리스 설치본이 있다. 같은 패키지로는 서명이 달라
+                // 설치가 거부되고(INSTALL_FAILED_VERSION_DOWNGRADE / UPDATE_INCOMPATIBLE, 실측),
+                // 지우면 사용자의 세션이 날아간다. 프리뷰는 별도 앱으로 나란히 설치한다.
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+                // 홈 화면에 "DROP"이 둘 보이면 어느 쪽이 실사용 앱인지 알 수 없다.
+                resValue("string", "app_name", "DROP 프리뷰")
+            }
+        }
         release {
             signingConfig = signingConfigs.getByName(if (hasReleaseKeystore) "release" else "debug")
             isMinifyEnabled = false

@@ -52,6 +52,7 @@ help:
 	@echo "    make android-test         - core 모듈 JVM 테스트 (에뮬레이터 불필요)"
 	@echo "    make android-build        - 디버그 APK 빌드"
 	@echo "    make android-install      - 연결된 기기·에뮬레이터에 설치"
+	@echo "    make android-preview      - 로그인·Supabase 없이 인메모리 표본으로 설치 (UI·위젯 작업용)"
 	@echo "    make android-clean        - 생성물 정리"
 
 # ============================================
@@ -267,6 +268,11 @@ android-build:
 
 android-install:
 	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) :app:installDebug
+
+# 프리뷰 빌드를 연결된 기기에 설치 — 로그인·Supabase 없이 인메모리 표본으로 화면·위젯을 띄운다.
+# 디버그 전용이고 릴리스 APK에는 그 코드가 없다 (BRU-136, iOS `-dropPreview`와 같은 자리).
+android-preview:
+	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) :app:installDebug -PdropPreview=true
 
 android-clean:
 	cd $(ANDROID_DIR) && $(ANDROID_GRADLE) clean

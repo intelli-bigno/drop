@@ -40,9 +40,12 @@ Android에서 Supabase SDK를 쓰지 않는 이유: supabase-kt의 세션 영속
 | `make android-test` | `core` JVM 테스트 (에뮬레이터 불필요, 가장 빠른 피드백) |
 | `make android-build` | 디버그 APK 빌드 |
 | `make android-install` | 연결된 기기·에뮬레이터에 설치 |
+| `make android-preview` | **로그인·Supabase 없이** 인메모리 표본으로 설치 — UI·위젯 작업용 (아래 참조) |
 | `make android-clean` | 생성물 정리 |
 
-사전 준비: JDK 17 이상, Android SDK(platform 35), 그리고 **`make android-config`** 1회.
+사전 준비: JDK 17~21, Android SDK(platform 35), 그리고 **`make android-config`** 1회.
+
+JDK는 **25로는 안 된다** — Gradle 8.14 + AGP가 시작조차 못 한다(2026-08-27 실측, `What went wrong: 25.0.2`). `JAVA_HOME`이 비어 있으면 `make android-*`가 Android Studio 내장 JBR(21, `/Applications/Android Studio.app/Contents/jbr/Contents/Home`)을 쓴다.
 
 ## 구성값이 흐르는 경로
 
@@ -101,6 +104,22 @@ gh workflow run release.yml -f target=android    # 태그 없이 테스터 빌�
 - **평문 HTTP는 디버그 빌드에서만** 열린다 (`app/src/debug`). 로컬 Supabase가 http로 뜨기 때문이고, 열어 주는 대상도 `10.0.2.2` · `127.0.0.1` · `localhost`로 한정한다.
 - **첨부 바이트는 노트를 만들기 전에 다 읽는다.** 공유로 들어온 파일을 읽지 못했을 때 조용히 건너뛰면 "담았습니다"라고 알리면서 첨부 없는 노트만 남는다 (BRU-41에서 실기로 겪었다). 읽기 실패는 그 자리에서 실패시키고, 업로드가 실패하면 `SharedCapture`가 만든 노트를 되돌린다.
 - **서명 URL은 `SignedUrlCache`로만 얻는다.** 비공개 버킷이라 이미지마다 서명 URL이 필요한데, 화면마다 새로 발급하면 목록을 스크롤할 때 요청이 폭주한다.
+
+## 로그인 없이 화면·위젯을 띄우는 법 — 프리뷰 빌드 (실기기·에뮬레이터 공통, BRU-136)
+
+iOS `-dropPreview`(`PreviewLaunch.swift`)의 Android판이다. UI·위젯만 손볼 때는 이 경로를 쓴다 — Supabase도, Google 로그인도, `.env.local`도 필요 없다.
+
+```bash
+make android-preview      # = ./gradlew :app:installDebug -PdropPreview=true
+```
+
+- **별도 앱으로 나란히 설치된다**: 패키지 `com.intellieffect.drop.mobile.preview`, 이름 "DROP 프리뷰". 실기기에 있는 실사용 설치본(릴리스 서명)을 건드리지 않는다 — 같은 패키지로는 서명이 달라 설치가 거부되고(`INSTALL_FAILED_VERSION_DOWNGRADE`, 실측), 지우면 사용자의 세션이 날아간다.
+- 인증은 `PreviewAuthGateway`가 항상 로그인된 세션을 돌려주고, 노트·태그·댓글은 `core`의 `InMemory*` 리포지토리, 첨부는 앱 캐시의 단색 PNG(`file://`)다. 표본은 iOS와 같다(고정·답글·보관·휴지통·마크다운·첨부·긴 본문).
+- 위젯은 앱이 목록을 불러올 때 `files/widget-snapshot.json`을 적으므로, 프리뷰 앱을 한 번 띄운 뒤 홈 화면에 "DROP 프리뷰" 위젯을 올리면 표본이 보인다.
+- 코드는 전부 `app/src/debug/.../PreviewLaunch.kt`와 디버그용 `DropContainerFactory`에 있다. 릴리스 소스셋의 팩토리는 Supabase만 알아서 **릴리스 APK에는 프리뷰 코드가 실리지 않는다**. `.gitignore`의 산출물용 `release` 규칙이 `src/release`를 삼키지 않도록 예외를 두었다.
+- 기기에서 프리뷰가 떠 있는지는 화면 상단 계정 표시 `preview@drop.local`로 안다.
+
+DB 컬럼이 화면까지 흘러오는지를 봐야 할 때는 이 경로로는 아무것도 증명하지 못한다 — 아래의 로컬 Supabase 경로를 쓴다.
 
 ## 로컬 Supabase로 화면을 확인하는 법 (에뮬레이터)
 
