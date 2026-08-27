@@ -136,7 +136,7 @@ function App() {
               {envLabel}
             </div>
           )}
-          <UserMenu />
+          <UserMenu onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />
         </div>
       </div>
 

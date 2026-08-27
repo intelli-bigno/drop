@@ -7,6 +7,8 @@ import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
 import { describeUpdateStatus, type UpdateStatus } from '../lib/update-status'
 import { TagManagementDialog } from './TagManagementDialog'
 import { ShortcutSettingsDialog } from './ShortcutSettingsDialog'
+import { CHEAT_SHEET_MENU_LABEL, formatKeyForDisplay } from '../shortcuts/catalog'
+import { KEYS } from '../shortcuts/keys'
 
 // updater 이벤트의 info는 unknown으로 노출된다 — 필요한 필드만 안전하게 꺼낸다
 function versionOf(info: unknown): string {
@@ -17,7 +19,11 @@ function versionOf(info: unknown): string {
   return '?'
 }
 
-export function UserMenu() {
+interface Props {
+  onOpenCheatSheet: () => void
+}
+
+export function UserMenu({ onOpenCheatSheet }: Props) {
   const { user, signOut } = useAuthStore()
   const [isOpen, setIsOpen] = useState(false)
   const [tokenCopied, setTokenCopied] = useState(false)
@@ -159,6 +165,11 @@ export function UserMenu() {
     setShowShortcutSettings(true)
   }
 
+  const handleOpenCheatSheet = () => {
+    setIsOpen(false)
+    onOpenCheatSheet()
+  }
+
   const dropdown =
     isOpen &&
     createPortal(
@@ -180,6 +191,25 @@ export function UserMenu() {
         </div>
 
         <div className="user-menu-divider" />
+
+        <button type="button" className="user-menu-item" onClick={handleOpenCheatSheet}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+          {CHEAT_SHEET_MENU_LABEL}
+          <kbd className="user-menu-item-key">{formatKeyForDisplay(KEYS.cheatSheetAlt[0])}</kbd>
+        </button>
 
         <button className="user-menu-item" onClick={handleOpenTagManagement}>
           <svg
@@ -502,6 +532,17 @@ export function UserMenu() {
 
         .user-menu-item svg {
           flex-shrink: 0;
+        }
+
+        .user-menu-item-key {
+          margin-left: auto;
+          padding: 1px 6px;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--text-tertiary);
+          background: transparent;
         }
       `}</style>
     </>

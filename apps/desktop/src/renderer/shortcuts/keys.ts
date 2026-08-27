@@ -46,6 +46,9 @@ export const KEYS = {
   // 템플릿 (빈 노트를 쓰는 중에만)
   insertTemplate: ['/'],
 
+  // 편집 중 Enter는 줄바꿈이다 (BRU-134). 피드의 Enter(답글/형제)와 다른 층.
+  insertNewline: ['Enter'],
+
   // 댓글 — Shift+C. 맨 `c`는 내용 복사, ⌘C는 OS 복사라 남는 자리가 Shift뿐이다 (BRU-63).
   // 한글 입력 상태에서 Shift+ㅊ는 `ㅊ` 그대로 찍히므로 별칭으로 함께 둔다.
   openComments: ['C', 'ㅊ'],

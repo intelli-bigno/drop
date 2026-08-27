@@ -3,7 +3,20 @@ import { KEYS, type ShortcutKeyId } from './keys'
 // 치트시트에 보여줄 항목. 키는 여기에 적지 않고 KEYS에서 keyId로 참조한다 —
 // 단축키를 추가하면 keys.ts 한 곳만 고치면 되고, 목록이 실제 동작과 어긋나지 않는다.
 
-export type ShortcutScope = 'feed' | 'global' | 'trash' | 'tag' | 'note' | 'selection'
+export type ShortcutScope = 'feed' | 'global' | 'trash' | 'tag' | 'note' | 'selection' | 'editor'
+
+/** BRU-117 — 사용자 메뉴에서 치트시트를 여는 항목. 상시 힌트가 아니라 메뉴 한 줄. */
+export const CHEAT_SHEET_MENU_LABEL = '단축키'
+
+/**
+ * 치트시트 하단 주석. 키 표에 안 들어가는 층(마크다운 숏컷·vim 없음)을 여기에 적는다.
+ * ShortcutCheatSheet는 이 배열만 그린다 — 문구를 컴포넌트에 두지 않는다.
+ */
+export const CHEAT_SHEET_NOTES: string[] = [
+  '피드: j/k 이동 · v 선택 · / · i 편집. 편집기에는 vim 모드가 없다.',
+  '편집 중: 마크다운 숏컷(# · * · ```) · Enter 줄바꿈 · Esc 끝내기.',
+  '한글 입력 상태에서도 같은 자리의 키가 동작한다 (J = ㅓ).',
+]
 
 export interface ShortcutCatalogEntry {
   keyId: ShortcutKeyId
@@ -19,7 +32,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   { keyId: 'focusNext', label: '다음 노트', group: '탐색', scope: 'feed' },
   { keyId: 'focusPrev', label: '이전 노트', group: '탐색', scope: 'feed' },
   { keyId: 'openFocused', label: '편집 모드로 들어가기', group: '탐색', scope: 'feed' },
-  { keyId: 'clearFocus', label: '편집 나가기 · 포커스 해제', group: '탐색', scope: 'feed' },
+  { keyId: 'clearFocus', label: '포커스 해제', group: '탐색', scope: 'feed' },
   { keyId: 'search', label: '검색', group: '탐색', scope: 'global', modifier: 'primary' },
 
   // 다중 선택 (BRU-80)
@@ -38,6 +51,15 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     scope: 'selection',
     modifier: 'shift',
   },
+
+  // 편집 — 인라인 에디터 (BRU-133). 피드 j/k/v와 다른 층. vim 모달은 없다.
+  {
+    keyId: 'insertNewline',
+    label: '줄바꿈 (입력을 끝내지 않음)',
+    group: '편집',
+    scope: 'editor',
+  },
+  { keyId: 'clearFocus', label: '편집 끝내기', group: '편집', scope: 'editor' },
 
   // 노트 액션
   { keyId: 'createNote', label: '새 노트', group: '노트 액션', scope: 'global' },

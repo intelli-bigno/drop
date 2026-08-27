@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { groupedCatalog, formatKeyForDisplay, keysForEntry } from '../shortcuts/catalog'
+import {
+  groupedCatalog,
+  formatKeyForDisplay,
+  keysForEntry,
+  CHEAT_SHEET_NOTES,
+} from '../shortcuts/catalog'
 
 interface Props {
   onClose: () => void
@@ -82,9 +87,13 @@ export function ShortcutCheatSheet({ onClose }: Props) {
           ))}
         </div>
 
-        <p className="cheatsheet-footnote">
-          한글 입력 상태에서도 같은 자리의 키가 동작한다 (J = ㅓ).
-        </p>
+        <div className="cheatsheet-footnotes">
+          {CHEAT_SHEET_NOTES.map((note) => (
+            <p className="cheatsheet-footnote" key={note}>
+              {note}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { SHORTCUT_CATALOG, formatKeyForDisplay, type ShortcutCatalogEntry } from '../catalog'
+import {
+  SHORTCUT_CATALOG,
+  CHEAT_SHEET_MENU_LABEL,
+  CHEAT_SHEET_NOTES,
+  formatKeyForDisplay,
+  type ShortcutCatalogEntry,
+} from '../catalog'
 import { KEYS } from '../keys'
 import { resolveNoteFeedShortcut } from '../noteFeed'
 import { resolveNoteSelectionShortcut } from '../noteSelection'
@@ -85,6 +91,35 @@ describe('SHORTCUT_CATALOG', () => {
       const event = key(KEYS[entry.keyId][0], modifiersFor(entry.modifier))
       expect(resolveNoteFeedShortcut(event)).toBe(entry.keyId)
     }
+  })
+
+  // BRU-117 — 치트시트 입구는 사용자 메뉴 「단축키」 한 줄. 온보딩 투어·상시 힌트 없음.
+  it('shouldExposeAQuietCheatSheetMenuLabel', () => {
+    expect(CHEAT_SHEET_MENU_LABEL).toBe('단축키')
+  })
+
+  // BRU-133 — 피드 vim식 키는 이미 동작한다. 치트시트가 그것을 빼먹으면 발견성 결함이다.
+  it('shouldDocumentFeedVimNavigationAndEditEntry', () => {
+    const byId = Object.fromEntries(SHORTCUT_CATALOG.map((e) => [e.keyId, e]))
+    expect(KEYS.focusNext).toContain('j')
+    expect(KEYS.focusPrev).toContain('k')
+    expect(KEYS.enterVisualSelection).toContain('v')
+    expect(KEYS.openFocused).toEqual(expect.arrayContaining(['/', 'i']))
+    expect(byId.focusNext?.group).toBe('탐색')
+    expect(byId.focusPrev?.group).toBe('탐색')
+    expect(byId.openFocused?.group).toBe('탐색')
+    expect(byId.enterVisualSelection?.group).toBe('선택')
+  })
+
+  // BRU-133 — 편집기는 마크다운 숏컷 + Esc 끝내기 + Enter 줄바꿈. vim 모달은 없다.
+  it('shouldDocumentTheEditorLayerWithoutAVimModal', () => {
+    const editor = SHORTCUT_CATALOG.filter((e) => e.group === '편집')
+    expect(editor.map((e) => e.keyId).sort()).toEqual(['clearFocus', 'insertNewline'])
+    expect(editor.every((e) => e.scope === 'editor')).toBe(true)
+    expect(KEYS.insertNewline).toEqual(['Enter'])
+    const notes = CHEAT_SHEET_NOTES.join(' ')
+    expect(notes).toMatch(/마크다운/)
+    expect(notes).toMatch(/vim 모드가 없다/)
   })
 })
 
