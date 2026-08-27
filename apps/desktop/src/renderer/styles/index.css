@@ -600,6 +600,11 @@ body {
 /* Note Editor Container */
 .note-editor {
   padding: 4px 16px 12px;
+  /* 편집 중 카드가 뷰포트보다 커지지 않게 본문만 스크롤한다 (BRU-130).
+     .note-card 는 overflow:hidden 이라 카드가 커지면 하단이 잘린다. */
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* 화면에 아직 닿지 않은 펼친 카드의 자리 (BRU-79).

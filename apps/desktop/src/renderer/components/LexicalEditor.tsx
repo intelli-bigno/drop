@@ -12,7 +12,7 @@ import { AutoLinkPlugin } from '@lexical/react/LexicalAutoLinkPlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListNode, ListItemNode } from '@lexical/list'
-import { CodeNode } from '@lexical/code'
+import { $isCodeNode, CodeNode } from '@lexical/code'
 import { LinkNode, AutoLinkNode } from '@lexical/link'
 import {
   $convertFromMarkdownString,
@@ -25,13 +25,14 @@ import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_HIGH,
-  COMMAND_PRIORITY_CRITICAL,
   HISTORY_MERGE_TAG,
   PASTE_COMMAND,
   KEY_ENTER_COMMAND,
   createCommand,
   LexicalCommand,
 } from 'lexical'
+import { decideEditorEnter } from '../lib/editor-enter'
+import { applyCaretScroll } from '../lib/editor-caret-scroll'
 
 const URL_MATCHER =
   /((https?:\/\/(www\.)?|www\.)[a-zA-Z0-9][-a-zA-Z0-9@:%._+~#=]{0,254}[a-zA-Z0-9]\.[a-z]{2,63}(\/[-a-zA-Z0-9@:%_+.~#?&/=]*)?)/
@@ -90,38 +91,31 @@ const theme = {
 function EscapePlugin({ onEscape }: { onEscape: () => void }) {
   const [editor] = useLexicalComposerContext()
 
-  // Enter 키 처리 (Shift+Enter는 새 단락 삽입, Enter만 누르면 저장+나가기)
+  // Enter는 줄을 넣는다. 편집 종료는 Esc (BRU-134).
+  // 코드 블록 안에서는 노드를 쪼개지 않고 줄만 넣는다 (BRU-130).
   useEffect(() => {
     return editor.registerCommand(
       KEY_ENTER_COMMAND,
       (event: KeyboardEvent | null) => {
-        if (!event) return false
-        // IME 조합 중이면 무시
-        if (event.isComposing) return false
+        const selection = $getSelection()
+        const inCodeBlock =
+          $isRangeSelection(selection) &&
+          $isCodeNode(selection.anchor.getNode().getTopLevelElement())
+        const action = decideEditorEnter({
+          isComposing: Boolean(event?.isComposing),
+          inCodeBlock,
+        })
+        if (action !== 'insertLine') return false
 
-        // Shift+Enter는 새 단락 삽입 (마크다운에서 실제 줄바꿈으로 인식되도록)
-        if (event.shiftKey) {
-          event.preventDefault()
-          editor.update(() => {
-            const selection = $getSelection()
-            if ($isRangeSelection(selection)) {
-              // 현재 선택 영역을 삭제하고 새 단락 삽입
-              selection.insertParagraph()
-            }
-          })
-          return true
+        event?.preventDefault()
+        if ($isRangeSelection(selection)) {
+          selection.insertLineBreak()
         }
-
-        // Enter만 누르면 저장+나가기
-        event.preventDefault()
-        const rootElement = editor.getRootElement()
-        rootElement?.blur()
-        onEscape()
         return true
       },
-      COMMAND_PRIORITY_CRITICAL
+      COMMAND_PRIORITY_HIGH
     )
-  }, [editor, onEscape])
+  }, [editor])
 
   // Escape 키 처리
   useEffect(() => {
@@ -141,6 +135,33 @@ function EscapePlugin({ onEscape }: { onEscape: () => void }) {
     rootElement.addEventListener('keydown', handleKeyDown)
     return () => rootElement.removeEventListener('keydown', handleKeyDown)
   }, [editor, onEscape])
+
+  return null
+}
+
+function CaretScrollPlugin() {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    return editor.registerUpdateListener(({ tags }) => {
+      if (tags.has(HISTORY_MERGE_TAG)) return
+      const root = editor.getRootElement()
+      const container = root?.closest('.note-editor')
+      if (!root || !(container instanceof HTMLElement)) return
+
+      const native = window.getSelection()
+      if (!native || native.rangeCount === 0 || !root.contains(native.anchorNode)) return
+      const range = native.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      if (rect.height === 0 && rect.width === 0) return
+
+      const containerRect = container.getBoundingClientRect()
+      applyCaretScroll(container, {
+        offsetTop: rect.top - containerRect.top + container.scrollTop,
+        height: Math.max(rect.height, 1),
+      })
+    })
+  }, [editor])
 
   return null
 }
@@ -375,6 +396,7 @@ export const LexicalEditor = forwardRef<LexicalEditorHandle, Props>(
           <FilePastePlugin onAddFile={onAddFile} />
           <TimestampPlugin onUserInput={handleUserInput} />
           <EscapePlugin onEscape={onEscape} />
+          <CaretScrollPlugin />
           <FocusPlugin editorRef={editorRef} />
           <InitialContentPlugin content={initialContent} />
           <UserInputPlugin onUserInput={handleUserInput} />
