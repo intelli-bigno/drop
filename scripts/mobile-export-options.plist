@@ -15,13 +15,18 @@
 	<!-- 프로파일 이름은 Apple Developer 포털의 것과 정확히 같아야 한다.
 	     번들 ID가 네이티브 앱과 동일(com.intellieffect.drop.mobile)하므로
 	     기존 프로파일(DROP Native App Store)을 그대로 쓴다.
-	     TODO(BRU-160): 공유 확장·위젯 타깃이 apps/mobile/ios 에 추가되면
-	     .share / .widget 항목과 해당 프로파일 시크릿 임포트를 되살려야 한다 —
-	     apps/ios/ExportOptions.plist 의 매핑과 BRU-58(빠뜨리면 업로드 409) 참조. -->
+	     공유 확장·위젯 매핑(BRU-160): 번들 ID·App Group이 apps/ios 확장과 같아
+	     apps/ios/ExportOptions.plist 의 프로파일을 그대로 쓴다. 확장 매핑이
+	     빠지면 appex가 entitlements 없이 서명되어 업로드가 409로 막힌다 (BRU-58).
+	     release.yml 쪽 프로파일 시크릿 임포트는 BRU-161 트랙이 잇는다. -->
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.intellieffect.drop.mobile</key>
 		<string>DROP Native App Store</string>
+		<key>com.intellieffect.drop.mobile.share</key>
+		<string>DROP Native Share App Store</string>
+		<key>com.intellieffect.drop.mobile.widget</key>
+		<string>DROP-Widget-Provisioning-Profile</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>

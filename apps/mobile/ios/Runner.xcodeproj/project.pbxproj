@@ -8,16 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		23C34F8F6F829E49B32E4DD5 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EA954969E86258809FB5C8 /* ShareViewController.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		36775EA482FAB180ADECD25B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5810EF6DED82EC5FAF03993 /* Foundation.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3B6B010B934F679E7BA404A9 /* DropShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1F4BD8ADF6BEF50F507B02D7 /* DropShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5378CB3348120254F037EE12 /* DropWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15DA829BA7D702CD8D27D9B /* DropWidgetBundle.swift */; };
+		5961CBED31816E2B569C9FC3 /* DropWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 66EF08AEFB81470C30C02780 /* DropWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		667C75C47F66609ED1BBEC78 /* DropShellCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B2FB84FC7C19541D9CD2DD /* DropShellCore.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7CADDB1F18553C77BEAB906A /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 189272B1945F4DD6AAE0CBDC /* Pods_RunnerTests.framework */; };
+		8D6CA7DCB1C3302F37F14F5C /* DropShellTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DCE2D7F3B44363C396E89C /* DropShellTokens.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		B8B86826C8A7B0F4F3C0157E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5810EF6DED82EC5FAF03993 /* Foundation.framework */; };
+		C0BD9E6770873ABF1EA3EC32 /* DropShellTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DCE2D7F3B44363C396E89C /* DropShellTokens.swift */; };
+		CE1F93B5F18A23FB72087485 /* DropShellCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B2FB84FC7C19541D9CD2DD /* DropShellCore.swift */; };
+		D822A5F65335483D227192A0 /* NativeShellChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A8F40E17AAFB67260FAEE /* NativeShellChannel.swift */; };
 		E1234B5E0D740308EA5230BC /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DC4A6B33F4AEF9F9B4FA386 /* Pods_Runner.framework */; };
+		FDBCDD9ECC73F3A0417DAC88 /* DropWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD6A080EB27F372D4CAF78A /* DropWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,9 +40,35 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
+		3F62C4571634A1902D5C7D4F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00B008DBD4CA660B542410CD;
+			remoteInfo = DropShare;
+		};
+		F1E73C594A9A3E5E40DFD76D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 131F046D5F8CDFFA0CF984EA;
+			remoteInfo = DropWidget;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		19C8E7D9DA0021FDC455E7C2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3B6B010B934F679E7BA404A9 /* DropShare.appex in Embed Foundation Extensions */,
+				5961CBED31816E2B569C9FC3 /* DropWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -44,22 +82,32 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		02D3CB3BEE0AE36366AEB085 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		06097F7A1ABB0C274632EF6F /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		0F9D405648BD345EFA5E272F /* DropWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DropWidget.entitlements; sourceTree = "<group>"; };
+		132A8F40E17AAFB67260FAEE /* NativeShellChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeShellChannel.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		155BF0E36163D19FA50AA11A /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		189272B1945F4DD6AAE0CBDC /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DC4A6B33F4AEF9F9B4FA386 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F4BD8ADF6BEF50F507B02D7 /* DropShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DropShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2741C8F4AAED5A1B5B942B77 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		314E4755F740A793E80602CD /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		33442A90C338FE109258CD06 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		33B2FB84FC7C19541D9CD2DD /* DropShellCore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DropShellCore.swift; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		47DCE2D7F3B44363C396E89C /* DropShellTokens.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DropShellTokens.swift; sourceTree = "<group>"; };
+		47EA954969E86258809FB5C8 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		4D2B4B68864833A6886030E5 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		66EF08AEFB81470C30C02780 /* DropWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DropWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
+		79A873E0BE3CFBCC5BF8F2B5 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		8492032E2F7ABE04174CAFA7 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
@@ -69,9 +117,21 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C7603B5296F8B0F2C3851603 /* DropShare.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DropShare.entitlements; sourceTree = "<group>"; };
+		CAD6A080EB27F372D4CAF78A /* DropWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DropWidget.swift; sourceTree = "<group>"; };
+		D15DA829BA7D702CD8D27D9B /* DropWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DropWidgetBundle.swift; sourceTree = "<group>"; };
+		F5810EF6DED82EC5FAF03993 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1FBF010202558F7BBF57ACAD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B8B86826C8A7B0F4F3C0157E /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -86,6 +146,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				7CADDB1F18553C77BEAB906A /* Pods_RunnerTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF4F5F03A77ED18ADAF1D4EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				36775EA482FAB180ADECD25B /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,9 +173,21 @@
 			children = (
 				1DC4A6B33F4AEF9F9B4FA386 /* Pods_Runner.framework */,
 				189272B1945F4DD6AAE0CBDC /* Pods_RunnerTests.framework */,
+				A16D64BDECFA45B30143DAE7 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
+		};
+		4D96FF3FEF0A3D729D6FBA1B /* DropShare */ = {
+			isa = PBXGroup;
+			children = (
+				47EA954969E86258809FB5C8 /* ShareViewController.swift */,
+				79A873E0BE3CFBCC5BF8F2B5 /* Info.plist */,
+				C7603B5296F8B0F2C3851603 /* DropShare.entitlements */,
+			);
+			name = DropShare;
+			path = DropShare;
+			sourceTree = SOURCE_ROOT;
 		};
 		7971C7D56C233EDFB228CEDB /* Pods */ = {
 			isa = PBXGroup;
@@ -122,6 +202,18 @@
 			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		92EF0A745C2D162D8FE3004A /* DropWidget */ = {
+			isa = PBXGroup;
+			children = (
+				D15DA829BA7D702CD8D27D9B /* DropWidgetBundle.swift */,
+				CAD6A080EB27F372D4CAF78A /* DropWidget.swift */,
+				4D2B4B68864833A6886030E5 /* Info.plist */,
+				0F9D405648BD345EFA5E272F /* DropWidget.entitlements */,
+			);
+			name = DropWidget;
+			path = DropWidget;
+			sourceTree = SOURCE_ROOT;
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
@@ -144,6 +236,9 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				7971C7D56C233EDFB228CEDB /* Pods */,
 				4B3F85CD580C3D6092921389 /* Frameworks */,
+				FC162F4E769C2985263912B5 /* DropShell */,
+				4D96FF3FEF0A3D729D6FBA1B /* DropShare */,
+				92EF0A745C2D162D8FE3004A /* DropWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -152,6 +247,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				1F4BD8ADF6BEF50F507B02D7 /* DropShare.appex */,
+				66EF08AEFB81470C30C02780 /* DropWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -168,13 +265,67 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				132A8F40E17AAFB67260FAEE /* NativeShellChannel.swift */,
+				02D3CB3BEE0AE36366AEB085 /* Runner.entitlements */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
 		};
+		A16D64BDECFA45B30143DAE7 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F5810EF6DED82EC5FAF03993 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		FC162F4E769C2985263912B5 /* DropShell */ = {
+			isa = PBXGroup;
+			children = (
+				33B2FB84FC7C19541D9CD2DD /* DropShellCore.swift */,
+				47DCE2D7F3B44363C396E89C /* DropShellTokens.swift */,
+			);
+			name = DropShell;
+			path = DropShell;
+			sourceTree = SOURCE_ROOT;
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		00B008DBD4CA660B542410CD /* DropShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 17A5B364EE48E4ED9A638A8A /* Build configuration list for PBXNativeTarget "DropShare" */;
+			buildPhases = (
+				15BA607057DECF1A27F91E3D /* Sources */,
+				1FBF010202558F7BBF57ACAD /* Frameworks */,
+				188BB20E41484124721AE7D6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DropShare;
+			productName = DropShare;
+			productReference = 1F4BD8ADF6BEF50F507B02D7 /* DropShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		131F046D5F8CDFFA0CF984EA /* DropWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 43AB0C15F88C89533976CED3 /* Build configuration list for PBXNativeTarget "DropWidget" */;
+			buildPhases = (
+				DFD9730429C32B23DF14D8BC /* Sources */,
+				EF4F5F03A77ED18ADAF1D4EC /* Frameworks */,
+				5B9183DA3EFB13B21CD5814C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DropWidget;
+			productName = DropWidget;
+			productReference = 66EF08AEFB81470C30C02780 /* DropWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -204,6 +355,7 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				19C8E7D9DA0021FDC455E7C2 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				B862F7B023E54876DD49D99A /* [CP] Embed Pods Frameworks */,
 				1C9219F76A2E17BE3B226BD2 /* [CP] Copy Pods Resources */,
@@ -211,6 +363,8 @@
 			buildRules = (
 			);
 			dependencies = (
+				887A9C52D46C72291C4ACDF3 /* PBXTargetDependency */,
+				97800D1EDF69FA5A5BBE9BC7 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -258,12 +412,28 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				00B008DBD4CA660B542410CD /* DropShare */,
+				131F046D5F8CDFFA0CF984EA /* DropWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		188BB20E41484124721AE7D6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807F294A63A400263BE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5B9183DA3EFB13B21CD5814C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -396,6 +566,16 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		15BA607057DECF1A27F91E3D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23C34F8F6F829E49B32E4DD5 /* ShareViewController.swift in Sources */,
+				667C75C47F66609ED1BBEC78 /* DropShellCore.swift in Sources */,
+				8D6CA7DCB1C3302F37F14F5C /* DropShellTokens.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -411,6 +591,18 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				D822A5F65335483D227192A0 /* NativeShellChannel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFD9730429C32B23DF14D8BC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5378CB3348120254F037EE12 /* DropWidgetBundle.swift in Sources */,
+				FDBCDD9ECC73F3A0417DAC88 /* DropWidget.swift in Sources */,
+				CE1F93B5F18A23FB72087485 /* DropShellCore.swift in Sources */,
+				C0BD9E6770873ABF1EA3EC32 /* DropShellTokens.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,6 +613,18 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		887A9C52D46C72291C4ACDF3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DropShare;
+			target = 00B008DBD4CA660B542410CD /* DropShare */;
+			targetProxy = 3F62C4571634A1902D5C7D4F /* PBXContainerItemProxy */;
+		};
+		97800D1EDF69FA5A5BBE9BC7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DropWidget;
+			target = 131F046D5F8CDFFA0CF984EA /* DropWidget */;
+			targetProxy = F1E73C594A9A3E5E40DFD76D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -444,6 +648,61 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		01BD7B61105BBA13F37301A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropWidget/DropWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.widget;
+				PRODUCT_NAME = DropWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		07D7CA62F09B155DB64A8DDB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropWidget/DropWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.widget;
+				PRODUCT_NAME = DropWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -487,7 +746,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -502,6 +761,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = LU65TLHW3Q;
 				ENABLE_BITCODE = NO;
@@ -568,6 +828,34 @@
 			};
 			name = Profile;
 		};
+		879539D3612EF310ECA015FE /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropShare/DropShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.share;
+				PRODUCT_NAME = DropShare;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -617,7 +905,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -668,7 +956,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -685,6 +973,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = LU65TLHW3Q;
 				ENABLE_BITCODE = NO;
@@ -708,6 +997,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = LU65TLHW3Q;
 				ENABLE_BITCODE = NO;
@@ -724,15 +1014,118 @@
 			};
 			name = Release;
 		};
+		A4D47806E638CF1114887DAB /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropShare/DropShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.share;
+				PRODUCT_NAME = DropShare;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
+		ABD696C29C14BEFC2A451816 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropWidget/DropWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.widget;
+				PRODUCT_NAME = DropWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
+		C62CE6FE907DF7B1DCBFADB4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DropShare/DropShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = LU65TLHW3Q;
+				INFOPLIST_FILE = DropShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.intellieffect.drop.mobile.share;
+				PRODUCT_NAME = DropShare;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		17A5B364EE48E4ED9A638A8A /* Build configuration list for PBXNativeTarget "DropShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				879539D3612EF310ECA015FE /* Release */,
+				C62CE6FE907DF7B1DCBFADB4 /* Debug */,
+				A4D47806E638CF1114887DAB /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				331C8088294A63A400263BE5 /* Debug */,
 				331C8089294A63A400263BE5 /* Release */,
 				331C808A294A63A400263BE5 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		43AB0C15F88C89533976CED3 /* Build configuration list for PBXNativeTarget "DropWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01BD7B61105BBA13F37301A1 /* Release */,
+				07D7CA62F09B155DB64A8DDB /* Debug */,
+				ABD696C29C14BEFC2A451816 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

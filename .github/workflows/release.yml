@@ -156,17 +156,16 @@ jobs:
           done
           bash scripts/mobile-config.sh
 
-      # 서명 자산. Flutter Runner는 아직 앱 타깃 하나라 프로파일도 하나만 넣는다
-      # (번들 ID가 네이티브와 같아 기존 프로파일·시크릿을 그대로 재사용).
-      # TODO(BRU-160): 공유 확장·위젯 타깃이 apps/mobile/ios 에 추가되면
-      # IOS_NATIVE_SHARE_PROVISIONING_PROFILE / IOS_WIDGET_PROVISIONING_PROFILE 임포트와
-      # scripts/mobile-export-options.plist 의 매핑을 되살려야 한다 —
+      # 서명 자산. 번들 ID가 네이티브와 같아 기존 프로파일·시크릿을 그대로 재사용한다.
+      # 앱 + DropShare + DropWidget 세 프로파일 전부 필요 (BRU-160) —
       # 하나라도 빠지면 그 확장이 entitlements 없이 서명되어 업로드가 409로 막힌다 (BRU-58).
       - name: Import signing assets
         env:
           CERTIFICATES_P12: ${{ secrets.CERTIFICATES_P12 }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           IOS_NATIVE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_PROVISIONING_PROFILE }}
+          IOS_NATIVE_SHARE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_SHARE_PROVISIONING_PROFILE }}
+          IOS_WIDGET_PROVISIONING_PROFILE: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE }}
         run: |
           CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
@@ -183,7 +182,9 @@ jobs:
           # 프로파일은 UUID 이름으로 두어야 xcodebuild가 찾는다.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           : > "$RUNNER_TEMP/imported-profiles.txt"
-          for pair in "app:$IOS_NATIVE_PROVISIONING_PROFILE"; do
+          for pair in "app:$IOS_NATIVE_PROVISIONING_PROFILE" \
+                      "share:$IOS_NATIVE_SHARE_PROVISIONING_PROFILE" \
+                      "widget:$IOS_WIDGET_PROVISIONING_PROFILE"; do
             NAME=${pair%%:*}; DATA=${pair#*:}
             [ -z "$DATA" ] && { echo "❌ $NAME 프로파일 시크릿이 비어 있습니다"; exit 1; }
             TMP=$RUNNER_TEMP/$NAME.mobileprovision

@@ -19,6 +19,9 @@ dependencies:
   google_sign_in: ^6.2.2
   # 컴포저의 사진·영상 첨부 (BRU-158). iOS PhotosPicker 대응.
   image_picker: ^1.1.2
+  # 딥링크 수신 (BRU-160). `drop://` 커스텀 스킴 + 유니버설 링크 배선만 —
+  # 해석은 drop_core `DropLink`가 한다.
+  app_links: ^6.3.2
   # drop_core의 SupabaseRestClient에 넘길 http.Client — drop_core와 같은 제약.
   http: ^1.2.0
   cupertino_icons: ^1.0.8

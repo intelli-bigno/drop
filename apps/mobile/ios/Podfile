@@ -1,5 +1,6 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# 최소 iOS 15.0 (BRU-160) — App Store가 MinimumOSVersion 13.0 업로드를
+# ITMS-90068로 거부하기 시작했다 (2027 봄부터 15.0+ 필수).
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -39,5 +40,12 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # 포드까지 앱과 같은 최소 OS로 — 낮은 값이 남으면 그 포드의
+    # MinimumOSVersion이 앱보다 낮아 ITMS-90068이 재발한다.
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      end
+    end
   end
 end

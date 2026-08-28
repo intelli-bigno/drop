@@ -12,5 +12,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // 네이티브 셸 채널 (BRU-160) — App Group 경로·위젯 리로드만 넘긴다.
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DropNativeShell") {
+      NativeShellChannel.register(with: registrar.messenger())
+    }
   }
 }
