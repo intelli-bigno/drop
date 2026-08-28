@@ -54,6 +54,21 @@ flutter run --dart-define=DROP_PREVIEW=true
 
 구성이 틀리면 시작 시점에 즉시 죽는다 — 잘못된 구성으로 실행을 이어가면 "로그인이 안 된다" 같은 엉뚱한 증상으로 나타난다 (iOS와 같은 규율).
 
+## 배포 (BRU-161)
+
+릴리스 파이프라인(`.github/workflows/release.yml`)의 모바일 레인은 **이 앱을 빌드한다** — 네이티브(`apps/ios`·`apps/android`)는 CI 테스트로만 남고 릴리스는 나가지 않는다.
+
+| 레인 | 경로 | 산출 |
+| --- | --- | --- |
+| `release-ios` | `flutter build ipa --no-codesign` → `xcodebuild -exportArchive`(수동 서명, `scripts/mobile-export-options.plist`) → `xcrun altool` | TestFlight |
+| `release-android` | `flutter build apk/appbundle --release` (keystore 시크릿 서명 + SHA-1 지문 대조) | Firebase App Distribution (+ Play internal, 시크릿 있을 때만) |
+
+- **실행**: 태그 `v*` push(데스크톱 포함 전체 릴리스) 또는 검증 빌드만 `gh workflow run release.yml -f target=ios|android`.
+- **버전**: iOS 빌드 번호 `date -u +%y%m%d%H%M`(과거 앱 레코드보다 커야 함), Android versionCode는 2025-01-01 이후 "분"(Play 상한 2,100,000,000 이하). 태그 릴리스면 버전 문자열도 태그에서.
+- **구성값**: CI가 시크릿으로 `scripts/mobile-config.sh` → `.config/remote.json`을 만들어 `--dart-define-from-file`로 주입 — 로컬 개발과 같은 경로다.
+- **iOS 서명**: 아카이브는 무서명, export 단계에서 수동 프로파일(`DROP Native App Store`, 번들 ID가 네이티브와 같아 재사용)로 서명한다 — Xcode 프로젝트의 팀 설정에 의존하지 않는다. ExportOptions가 `apps/mobile/ios/`가 아니라 `scripts/`에 있는 이유는 plist 안의 주석 참조. **공유 확장·위젯(BRU-160)이 추가되면** share/widget 프로파일 임포트와 plist 매핑을 되살려야 한다 (BRU-58 참조).
+- **Android 서명**: `android/app/build.gradle.kts`가 `ANDROID_KEYSTORE_FILE` 등 환경변수를 읽어 릴리스 키로 서명. 환경변수 없으면 debug 키 폴백 — 그 빌드는 Google 로그인이 안 된다(SHA-1 불일치).
+
 ## 주의
 
 - **번들 ID `com.intellieffect.drop.mobile`** — 과거 Flutter 앱 시절의 App Store Connect 레코드·TestFlight를 그대로 승계한다. 빌드 번호는 그 시절보다 커야 하므로 시간 기반.

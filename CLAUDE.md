@@ -18,7 +18,7 @@
 
 모바일의 현재 트랙은 **Flutter 앱 `apps/mobile`** 이다 — BRU-33(네이티브 채택)을 번복하고 재구축했다(3중 구현 유지비, BRU-115 실증). 옛 Flutter 앱(BRU-22 제거)의 복원이 아니라 **당시 `apps/ios` 구현 상태를 스펙으로** 처음부터 다시 지었다. 경위·원칙의 정본은 Linear 프로젝트 「DROP Flutter 재구축」, 구조·명령은 `apps/mobile/README.md`.
 
-`apps/ios`(SwiftUI)·`apps/android`(Compose)는 **Flutter가 패리티에 도달할 때까지 유지**된다 — iOS가 도메인 규칙(DropCore 테스트)의 스펙 원본이고, Android는 스캐폴드 단계에서 동결(BRU-36·42는 BRU-161에서 정리).
+`apps/ios`(SwiftUI)·`apps/android`(Compose)는 **Flutter가 패리티에 도달할 때까지 유지**된다 — iOS가 도메인 규칙(DropCore 테스트)의 스펙 원본이고, Android는 스캐폴드 단계에서 동결(BRU-36·42는 BRU-161에서 정리). **릴리스 파이프라인(release.yml)은 BRU-161부터 Flutter 앱을 배포한다** — release-ios(TestFlight)·release-android(Firebase App Distribution)가 `apps/mobile`을 빌드하고, 네이티브 앱은 CI 테스트로만 남는다. 배포 상세는 `apps/mobile/README.md` 배포 섹션.
 
 **도메인 로직은 플랫폼 SDK 없이 도는 모듈에 둔다** — Flutter는 `apps/mobile/packages/drop_core`(순수 Dart), iOS는 `Packages/DropCore`, Android는 `core`. 시뮬레이터·에뮬레이터 없이 `make mobile-test` / `make ios-test` / `make android-test`가 도는 상태가 TDD 사이클의 전제다.
 
@@ -29,8 +29,8 @@
 - 빌드 구성값은 `.env.local` → `make ios-config` → `Config/Config-*.xcconfig` 경로로 흐른다. xcconfig 파일 자체는 커밋되지 않는다.
 - `GOOGLE_WEB_CLIENT_ID`(= `serverClientId`)를 **반드시** 넘긴다. Supabase Google provider는 웹 클라이언트 하나만 audience로 신뢰하므로, 빼면 id_token의 audience가 플랫폼 클라이언트 ID가 되어 `Unacceptable audience`로 거부된다. `scripts/ios-config.sh`가 이미 주입한다.
 - iOS·웹 OAuth 클라이언트는 같은 GCP 프로젝트(`bruce-clawdbot`)에 있어야 한다. 다르면 Google이 `invalid_audience: The audience client and the client need to be in the same project.`로 거부한다 (2026-08-11 실증, PR #17).
-- 번들 ID는 `com.intellieffect.drop.mobile` — 과거 Flutter 앱의 App Store Connect 레코드·App Group·TestFlight 테스터를 그대로 이어받았다. **빌드 번호는 그 시절보다 커야 하므로** CI가 시간 기반(`date -u +%y%m%d%H%M`)으로 만든다.
-- TestFlight에 검증용 빌드만 보낼 때는 태그를 만들지 말고 `gh workflow run release.yml -f target=ios`. 태그를 밀면 데스크톱 DMG 공증·GitHub Release·설치본 자동 업데이트까지 함께 나간다.
+- 번들 ID는 `com.intellieffect.drop.mobile` — 과거 Flutter 앱의 App Store Connect 레코드·App Group·TestFlight 테스터를 그대로 이어받았고, 재구축 Flutter 앱(`apps/mobile`)도 같은 번들 ID로 같은 레코드에 배포된다. **빌드 번호는 항상 그 레코드의 기존 값보다 커야 하므로** CI가 시간 기반(`date -u +%y%m%d%H%M`)으로 만든다.
+- TestFlight에 검증용 빌드만 보낼 때는 태그를 만들지 말고 `gh workflow run release.yml -f target=ios`. 태그를 밀면 데스크톱 DMG 공증·GitHub Release·설치본 자동 업데이트까지 함께 나간다. **release-ios·release-android는 BRU-161부터 Flutter 앱(`apps/mobile`)을 빌드한다** — `apps/ios` 네이티브는 더 이상 릴리스로 나가지 않는다(CI 테스트만).
 - 도메인 로직은 `Packages/DropCore`에 둔다 — 시뮬레이터 없이 `make ios-test`로 도는 상태가 이 레포 TDD 사이클의 전제다.
 
 # ROLE AND EXPERTISE

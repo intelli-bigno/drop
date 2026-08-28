@@ -15,21 +15,37 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // 네이티브 시절부터 이어 온 패키지명 — Firebase·Play·Google OAuth(SHA-1) 레코드와 묶여 있다.
         applicationId = "com.intellieffect.drop.mobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    // 릴리스 서명 (BRU-161). CI(release.yml)가 keystore 시크릿을 풀어 환경변수로 넘긴다.
+    // 환경변수가 없으면(로컬 개발) debug 키로 폴백한다 — 단, 그 빌드는 Google 로그인이
+    // 안 된다 (등록된 SHA-1과 지문이 다름). CI는 별도 스텝에서 지문을 대조해 끊는다.
+    val releaseKeystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+
+    signingConfigs {
+        if (releaseKeystoreFile != null) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile)
+                storePassword = System.getenv("ANDROID_STORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseKeystoreFile != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Flutter(apps/mobile) App Store 내보내기 옵션 — release.yml release-ios가 쓴다.
+	     apps/mobile/ios/ 가 아니라 여기(scripts/)에 두는 이유: BRU-160이 같은 시기에
+	     apps/mobile/ios/ 아래 공유 확장·위젯 타깃을 작업 중이라 그 트리를 건드리지
+	     않기 위해서다. 위치를 옮기려면 release.yml의 경로도 함께 바꿔야 한다. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>J2Y925QHNV</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<!-- 프로파일 이름은 Apple Developer 포털의 것과 정확히 같아야 한다.
+	     번들 ID가 네이티브 앱과 동일(com.intellieffect.drop.mobile)하므로
+	     기존 프로파일(DROP Native App Store)을 그대로 쓴다.
+	     TODO(BRU-160): 공유 확장·위젯 타깃이 apps/mobile/ios 에 추가되면
+	     .share / .widget 항목과 해당 프로파일 시크릿 임포트를 되살려야 한다 —
+	     apps/ios/ExportOptions.plist 의 매핑과 BRU-58(빠뜨리면 업로드 409) 참조. -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.intellieffect.drop.mobile</key>
+		<string>DROP Native App Store</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

@@ -107,7 +107,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # iOS(apps/ios) TestFlight 배포 — 유일한 모바일 배포 경로.
+  # iOS TestFlight 배포 — 유일한 모바일 배포 경로.
+  # BRU-161부터 Flutter 앱(apps/mobile)을 빌드한다 — 네이티브(apps/ios)는 CI 테스트로만 남고
+  # 릴리스는 나가지 않는다. 번들 ID가 같아(com.intellieffect.drop.mobile) 같은
+  # App Store Connect 레코드·TestFlight 테스터를 그대로 이어 쓴다.
   # 태그를 밀면 데스크톱 DMG 공증까지 함께 나간다.
   # 검증 빌드만 보낼 때는 태그 없이:
   #   gh workflow run release.yml -f target=ios
@@ -125,33 +128,45 @@ jobs:
           sudo xcode-select -switch "$XCODE"
           xcodebuild -version
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      # 로컬(Mac Studio)·CI(ci.yml mobile 잡)와 같은 버전으로 핀.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
 
+      # iOS 빌드는 CocoaPods 경로를 쓴다 — Flutter 3.44의 SwiftPM 통합은
+      # `Could not resolve package dependencies`로 죽는다 (2026-08-27 실측, apps/mobile/README.md).
+      # 머신 전역 설정이라 러너마다 한 번 꺼 줘야 한다.
+      - name: Disable SwiftPM integration
+        run: flutter config --no-enable-swift-package-manager
+
+      # 시크릿 → .config/remote.json (--dart-define-from-file 입력).
+      # 값 이름·경로는 로컬 개발(make mobile-config)과 동일하다.
       - name: Prepare build configuration
-        working-directory: apps/ios
         env:
           SUPABASE_URL_REMOTE: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY_REMOTE: ${{ secrets.SUPABASE_ANON_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
         run: |
-          cd "$GITHUB_WORKSPACE"
-          bash scripts/ios-config.sh
-          # 로컬 구성은 필요 없지만 프로젝트 생성이 두 파일을 모두 요구한다
-          cp apps/ios/Config/Config-remote.xcconfig apps/ios/Config/Config-localdev.xcconfig
+          for name in SUPABASE_URL_REMOTE SUPABASE_ANON_KEY_REMOTE GOOGLE_WEB_CLIENT_ID GOOGLE_IOS_CLIENT_ID; do
+            [ -n "${!name}" ] || { echo "❌ 시크릿 $name 이 비어 있습니다"; exit 1; }
+          done
+          bash scripts/mobile-config.sh
 
-      - name: Generate project
-        working-directory: apps/ios
-        run: xcodegen generate
-
+      # 서명 자산. Flutter Runner는 아직 앱 타깃 하나라 프로파일도 하나만 넣는다
+      # (번들 ID가 네이티브와 같아 기존 프로파일·시크릿을 그대로 재사용).
+      # TODO(BRU-160): 공유 확장·위젯 타깃이 apps/mobile/ios 에 추가되면
+      # IOS_NATIVE_SHARE_PROVISIONING_PROFILE / IOS_WIDGET_PROVISIONING_PROFILE 임포트와
+      # scripts/mobile-export-options.plist 의 매핑을 되살려야 한다 —
+      # 하나라도 빠지면 그 확장이 entitlements 없이 서명되어 업로드가 409로 막힌다 (BRU-58).
       - name: Import signing assets
         env:
           CERTIFICATES_P12: ${{ secrets.CERTIFICATES_P12 }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           IOS_NATIVE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_PROVISIONING_PROFILE }}
-          IOS_NATIVE_SHARE_PROVISIONING_PROFILE: ${{ secrets.IOS_NATIVE_SHARE_PROVISIONING_PROFILE }}
-          IOS_WIDGET_PROVISIONING_PROFILE: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE }}
         run: |
           CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
@@ -166,13 +181,9 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
           # 프로파일은 UUID 이름으로 두어야 xcodebuild가 찾는다.
-          # 위젯(BRU-35에서 추가된 타깃)까지 셋 다 넣어야 한다 — 하나라도 빠지면 그 확장이
-          # entitlements 없이 서명되어 업로드가 App Store 검증에서 막힌다 (BRU-58).
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           : > "$RUNNER_TEMP/imported-profiles.txt"
-          for pair in "app:$IOS_NATIVE_PROVISIONING_PROFILE" \
-                      "share:$IOS_NATIVE_SHARE_PROVISIONING_PROFILE" \
-                      "widget:$IOS_WIDGET_PROVISIONING_PROFILE"; do
+          for pair in "app:$IOS_NATIVE_PROVISIONING_PROFILE"; do
             NAME=${pair%%:*}; DATA=${pair#*:}
             [ -z "$DATA" ] && { echo "❌ $NAME 프로파일 시크릿이 비어 있습니다"; exit 1; }
             TMP=$RUNNER_TEMP/$NAME.mobileprovision
@@ -189,7 +200,6 @@ jobs:
       # ExportOptions가 이름으로 부르는 프로파일이 실제로 들어와 있는지 여기서 끊는다.
       # 어긋나면 export는 조용히 넘어가고 업로드 단계에서야 409로 막힌다 (BRU-58).
       - name: Verify provisioning profiles match ExportOptions
-        working-directory: apps/ios
         run: |
           MISSING=0
           while read -r WANTED; do
@@ -200,37 +210,40 @@ jobs:
               echo "❌ ExportOptions가 요구하는 프로파일이 없습니다: $WANTED"
               MISSING=1
             fi
-          done < <(plutil -extract provisioningProfiles json -o - ExportOptions.plist \
+          done < <(plutil -extract provisioningProfiles json -o - scripts/mobile-export-options.plist \
                    | python3 -c 'import json,sys; [print(v) for v in json.load(sys.stdin).values()]')
           echo "--- 임포트된 프로파일 ---"; cat "$RUNNER_TEMP/imported-profiles.txt"
           [ "$MISSING" -eq 0 ] || exit 1
 
       # 과거 Flutter 빌드와 같은 앱 레코드를 이어 쓰므로 빌드 번호가 기존 것보다 커야 한다.
       # (전환 시점 최신은 38이었다) 시간 기반이면 항상 증가하고 충돌하지 않는다.
+      # 태그 릴리스면 버전 문자열도 태그에서 받는다 (아니면 pubspec 기본값).
       - name: Compute build number
-        run: echo "BUILD_NUMBER=$(date -u +%y%m%d%H%M)" >> "$GITHUB_ENV"
-
-      - name: Archive
-        working-directory: apps/ios
         run: |
-          xcodebuild -project Drop.xcodeproj \
-            -scheme Drop-remote \
-            -configuration Release-remote \
-            -archivePath $RUNNER_TEMP/Drop.xcarchive \
-            -destination 'generic/platform=iOS' \
-            CURRENT_PROJECT_VERSION=$BUILD_NUMBER \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            archive
+          echo "BUILD_NUMBER=$(date -u +%y%m%d%H%M)" >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF#refs/tags/v}" != "$GITHUB_REF" ]; then
+            echo "BUILD_NAME_ARG=--build-name=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_ENV"
+          else
+            echo "BUILD_NAME_ARG=" >> "$GITHUB_ENV"
+          fi
+
+      # 아카이브는 서명 없이 만들고, 서명은 아래 export에서 수동 프로파일로 한다 —
+      # 네이티브 잡이 쓰던 것과 같은 매커니즘(CODE_SIGNING_ALLOWED=NO archive → exportArchive).
+      # 프로젝트(pbxproj)의 팀·서명 설정에 의존하지 않으므로 apps/mobile/ios 를 건드릴 필요가 없다.
+      - name: Build archive (no codesign)
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          flutter build ipa --release --no-codesign \
+            --dart-define-from-file=.config/remote.json \
+            --build-number="$BUILD_NUMBER" $BUILD_NAME_ARG
 
       - name: Export IPA
-        working-directory: apps/ios
         run: |
           xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/Drop.xcarchive \
+            -archivePath apps/mobile/build/ios/archive/Runner.xcarchive \
             -exportPath $RUNNER_TEMP/ipa \
-            -exportOptionsPlist ExportOptions.plist
+            -exportOptionsPlist scripts/mobile-export-options.plist
 
       # altool은 검증에 실패해도 종료코드 0을 낸다 — 그대로 두면 업로드가 막혀도
       # 잡이 초록으로 끝난다. v0.0.10·v1.0.29 두 릴리스가 그렇게 조용히 사라졌다 (BRU-58).
@@ -270,10 +283,12 @@ jobs:
           name: DROP-ios-ipa
           path: ${{ runner.temp }}/ipa/*.ipa
 
-  # Android 네이티브(apps/android) 배포 — BRU-42.
+  # Android 배포 — BRU-161부터 Flutter 앱(apps/mobile)을 빌드한다.
+  # 네이티브(apps/android)는 스캐폴드 동결(BRU-152) — 릴리스는 나가지 않는다.
+  # 패키지명이 같아(com.intellieffect.drop.mobile) Firebase·Play 레코드를 그대로 이어 쓴다.
   #
   # 두 경로로 나간다:
-  #   1. Firebase App Distribution — 자격증명이 이미 있어 지금 동작한다 (Flutter 시절 경로)
+  #   1. Firebase App Distribution — 자격증명이 이미 있어 지금 동작한다
   #   2. Play 내부 테스트 — PLAY_SERVICE_ACCOUNT_JSON 시크릿이 있을 때만. 없으면 큰 소리로 스킵
   #
   # 검증 빌드만 보낼 때는 태그 없이:
@@ -294,6 +309,27 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # 로컬(Mac Studio)·CI(ci.yml mobile 잡)와 같은 버전으로 핀.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      # 시크릿 → .config/remote.json (--dart-define-from-file 입력).
+      - name: Prepare build configuration
+        env:
+          SUPABASE_URL_REMOTE: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY_REMOTE: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
+        run: |
+          for name in SUPABASE_URL_REMOTE SUPABASE_ANON_KEY_REMOTE GOOGLE_WEB_CLIENT_ID; do
+            [ -n "${!name}" ] || { echo "❌ 시크릿 $name 이 비어 있습니다"; exit 1; }
+          done
+          bash scripts/mobile-config.sh
 
       # 서명 키. 네 값이 모두 있어야 릴리스 서명이 된다 — 하나라도 비면 빌드가
       # 디버그 키로 서명되고, 그러면 "로그인만 안 되는 빌드"가 테스터에게 나간다.
@@ -327,30 +363,29 @@ jobs:
             echo "VERSION_NAME=0.1.0-$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
           fi
 
+      # 서명 설정은 apps/mobile/android/app/build.gradle.kts 가
+      # ANDROID_KEYSTORE_FILE 등 위 환경변수를 읽어 적용한다.
       - name: Build release APK and AAB
-        working-directory: apps/android
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+        working-directory: apps/mobile
         run: |
-          for name in SUPABASE_URL SUPABASE_ANON_KEY GOOGLE_WEB_CLIENT_ID; do
-            [ -n "${!name}" ] || { echo "❌ 시크릿 $name 이 비어 있습니다"; exit 1; }
-          done
-          ./gradlew --no-daemon \
-            -PversionCode="$VERSION_CODE" -PversionName="$VERSION_NAME" \
-            :app:assembleRelease :app:bundleRelease
+          flutter pub get
+          flutter build apk --release \
+            --dart-define-from-file=.config/remote.json \
+            --build-number="$VERSION_CODE" --build-name="$VERSION_NAME"
+          flutter build appbundle --release \
+            --dart-define-from-file=.config/remote.json \
+            --build-number="$VERSION_CODE" --build-name="$VERSION_NAME"
 
       # 서명 지문을 대조한다. Google은 (패키지명, SHA-1)로 앱을 매칭하므로 지문이
       # 어긋난 빌드는 로그인만 실패하는 빌드가 된다 — 그 상태로 배포되면 안 된다.
       # (BRU-30에서 실기 검증에 쓴 것과 같은 확인)
       - name: Verify release signature
-        working-directory: apps/android
+        working-directory: apps/mobile
         env:
           EXPECTED_SHA1: A8:D1:12:55:A3:31:4B:C8:A8:1D:59:13:D4:43:2A:4A:01:78:60:17
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
-          ACTUAL=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+          ACTUAL=$("$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
                    | grep -i "SHA-1 digest" | head -1 | awk '{print $NF}')
           WANT=$(echo "$EXPECTED_SHA1" | tr -d ':' | tr 'A-Z' 'a-z')
           echo "expected=$WANT"
@@ -367,8 +402,8 @@ jobs:
           appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: testers
-          releaseNotes: "DROP Android 네이티브 (versionCode ${{ env.VERSION_CODE }})"
-          file: apps/android/app/build/outputs/apk/release/app-release.apk
+          releaseNotes: "DROP Flutter (versionCode ${{ env.VERSION_CODE }})"
+          file: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
 
       # Play 내부 테스트. 시크릿이 없으면 멈추지는 않되, 무엇이 없어서 안 나갔는지
       # 로그에 남긴다 — 조용히 넘어가면 "배포됐다"고 착각하게 된다.
@@ -390,7 +425,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.intellieffect.drop.mobile
-          releaseFiles: apps/android/app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: apps/mobile/build/app/outputs/bundle/release/app-release.aab
           track: internal
           status: completed
 
@@ -399,5 +434,5 @@ jobs:
         with:
           name: DROP-android
           path: |
-            apps/android/app/build/outputs/apk/release/app-release.apk
-            apps/android/app/build/outputs/bundle/release/app-release.aab
+            apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+            apps/mobile/build/app/outputs/bundle/release/app-release.aab
