@@ -306,11 +306,12 @@ jobs:
 
   # Android 배포 — BRU-161부터 Flutter 앱(apps/mobile)을 빌드한다.
   # 네이티브(apps/android)는 스캐폴드 동결(BRU-152) — 릴리스는 나가지 않는다.
-  # 패키지명이 같아(com.intellieffect.drop.mobile) Firebase·Play 레코드를 그대로 이어 쓴다.
+  # 패키지명이 같아(com.intellieffect.drop.mobile) Firebase 레코드를 그대로 이어 쓴다.
   #
-  # 두 경로로 나간다:
-  #   1. Firebase App Distribution — 자격증명이 이미 있어 지금 동작한다
-  #   2. Play 내부 테스트 — PLAY_SERVICE_ACCOUNT_JSON 시크릿이 있을 때만. 없으면 큰 소리로 스킵
+  # 나가는 곳은 **Firebase App Distribution 하나**다 (BRU-174 결정).
+  # Play 내부 테스트는 쓰지 않는다 — DROP은 Play Console에 앱 레코드 자체가 없고,
+  # 만들려면 스토어 등록·앱 콘텐츠 선언·영구 고정 패키지명이 따라온다 (BRU-171 실측).
+  # 스토어 출시가 필요해지면 그때 다시 판단한다.
   #
   # 검증 빌드만 보낼 때는 태그 없이:
   #   gh workflow run release.yml -f target=android
@@ -386,6 +387,9 @@ jobs:
 
       # 서명 설정은 apps/mobile/android/app/build.gradle.kts 가
       # ANDROID_KEYSTORE_FILE 등 위 환경변수를 읽어 적용한다.
+      #
+      # 배포에 쓰이는 것은 APK 하나다 (Firebase App Distribution). AAB는 나가는 곳이
+      # 없지만 아티팩트로 남긴다 — 스토어 출시를 판단할 때 손으로 올릴 물건이다 (BRU-174).
       - name: Build release APK and AAB
         working-directory: apps/mobile
         run: |
@@ -425,30 +429,6 @@ jobs:
           groups: testers
           releaseNotes: "DROP Flutter (versionCode ${{ env.VERSION_CODE }})"
           file: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
-
-      # Play 내부 테스트. 시크릿이 없으면 멈추지는 않되, 무엇이 없어서 안 나갔는지
-      # 로그에 남긴다 — 조용히 넘어가면 "배포됐다"고 착각하게 된다.
-      - name: Check Play credentials
-        id: play
-        env:
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-        run: |
-          if [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::PLAY_SERVICE_ACCOUNT_JSON 시크릿이 없어 Play 내부 테스트 업로드를 건너뜁니다 (BRU-42)"
-          fi
-
-      - name: Upload to Play internal track
-        if: steps.play.outputs.available == 'true'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.intellieffect.drop.mobile
-          releaseFiles: apps/mobile/build/app/outputs/bundle/release/app-release.aab
-          track: internal
-          status: completed
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
