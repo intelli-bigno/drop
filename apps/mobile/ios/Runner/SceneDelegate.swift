@@ -17,4 +17,28 @@ class SceneDelegate: FlutterSceneDelegate {
   override func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {
     return nil
   }
+
+  /// 콜드 스타트 딥링크를 플러그인에게 다시 흘린다 (BRU-188).
+  ///
+  /// 앱이 꺼져 있을 때 위젯을 누르면 URL은 `scene:openURLContexts:`가 아니라 **여기**로만
+  /// 온다(`connectionOptions.urlContexts`). Flutter의 씬 브리지는 그 초기 URL을
+  /// `addApplicationDelegate` 계열 플러그인에게 전달하지 않아서, `app_links`가 링크를
+  /// 통째로 못 받는다 — 실측: 앱이 떠 있을 때 `drop://note/5`는 뷰어를 열지만,
+  /// 종료 상태에서 같은 링크를 열면 홈 목록만 뜬다.
+  ///
+  /// `super`가 엔진·플러그인 등록을 마친 뒤에 `scene:openURLContexts:` 경로로 되돌린다.
+  /// 중복 전달이 되더라도 `DeepLinkRouter`는 같은 링크를 다시 보관할 뿐이라 무해하다.
+  override func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    super.scene(scene, willConnectTo: session, options: connectionOptions)
+
+    let contexts = connectionOptions.urlContexts
+    guard !contexts.isEmpty else { return }
+    DispatchQueue.main.async { [weak self] in
+      self?.scene(scene, openURLContexts: contexts)
+    }
+  }
 }

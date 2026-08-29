@@ -80,6 +80,14 @@
 	<string>노트에 사진과 영상을 첨부하기 위해 사진 보관함에 접근합니다.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>찍은 사진을 바로 노트로 만들기 위해 카메라를 사용합니다.</string>
+	<!-- Flutter 기본 딥링킹을 끈다 (BRU-188).
+	     켜져 있으면(3.27부터 기본값) 엔진이 `drop://note/1`을 **경로 문자열 그대로**
+	     go_router에 넘겨 "no routes for location: drop://note/1"로 죽는다 — 위젯을
+	     눌렀을 때 실제로 그 화면이 떴다. 이 앱의 딥링크 소비자는 app_links →
+	     `DropLink.parse` → `DeepLinkRouter`(lib/app.dart)뿐이고, 그 경로는 이 키와
+	     무관하게 그대로 동작한다. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
