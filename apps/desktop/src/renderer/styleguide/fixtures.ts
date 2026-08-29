@@ -46,6 +46,9 @@ export function makeNote(overrides: Partial<Note> = {}): Note {
     linearIssueKey: null,
     linearExportedAt: null,
     projectId: null,
+    // 기본은 일반 노트 — 할일 쇼케이스는 overrides로 type을 넘긴다 (BRU-175)
+    type: 'note',
+    completedAt: null,
     ...overrides,
   }
 }

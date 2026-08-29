@@ -48,12 +48,17 @@ Add to `.mcp.json`:
 
 - `list_notes` - List recent notes with pagination
 - `get_note` - Get a single note with tags and attachments
-- `create_note` - Create a new note
+- `create_note` - Create a new note (pass `type: "todo"` if it is itself a task)
 - `update_note` - Update an existing note
 - `delete_note` - Soft-delete a note (move to trash)
 - `archive_note` - Archive a note
+- `set_note_type` - Mark a note as a todo, or back to a plain note (BRU-175)
+- `set_note_completed` - Complete or reopen a todo
 - `set_note_export` - Mark a note as exported to a Linear issue (records the issue URL)
 - `clear_note_export` - Remove the export mark
+
+노트 응답에는 `type`(`note`|`todo`)과 `completedAt`이 함께 실린다. 이미 할일로
+판정된 노트를 다시 판정하지 않으려면 이 둘을 먼저 본다.
 
 ### Search
 

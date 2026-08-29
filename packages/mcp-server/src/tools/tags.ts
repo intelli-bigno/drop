@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { callMcpRpc } from '../supabase.js'
+import { toTodoFields, type NoteRow } from '../note-shape.js'
 
 interface Tag {
   id: string
@@ -12,19 +13,9 @@ interface ListTagsResult {
   tags: Tag[]
 }
 
-interface Note {
-  id: string
-  display_id: number
-  content: string
-  created_at: string
-  has_link: boolean
-  has_media: boolean
-  has_files: boolean
-}
-
 interface GetNotesByTagResult {
   tag_name: string
-  notes: Note[]
+  notes: NoteRow[]
 }
 
 interface TagOperationResult {
@@ -89,6 +80,7 @@ export function registerTagsTools(server: McpServer) {
           hasLink: note.has_link,
           hasMedia: note.has_media,
           hasFiles: note.has_files,
+          ...toTodoFields(note),
         }))
 
         return {

@@ -1,37 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { callMcpRpc } from '../supabase.js'
-
-interface Note {
-  id: string
-  display_id: number
-  content: string
-  source: string
-  parent_id: string | null
-  is_locked: boolean
-  has_link: boolean
-  has_media: boolean
-  has_files: boolean
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  archived_at: string | null
-  linear_issue_url?: string | null
-  linear_issue_key?: string | null
-  linear_exported_at?: string | null
-  tags?: Array<{ id: string; name: string }>
-  attachments?: Array<{
-    id: string
-    type: string
-    filename: string | null
-    mime_type: string | null
-    size: number | null
-    storage_path: string | null
-  }>
-}
+import { toTodoFields, type NoteRow } from '../note-shape.js'
 
 interface ListNotesResult {
-  notes: Note[]
+  notes: NoteRow[]
   total: number
 }
 
@@ -73,6 +46,8 @@ export function registerNotesTools(server: McpServer) {
           updatedAt: note.updated_at,
           isDeleted: !!note.deleted_at,
           isArchived: !!note.archived_at,
+          // 할일인지·끝났는지 (BRU-175). 없으면 에이전트가 이미 판정한 노트를 다시 판정한다.
+          ...toTodoFields(note),
           // 이미 Linear로 나간 노트인지. 없으면 같은 노트를 두 번 반출하게 된다 (BRU-45).
           exportedTo: note.linear_issue_url ?? null,
           exportedKey: note.linear_issue_key ?? null,
@@ -108,7 +83,7 @@ export function registerNotesTools(server: McpServer) {
     },
     async ({ noteId }) => {
       try {
-        const note = await callMcpRpc<Note>('mcp_get_note', { p_note_id: noteId })
+        const note = await callMcpRpc<NoteRow>('mcp_get_note', { p_note_id: noteId })
 
         const result = {
           id: note.id,
@@ -124,6 +99,7 @@ export function registerNotesTools(server: McpServer) {
           updatedAt: note.updated_at,
           isDeleted: !!note.deleted_at,
           isArchived: !!note.archived_at,
+          ...toTodoFields(note),
           exportedTo: note.linear_issue_url ?? null,
           exportedKey: note.linear_issue_key ?? null,
           exportedAt: note.linear_exported_at ?? null,
@@ -157,13 +133,18 @@ export function registerNotesTools(server: McpServer) {
       content: z.string().describe('The content of the note'),
       parentId: z.string().uuid().optional().describe('Parent note ID for replies'),
       tagNames: z.array(z.string()).optional().describe('Tag names to attach'),
+      type: z
+        .enum(['note', 'todo'])
+        .optional()
+        .describe("'todo' if the note is itself a task to be done; otherwise 'note' (default)"),
     },
-    async ({ content, parentId, tagNames }) => {
+    async ({ content, parentId, tagNames, type }) => {
       try {
-        const note = await callMcpRpc<Note>('mcp_create_note', {
+        const note = await callMcpRpc<NoteRow>('mcp_create_note', {
           p_content: content,
           p_parent_id: parentId || null,
           p_tag_names: tagNames || null,
+          p_type: type ?? 'note',
         })
 
         return {
@@ -171,7 +152,13 @@ export function registerNotesTools(server: McpServer) {
             {
               type: 'text' as const,
               text: JSON.stringify(
-                { id: note.id, displayId: note.display_id, content: note.content, createdAt: note.created_at },
+                {
+                  id: note.id,
+                  displayId: note.display_id,
+                  content: note.content,
+                  createdAt: note.created_at,
+                  ...toTodoFields(note),
+                },
                 null,
                 2
               ),
@@ -196,7 +183,7 @@ export function registerNotesTools(server: McpServer) {
     },
     async ({ noteId, content }) => {
       try {
-        const note = await callMcpRpc<Note>('mcp_update_note', {
+        const note = await callMcpRpc<NoteRow>('mcp_update_note', {
           p_note_id: noteId,
           p_content: content,
         })
@@ -288,6 +275,76 @@ export function registerNotesTools(server: McpServer) {
             {
               type: 'text' as const,
               text: `Note ${noteId} marked as exported to ${result.linear_issue_key ?? issueUrl}`,
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${(err as Error).message}` }],
+          isError: true,
+        }
+      }
+    }
+  )
+
+  // 노트의 종류와 완료 상태 (BRU-175). 본문을 건드리지 않으므로 편집 히스토리
+  // 스냅샷이 남지 않는다 — 분류를 옮기거나 상태를 뒤집는 것은 노트를 고친 것이 아니다.
+  server.tool(
+    'set_note_type',
+    "Mark a note as a todo (something to be done) or back to a plain note. Reverting to 'note' also clears its completion time.",
+    {
+      noteId: z.string().uuid().describe('The UUID of the note'),
+      type: z.enum(['note', 'todo']).describe("'todo' if the note is itself a task, else 'note'"),
+    },
+    async ({ noteId, type }) => {
+      try {
+        const note = await callMcpRpc<NoteRow>('mcp_set_note_type', {
+          p_note_id: noteId,
+          p_type: type,
+        })
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                { id: note.id, displayId: note.display_id, ...toTodoFields(note) },
+                null,
+                2
+              ),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${(err as Error).message}` }],
+          isError: true,
+        }
+      }
+    }
+  )
+
+  server.tool(
+    'set_note_completed',
+    'Mark a todo as done, or reopen it. Only works on notes whose type is todo.',
+    {
+      noteId: z.string().uuid().describe('The UUID of the note'),
+      completed: z.boolean().default(true).describe('true to complete, false to reopen'),
+    },
+    async ({ noteId, completed }) => {
+      try {
+        const note = await callMcpRpc<NoteRow>('mcp_set_note_completed', {
+          p_note_id: noteId,
+          p_completed: completed,
+        })
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                { id: note.id, displayId: note.display_id, ...toTodoFields(note) },
+                null,
+                2
+              ),
             },
           ],
         }

@@ -65,9 +65,28 @@ export interface NoteFilterOptions {
   retainedNoteIds?: ReadonlySet<string>
 }
 
-/** Inbox의 정의 — 태그가 하나도 없는 노트. 새 컬럼도, 마이그레이션도 없다. */
+/** 태그가 하나도 붙지 않은 노트. 이름 그대로 **태그만** 본다. */
 export function isUntaggedNote(note: Pick<FilterableNote, 'tags'>): boolean {
   return note.tags.length === 0
+}
+
+/**
+ * Inbox의 정의 — **아직 분류되지 않은** 노트 (BRU-50, BRU-181로 개정).
+ *
+ * 원래는 "태그가 하나도 없는 노트"였다. 그런데 에이전트가 판정 결과를 `agent:task`
+ * 태그로 남기고 있어서, 할일로 분류하는 순간 그 노트가 Inbox에서 사라졌다 —
+ * "할일로 분류됨"과 "정리 끝남"이 같은 신호가 돼 버린 것이다.
+ *
+ * BRU-175로 `type` 컬럼이 생겼으니 분류를 태그에 얹지 않아도 된다. 그러면 반대로
+ * "할일인데 태그가 없어서 Inbox에 영영 남는" 문제가 생기는데, **할일로 표시하는
+ * 것 자체가 분류 행위**라고 보면 답이 나온다. "이건 해야 할 일이다"라고 판정된
+ * 노트는 더 이상 아직 분류되지 않은 캡처가 아니다.
+ *
+ * 그래서 타입 축이 태그 축과 나란히 들어온다. 덕분에 drop-loop이 `agent:task`를
+ * 그만 붙여도 그 노트들이 Inbox로 되돌아오지 않는다.
+ */
+export function isUnclassifiedNote(note: Pick<FilterableNote, 'tags' | 'type'>): boolean {
+  return isUntaggedNote(note) && !isTodoNote(note)
 }
 
 /**
@@ -139,7 +158,7 @@ function matchesInbox(
   retainedNoteIds: ReadonlySet<string> | undefined
 ): boolean {
   if (!inboxOnly) return true
-  return isUntaggedNote(note) || (retainedNoteIds?.has(note.id) ?? false)
+  return isUnclassifiedNote(note) || (retainedNoteIds?.has(note.id) ?? false)
 }
 
 /**
@@ -187,7 +206,7 @@ function matchesExport(
 }
 
 /**
- * Inbox 뱃지에 띄울 수 — 태그 없는 **최상위** 노트 수.
+ * Inbox 뱃지에 띄울 수 — 아직 분류되지 않은 **최상위** 노트 수 (BRU-181).
  *
  * 답글은 세지 않는다. 피드는 최상위 노트만 줄로 세우고 답글은 그 아래에
  * 딸려 나오므로, 최상위만 세야 화면에 보이는 줄 수와 맞는다.
@@ -196,11 +215,11 @@ function matchesExport(
  * 것이 이 기능의 핵심이다. 줄은 팝오버가 닫힐 때까지 남아 있어도 숫자는 먼저 준다.
  */
 export function countInboxNotes(
-  notes: Array<Pick<FilterableNote, 'parentId' | 'tags' | 'linearIssueUrl'>>
+  notes: Array<Pick<FilterableNote, 'parentId' | 'tags' | 'type' | 'linearIssueUrl'>>
 ): number {
   return notes.filter(
     // 반출된 노트는 태그가 없어도 처리가 끝난 것이다 — Inbox 수에서 뺀다 (BRU-45).
-    (note) => note.parentId === null && isUntaggedNote(note) && !isExportedNote(note)
+    (note) => note.parentId === null && isUnclassifiedNote(note) && !isExportedNote(note)
   ).length
 }
 

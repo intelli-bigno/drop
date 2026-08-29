@@ -1,19 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { callMcpRpc } from '../supabase.js'
-
-interface Note {
-  id: string
-  display_id: number
-  content: string
-  created_at: string
-  has_link: boolean
-  has_media: boolean
-  has_files: boolean
-}
+import { toTodoFields, type NoteRow } from '../note-shape.js'
 
 interface SearchResult {
-  notes: Note[]
+  notes: NoteRow[]
 }
 
 export function registerSearchTools(server: McpServer) {
@@ -58,6 +49,7 @@ export function registerSearchTools(server: McpServer) {
             displayId: note.display_id,
             content: note.content,
             createdAt: note.created_at,
+            ...toTodoFields(note),
             matchedText,
           }
         })
@@ -125,6 +117,7 @@ export function registerSearchTools(server: McpServer) {
           hasLink: note.has_link,
           hasMedia: note.has_media,
           hasFiles: note.has_files,
+          ...toTodoFields(note),
         }))
 
         return {

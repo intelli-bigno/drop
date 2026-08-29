@@ -4,6 +4,7 @@ import {
   countInboxNotes,
   countOpenTodos,
   isExportedNote,
+  isUnclassifiedNote,
   isUntaggedNote,
   UNASSIGNED_PROJECT_ID,
   type FilterableNote,
@@ -431,5 +432,78 @@ describe('countOpenTodos — 미완료 할일 수 (BRU-175)', () => {
       }),
     ]
     expect(countOpenTodos(notes)).toBe(1)
+  })
+})
+
+// ============================================================
+// Inbox 정의와 타입 축 (BRU-181)
+// ============================================================
+
+describe('isUnclassifiedNote — Inbox의 정의 (BRU-181)', () => {
+  it('태그도 없고 할일도 아니면 아직 분류되지 않은 것이다', () => {
+    expect(isUnclassifiedNote(todoNote('a'))).toBe(true)
+  })
+
+  it('태그가 붙으면 분류된 것이다', () => {
+    expect(isUnclassifiedNote(todoNote('a', { tags: [{ name: 'work' }] }))).toBe(false)
+  })
+
+  // 이 이슈의 핵심 — "할일이다"라고 판정하는 것 자체가 분류 행위다.
+  // 그래야 drop-loop이 agent:task 태그를 그만 붙여도 그 노트가 Inbox로 돌아오지 않는다.
+  it('태그가 없어도 할일로 표시됐으면 분류된 것이다', () => {
+    expect(isUnclassifiedNote(todoNote('a', { type: 'todo' }))).toBe(false)
+  })
+
+  it('끝난 할일도 마찬가지다', () => {
+    expect(isUnclassifiedNote(todoNote('a', { type: 'todo', completedAt: new Date() }))).toBe(false)
+  })
+
+  // isUntaggedNote는 이름 그대로 태그만 본다 — 두 판정을 섞지 않는다
+  it('isUntaggedNote는 타입을 보지 않는다', () => {
+    expect(isUntaggedNote(todoNote('a', { type: 'todo' }))).toBe(true)
+  })
+})
+
+describe('Inbox 필터에 타입 축이 걸린다 (BRU-181)', () => {
+  const plain = todoNote('plain')
+  const tagged = todoNote('tagged', { tags: [{ name: 'work' }] })
+  const todo = todoNote('todo', { type: 'todo' })
+
+  it('Inbox는 아직 분류되지 않은 노트만 남긴다', () => {
+    const result = filterTodo([plain, tagged, todo], { inboxOnly: true })
+    expect(ids(result)).toEqual(['plain'])
+  })
+
+  // 유예는 그대로 살아 있어야 한다 — 팝오버가 열려 있는 동안 줄이 사라지면
+  // 두 번째 태그를 달 길이 없어진다 (BRU-50)
+  it('유예된 노트는 할일이 되어도 자리를 지킨다', () => {
+    const result = filterTodo([plain, todo], {
+      inboxOnly: true,
+      retainedNoteIds: new Set(['todo']),
+    })
+    expect(ids(result)).toEqual(['plain', 'todo'])
+  })
+})
+
+describe('countInboxNotes에 타입 축이 걸린다 (BRU-181)', () => {
+  it('할일은 세지 않는다', () => {
+    const notes = [
+      todoNote('a'),
+      todoNote('b', { type: 'todo' }),
+      todoNote('c', { tags: [{ name: 'x' }] }),
+    ]
+    expect(countInboxNotes(notes)).toBe(1)
+  })
+
+  // 기존 규칙이 유지되는지 — 답글·반출분은 여전히 빠진다
+  it('답글과 반출된 노트는 여전히 세지 않는다', () => {
+    const notes = [
+      todoNote('root'),
+      todoNote('reply', { parentId: 'root' }),
+      todoNote('exported', {
+        linearIssueUrl: 'https://linear.app/intellieffect/issue/BRU-96/x',
+      }),
+    ]
+    expect(countInboxNotes(notes)).toBe(1)
   })
 })
