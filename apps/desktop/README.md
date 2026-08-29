@@ -120,6 +120,33 @@ grep -rc "preview@drop.local\|dropPreviewSignIn\|installPreviewApiShim" out/rend
 # 전부 0이어야 한다
 ```
 
+## 릴리스 버전의 정본은 태그다 (BRU-192)
+
+`package.json`의 `version`은 **배포에 쓰이지 않는다.** `.github/workflows/release.yml`이
+태그에서 값을 뽑아 빌드 직전에 덮어쓴다:
+
+```yaml
+VERSION=${GITHUB_REF#refs/tags/v}
+npm version $VERSION --no-git-tag-version --allow-same-version
+```
+
+여기 적힌 값은 **로컬 개발 빌드가 화면(사용자 메뉴)에 보여줄 때만** 쓰인다. 그래서 최신
+릴리스와 맞춰 두지만, 이 값을 올린다고 릴리스가 되지는 않는다.
+
+한때 `make release`가 이 값에서 patch를 올렸다. 아무도 관리하지 않아 0.0.9에 머물러
+있었고 태그는 v1.0.34까지 가 있어서, `make release`가 이미 존재하는 옛 태그 v0.0.10을
+만들려다 멈췄다. 멈춘 것이 다행이었다 — 성공했다면 최신보다 낮은 버전이 발행되고,
+electron-updater는 semver 역행을 **조용히 무시하므로** 아무도 업데이트를 못 받은 채
+릴리스는 성공한 것처럼 보였을 것이다.
+
+지금은 `scripts/release-version.mjs`가 태그에서 다음 버전을 계산하고 역행을 막는다.
+`make release`와 `make release-local`이 둘 다 그것을 본다.
+
+```bash
+make release-dry-run   # 다음 버전만 확인
+make release           # 최신 태그 + 1 로 태그·push
+```
+
 ## 워크트리에서 실행할 때
 
 `pnpm install`이 Electron 바이너리 내려받기를 건너뛰면 `Error: Electron uninstall` 또는 `Library not loaded: Electron Framework`로 죽는다. 메인 체크아웃의 dist를 그대로 쓰면 된다:

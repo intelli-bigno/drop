@@ -1,5 +1,6 @@
 .PHONY: help install setup test test-db db-test clean tokens tokens-check \
         electron-rebuild electron-dev electron-dev-local electron-dev-remote desktop-browser desktop-styleguide \
+        release release-dry-run release-local \
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
         android-config android-config-remote android-test android-build android-install android-clean \
@@ -65,6 +66,11 @@ help:
 	@echo "    make mobile-dev-remote    - 시뮬레이터에서 실행 (리모트 Supabase)"
 	@echo "    make mobile-build         - iOS 시뮬레이터용 빌드"
 	@echo "    make mobile-clean         - 생성물 정리"
+	@echo ""
+	@echo "  Release — 버전의 정본은 태그다 (BRU-192)"
+	@echo "    make release-dry-run      - 다음 버전만 확인 (태그·push 없음)"
+	@echo "    make release              - 최신 태그 + 1 로 태그·push → CI가 서명·공증·발행"
+	@echo "    make release-local        - 비상용: 태그된 커밋을 로컬에서 다시 빌드·발행"
 
 # ============================================
 # 기본 설정
@@ -349,26 +355,55 @@ mobile-clean:
 # Release — 서명·공증 DMG → GitHub Releases (설치본 자동 업데이트 채널)
 # ============================================
 
-# 표준 경로: patch 버전 범프 → 커밋 + 태그 + push → GitHub Actions가 서명·공증·발행.
+# 버전의 정본은 **태그**다 (BRU-192).
+#
+# release.yml이 태그에서 버전을 뽑아 package.json을 덮어쓴다:
+#     VERSION=${GITHUB_REF#refs/tags/v}
+#     npm version $VERSION --no-git-tag-version --allow-same-version
+#
+# 그래서 커밋된 apps/desktop/package.json의 version은 배포에 쓰이지 않는다. 전에는 그 값을
+# 정본으로 착각하고 거기서 patch를 올렸는데, 아무도 관리하지 않아 0.0.9에 머물러 있었고
+# 태그는 v1.0.34까지 가 있었다 — `make release`가 v0.0.10(이미 존재하는 옛 태그)을 만들려다
+# 멈췄다. 멈춘 것이 다행이었다: 성공했다면 최신보다 낮은 버전이 발행돼 설치본 자동
+# 업데이트가 조용히 죽었을 것이다.
+#
+# 이제 두 경로(release·release-local)가 scripts/release-version.mjs 하나를 본다.
+# 그 스크립트가 semver로 최신 태그를 찾고 역행을 막는다.
+
+# 표준 경로: 최신 태그 + 1 → 태그 + push → GitHub Actions가 서명·공증·발행.
 # mac과 iOS가 한 번에 나가고, 설치본은 latest-mac.yml을 보고 자동 업데이트한다.
+# 버전 범프 커밋은 만들지 않는다 — 워크플로가 태그에서 덮어쓰므로 커밋할 값이 없다.
 release:
 	@test "$$(git rev-parse --abbrev-ref HEAD)" = "main" || { echo "✗ main에서만 릴리스한다 (현재: $$(git rev-parse --abbrev-ref HEAD))"; exit 1; }
 	@test -z "$$(git status --porcelain)" || { echo "✗ 워킹트리가 깨끗해야 한다"; exit 1; }
 	@git pull --ff-only
-	cd apps/desktop && npm version patch --no-git-tag-version
-	@VERSION=$$(node -p "require('./apps/desktop/package.json').version"); \
-	git add apps/desktop/package.json && \
-	git commit -m "chore(release): v$$VERSION" && \
+	@git fetch --tags --quiet
+	@VERSION=$$(node scripts/release-version.mjs next) || exit 1; \
+	echo "→ 최신 $$(node scripts/release-version.mjs latest) → 다음 v$$VERSION"; \
 	git tag "v$$VERSION" && \
-	git push && git push origin "v$$VERSION" && \
+	git push origin "v$$VERSION" && \
 	echo "→ v$$VERSION 태그 push 완료 — GitHub Actions에서 빌드·공증·발행 진행 (gh run watch)"
 
-# 비상용: CI가 죽었을 때 로컬 맥에서 현재 버전 그대로 빌드·서명·공증 후 같은 릴리스에 업로드.
-# 버전 범프도 태그도 하지 않는다 — 태그는 항상 `make release`가 만든다.
+# 다음 버전만 확인한다 (태그도 push도 하지 않는다)
+release-dry-run:
+	@git fetch --tags --quiet
+	@echo "최신: $$(node scripts/release-version.mjs latest)"
+	@echo "다음: $$(node scripts/release-version.mjs next)"
+
+# 비상용: CI가 죽었을 때 로컬 맥에서 **현재 최신 태그 버전 그대로** 빌드·서명·공증 후
+# 같은 릴리스에 업로드. 버전 범프도 태그도 하지 않는다 — 태그는 항상 `make release`가 만든다.
+#
+# 전에는 여기서도 package.json(0.0.9)을 읽었다. 태그 충돌 같은 안전장치도 없이
+# `--publish always`로 바로 올리므로, 급할 때 눌러 낮은 버전을 발행하기 가장 쉬운 자리였다.
 # 자격증명은 1Password(op)에서 주입. 공증 실패 시: make release-local NOTARIZE=false
 NOTARIZE ?= true
 release-local:
-	@VERSION=$$(node -p "require('./apps/desktop/package.json').version"); \
+	@git fetch --tags --quiet
+	@VERSION=$$(node scripts/release-version.mjs latest) || exit 1; \
+	test "$$(git tag --points-at HEAD --list "v$$VERSION")" = "v$$VERSION" || { \
+		echo "✗ HEAD에 v$$VERSION 태그가 없다. 이 명령은 이미 태그된 커밋을 다시 빌드하는 비상용이다."; \
+		echo "  새 버전을 내려면 make release 를 쓴다."; \
+		exit 1; }; \
 	echo "→ v$$VERSION 로컬 빌드·서명·발행 (notarize=$(NOTARIZE))"; \
 	export APPLE_ID=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields apple_id); \
 	export APPLE_APP_SPECIFIC_PASSWORD=$$(op item get "Apple App-Specific Password" --vault "Dev Credentials" --fields credential --reveal); \
