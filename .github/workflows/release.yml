@@ -266,6 +266,29 @@ jobs:
           }
           echo "✅ 수출 규정 준수 선언 확인 — 업로드 후 사람 개입 없이 배포된다"
 
+      # Google 로그인 콜백 URL 스킴이 빠지면 GIDSignIn이 버튼을 누르는 순간
+      # NSException으로 앱을 죽인다. 업로드·설치·실행은 전부 성공하고 로그인만
+      # 깨지는 조용한 실패라 CI로는 안 잡힌다 (BRU-186 실측 — BRU-173·BRU-58과 같은 부류).
+      # 소스가 아니라 IPA 안의 실제 값을 본다 — 스킴은 xcconfig 변수 치환의 결과라
+      # 소스만 보면 치환이 빈 문자열로 끝난 경우를 못 잡는다.
+      - name: Verify Google Sign-In URL scheme
+        run: |
+          APP=$(ls -d "$RUNNER_TEMP"/ipa/*.ipa | head -1)
+          WORK=$RUNNER_TEMP/ipa-check-google
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -q "$APP" -d "$WORK"
+          PLIST=$(ls "$WORK"/Payload/*.app/Info.plist | head -1)
+          SCHEMES=$(plutil -extract CFBundleURLTypes json -o - "$PLIST" \
+            | python3 -c 'import json,sys; [print(s) for t in json.load(sys.stdin) for s in t.get("CFBundleURLSchemes", [])]')
+          echo "--- CFBundleURLSchemes ---"; echo "$SCHEMES"
+          echo "$SCHEMES" | grep -q '^com\.googleusercontent\.apps\.' || {
+            echo "❌ IPA에 Google 로그인 콜백 URL 스킴이 없습니다 — 로그인 버튼을 누르면 크래시합니다"
+            echo "   GOOGLE_IOS_CLIENT_ID 시크릿과 scripts/mobile-config.sh 생성물"
+            echo "   (apps/mobile/ios/Flutter/GoogleSignIn.xcconfig)을 확인하세요"
+            exit 1
+          }
+          echo "✅ Google 로그인 콜백 URL 스킴 확인"
+
       # altool은 검증에 실패해도 종료코드 0을 낸다 — 그대로 두면 업로드가 막혀도
       # 잡이 초록으로 끝난다. v0.0.10·v1.0.29 두 릴리스가 그렇게 조용히 사라졌다 (BRU-58).
       # 출력에 ERROR가 있으면 여기서 잡을 실패시킨다.

@@ -1,2 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// Google 로그인 콜백 URL 스킴 (BRU-186). make mobile-config 생성물이라 커밋되지 않는다 —
+// 없어도 빌드는 되게 optional include 로 둔다(그 빌드는 Google 로그인이 크래시한다).
+#include? "GoogleSignIn.xcconfig"

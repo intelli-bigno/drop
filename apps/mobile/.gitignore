@@ -46,3 +46,5 @@ app.*.map.json
 
 # 환경별 설정 (make mobile-config 생성물 — 커밋 금지)
 .config/
+# Google 로그인 콜백 URL 스킴 (make mobile-config 생성물 — 커밋 금지, BRU-186)
+ios/Flutter/GoogleSignIn.xcconfig
