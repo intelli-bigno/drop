@@ -6,8 +6,11 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<!-- 홈 화면·설정에 보이는 이름 (BRU-178). `flutter create --project-name mobile`이
+	     남긴 "Mobile"/"mobile"을 네이티브 앱(apps/ios/Drop/Info.plist)과 같은 DROP으로
+	     맞춘다 — 같은 번들 ID를 쓰므로 두 앱의 표시 이름이 갈리면 안 된다. -->
 	<key>CFBundleDisplayName</key>
-	<string>Mobile</string>
+	<string>DROP</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +18,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>mobile</string>
+	<string>DROP</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
