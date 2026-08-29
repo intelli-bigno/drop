@@ -24,6 +24,13 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- 수출 규정 준수 선언 (BRU-173). 이 키가 없으면 업로드된 빌드가
+	     Missing Compliance에 걸려 테스터에게 배포되지 않는다 — 업로드는
+	     성공하므로 릴리스 잡은 초록으로 끝나고, 빌드만 조용히 멈춘다.
+	     DROP은 HTTPS(OS 제공 암호화)만 쓰므로 면제 대상이다.
+	     apps/ios/Drop/Info.plist 가 같은 선언을 하고 있다. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -246,6 +246,26 @@ jobs:
             -exportPath $RUNNER_TEMP/ipa \
             -exportOptionsPlist scripts/mobile-export-options.plist
 
+      # 수출 규정 준수 선언이 빠지면 업로드는 성공하는데 빌드가 Missing Compliance에
+      # 걸려 테스터에게 가지 않는다 — 잡은 초록이고 빌드만 조용히 멈춘다 (BRU-173 실측).
+      # 업로드 전에 IPA 안의 실제 값을 본다. 소스의 Info.plist만 보면 빌드 설정이
+      # 덮어썼을 때를 못 잡는다.
+      - name: Verify export compliance declaration
+        run: |
+          APP=$(ls -d "$RUNNER_TEMP"/ipa/*.ipa | head -1)
+          WORK=$RUNNER_TEMP/ipa-check
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -q "$APP" -d "$WORK"
+          PLIST=$(ls "$WORK"/Payload/*.app/Info.plist | head -1)
+          VALUE=$(plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$PLIST" 2>/dev/null || echo "MISSING")
+          echo "ITSAppUsesNonExemptEncryption=$VALUE"
+          [ "$VALUE" = "false" ] || {
+            echo "❌ IPA에 수출 규정 준수 선언이 없습니다 — 업로드해도 테스터에게 가지 않습니다"
+            echo "   apps/mobile/ios/Runner/Info.plist 에 ITSAppUsesNonExemptEncryption=false 를 두세요"
+            exit 1
+          }
+          echo "✅ 수출 규정 준수 선언 확인 — 업로드 후 사람 개입 없이 배포된다"
+
       # altool은 검증에 실패해도 종료코드 0을 낸다 — 그대로 두면 업로드가 막혀도
       # 잡이 초록으로 끝난다. v0.0.10·v1.0.29 두 릴리스가 그렇게 조용히 사라졌다 (BRU-58).
       # 출력에 ERROR가 있으면 여기서 잡을 실패시킨다.
