@@ -40,10 +40,17 @@ class DropEnvironmentContainer {
   });
 
   /// 자격증명 없는 프리뷰 조립 (iOS `-dropPreview` + `PreviewLaunch` 대응).
-  factory DropEnvironmentContainer.preview() => DropEnvironmentContainer(
+  ///
+  /// [notes]를 주면 표본 대신 그것을 쓴다. 위젯 테스트가 **자기 픽스처를 들고**
+  /// 오게 하기 위한 구멍이다 — 공유 표본에 노트를 더하면 목록이 길어져서 다른
+  /// 테스트가 보던 섹션 헤더가 화면 밖으로 밀린다(BRU-184에서 실제로 겪었다).
+  factory DropEnvironmentContainer.preview({List<Note>? notes}) =>
+      DropEnvironmentContainer(
         configuration: null,
         isPreview: true,
-        notesRepository: PreviewLaunch.makeNotesRepository(),
+        notesRepository: notes == null
+            ? PreviewLaunch.makeNotesRepository()
+            : InMemoryNotesRepository(notes: notes),
         commentsRepository: PreviewLaunch.makeCommentsRepository(),
         attachmentsRepository: InMemoryAttachmentsRepository(),
         authenticationGateway: const _PreviewAuthenticationGateway(),

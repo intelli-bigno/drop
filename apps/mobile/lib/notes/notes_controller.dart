@@ -24,6 +24,20 @@ class NotesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 할일 필터를 다음 상태로 돌린다 (BRU-184). 데스크톱과 같은 3단 순환.
+  void cycleTodoFilter() {
+    store.todoFilter = store.todoFilter.next;
+    notifyListeners();
+  }
+
+  /// 노트를 할일로 올리거나 일반 노트로 되돌린다 (BRU-184).
+  Future<void> setType(String id, NoteType type) =>
+      _tracked(store.setType(id, type));
+
+  /// 할일의 완료를 뒤집는다 (BRU-184).
+  Future<void> setCompleted(String id, {required bool completed}) =>
+      _tracked(store.setCompleted(id, completed: completed));
+
   void setCategory(NoteCategory category) {
     store.category = category;
     notifyListeners();

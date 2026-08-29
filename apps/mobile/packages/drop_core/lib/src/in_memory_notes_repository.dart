@@ -111,6 +111,18 @@ class InMemoryNotesRepository implements NotesRepository {
       _mutate(id, (note) => note.replacing(priority: priority.clamp(0, 3)));
 
   @override
+  Future<void> setType(String id, NoteType type) =>
+      // replacing이 일반 노트로 되돌릴 때 완료 시각을 지우는 규칙을 이미 안다.
+      _mutate(id, (note) => note.replacing(type: type));
+
+  @override
+  Future<void> setCompleted(String id, {required bool completed}) => _mutate(
+        id,
+        (note) => note.replacing(
+            completedAt: completed ? DateTime.now().toUtc() : null),
+      );
+
+  @override
   Future<void> updateCategories(
     String id, {
     required bool hasLink,

@@ -114,6 +114,20 @@ class SupabaseNotesRepository implements NotesRepository {
       _update(id, {'priority': priority.clamp(0, 3)});
 
   @override
+  Future<void> setType(String id, NoteType type) => _update(id, {
+        'type': type.name,
+        // 일반 노트로 되돌릴 때 완료 시각을 같은 갱신에서 지운다. 따로 두 번
+        // 쓰면 그 사이 상태가 CHECK를 위반해 첫 갱신부터 거부된다 (BRU-184).
+        if (type != NoteType.todo) 'completed_at': null,
+      });
+
+  @override
+  Future<void> setCompleted(String id, {required bool completed}) => _update(
+        id,
+        {'completed_at': completed ? DateTime.now().toUtc().toIso8601String() : null},
+      );
+
+  @override
   Future<void> updateCategories(
     String id, {
     required bool hasLink,

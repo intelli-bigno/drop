@@ -77,6 +77,14 @@ class _NoteFilterBarState extends State<NoteFilterBar> {
                       isOn: store.category == category,
                       onTap: () => widget.controller.setCategory(category),
                     ),
+                  // 카테고리와 별도 축이다 (BRU-184) — 할일이면서 링크가 있는
+                  // 노트가 있으므로 같은 배타 그룹에 넣을 수 없다.
+                  _chip(
+                    label: _todoLabel(store.todoFilter,
+                        countOpenTodos(store.scopedNotes)),
+                    isOn: store.todoFilter != TodoFilter.off,
+                    onTap: widget.controller.cycleTodoFilter,
+                  ),
                   if (store.availableTags.isNotEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
@@ -115,6 +123,14 @@ class _NoteFilterBarState extends State<NoteFilterBar> {
       ),
     ),
   );
+
+  /// 숫자는 **남은** 할일만 센다. 목록은 "무엇을 했나"까지 보여 주지만 숫자는
+  /// "얼마나 남았나"에 답해야 한다 — 두 질문이 다르므로 답도 다르다.
+  String _todoLabel(TodoFilter filter, int openCount) => switch (filter) {
+        TodoFilter.off => '할일 $openCount',
+        TodoFilter.all => '할일 전체',
+        TodoFilter.open => '남은 할일 $openCount',
+      };
 
   String _categoryLabel(NoteCategory category) => switch (category) {
     NoteCategory.all => '전체',

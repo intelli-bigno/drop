@@ -433,6 +433,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onDoubleTap: () => _handleTap(context, notes, row.note, count: 2),
               // 롱프레스는 선택 모드 하나만 쓴다.
               onLongPress: () => notes.toggleSelection(row.id),
+              onToggleCompleted: () => notes.setCompleted(row.id,
+                  completed: !row.note.isCompleted),
             ),
         ],
       ],

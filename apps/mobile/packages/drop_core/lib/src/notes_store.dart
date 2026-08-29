@@ -21,6 +21,7 @@ class NotesStore {
 
   NoteViewMode viewMode = NoteViewMode.active;
   NoteCategory category = NoteCategory.all;
+  TodoFilter todoFilter = TodoFilter.off;
   String? selectedTagId;
   String searchText = '';
 
@@ -43,6 +44,7 @@ class NotesStore {
       .toList();
 
   List<Note> get visibleNotes => scopedNotes.where((note) {
+        if (!todoFilter.matches(note)) return false;
         final selectedTagId = this.selectedTagId;
         if (selectedTagId != null &&
             !note.tags.any((tag) => tag.id == selectedTagId)) {
@@ -175,6 +177,29 @@ class NotesStore {
         optimistic: (note) => note.replacing(archivedAt: null),
         perform: () => _repository.unarchive(id),
       );
+
+  /// 노트를 할일로 올리거나 일반 노트로 되돌린다 (BRU-184).
+  Future<void> setType(String id, NoteType type) => _mutate(
+        id,
+        optimistic: (note) => note.replacing(type: type),
+        perform: () => _repository.setType(id, type),
+      );
+
+  /// 할일의 완료를 뒤집는다 (BRU-184).
+  ///
+  /// 할일이 아닌 노트는 건드리지 않는다 — 조용히 타입까지 바꿔 주면 "완료했더니
+  /// 노트 종류가 변했다"가 된다. 체크박스는 할일에만 그리므로 여기 닿을 일이
+  /// 없지만, 다른 입구가 생겨도 규칙이 한 곳에 남아 있게 한다.
+  Future<void> setCompleted(String id, {required bool completed}) {
+    final note = allNotes.where((n) => n.id == id).firstOrNull;
+    if (note == null || !note.isTodo) return Future<void>.value();
+    return _mutate(
+      id,
+      optimistic: (n) =>
+          n.replacing(completedAt: completed ? DateTime.now().toUtc() : null),
+      perform: () => _repository.setCompleted(id, completed: completed),
+    );
+  }
 
   Future<void> setPinned(String id, {required bool isPinned}) => _mutate(
         id,

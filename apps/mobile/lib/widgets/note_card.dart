@@ -14,6 +14,9 @@ class NoteCard extends StatelessWidget {
   final VoidCallback onDoubleTap;
   final VoidCallback onLongPress;
 
+  /// 할일 체크박스를 눌렀을 때. 할일이 아닌 노트에는 체크박스를 그리지 않는다.
+  final VoidCallback? onToggleCompleted;
+
   const NoteCard({
     super.key,
     required this.row,
@@ -23,6 +26,7 @@ class NoteCard extends StatelessWidget {
     required this.onTap,
     required this.onDoubleTap,
     required this.onLongPress,
+    this.onToggleCompleted,
   });
 
   @override
@@ -48,6 +52,25 @@ class NoteCard extends StatelessWidget {
                     : theme.colorScheme.outline,
               ),
             ),
+          // 할일에만 그린다 (BRU-184). 일반 노트에도 있으면 "이 노트도 끝낼 수
+          // 있는 것"으로 읽힌다. 선택 모드에서는 선택 동그라미와 겹치므로 뺀다.
+          if (note.isTodo && !isSelecting)
+            Padding(
+              padding: const EdgeInsets.only(right: 8, top: 1),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggleCompleted,
+                child: Icon(
+                  note.isCompleted
+                      ? Icons.check_box
+                      : Icons.check_box_outline_blank,
+                  size: 20,
+                  color: note.isCompleted
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
+                ),
+              ),
+            ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +94,15 @@ class NoteCard extends StatelessWidget {
                         MarkdownSummaryCache.summaryFor(note.content),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
+                        // 끝난 할일은 목록에서 사라지지 않고 흐려진다 —
+                        // 방금 끝낸 것이 눈앞에서 없어지면 무슨 일이
+                        // 일어났는지 알 수 없다 (BRU-184).
+                        style: note.isCompleted
+                            ? theme.textTheme.bodyMedium?.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                color: theme.colorScheme.outline,
+                              )
+                            : theme.textTheme.bodyMedium,
                       ),
                     ),
                   ],

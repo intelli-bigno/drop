@@ -21,6 +21,16 @@ abstract interface class NotesRepository {
   Future<void> setPinned(String id, {required bool isPinned});
   Future<void> setLocked(String id, {required bool isLocked});
   Future<void> setPriority(String id, int priority);
+
+  /// 노트의 종류를 바꾼다 (BRU-184).
+  ///
+  /// 일반 노트로 되돌릴 때는 `completedAt`도 함께 지워야 한다 — DB
+  /// CHECK(`notes_todo_state_consistent`)가 완료 시각이 남은 일반 노트를
+  /// 거부하므로, 두 컬럼을 한 번에 쓰지 않으면 갱신 자체가 실패한다.
+  Future<void> setType(String id, NoteType type);
+
+  /// 할일의 완료를 표시하거나 해제한다 (BRU-184).
+  Future<void> setCompleted(String id, {required bool completed});
   Future<void> updateCategories(
     String id, {
     required bool hasLink,
