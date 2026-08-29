@@ -16,6 +16,7 @@ import { NoteViewer } from './NoteViewer'
 import { AttachmentList } from './AttachmentList'
 import { LinkPreviews } from './LinkPreviews'
 import { Icon } from './Icon'
+import { TagList } from './TagList'
 import { useNotesStore } from '../stores/notes'
 import { formatRelativeTime } from '../lib/time-utils'
 import type { Note } from '@drop/shared'
@@ -37,12 +38,16 @@ export function NotePreviewPanel({ note, onClose }: Props) {
     (s) => note.isLocked && !s.temporarilyUnlockedNoteIds.has(note.id)
   )
 
+  // 행에서 뺀 정보가 도착하는 곳이다 (BRU-187).
+  // 목록은 조용하게 두되, 하나를 들여다볼 때는 전부 보여야 한다.
   const meta = useMemo(() => {
     const parts: string[] = [`#${note.displayId}`, formatRelativeTime(note.updatedAt)]
     if (project) parts.push(project.name)
+    if (note.priority > 0) parts.push(`긴급도 ${note.priority}`)
     if (commentCount > 0) parts.push(`댓글 ${commentCount}`)
+    if (note.attachments.length > 0) parts.push(`첨부 ${note.attachments.length}`)
     return parts
-  }, [note.displayId, note.updatedAt, project, commentCount])
+  }, [note.displayId, note.updatedAt, note.priority, note.attachments.length, project, commentCount])
 
   return (
     // aria-live 없이 role="complementary" — 보조 정보 영역이라는 뜻이고,
@@ -72,6 +77,12 @@ export function NotePreviewPanel({ note, onClose }: Props) {
           </p>
         ) : (
           <>
+            {/* 태그도 행에서 뺐으므로 여기가 유일하게 이름이 보이는 자리다 */}
+            {note.tags.length > 0 && (
+              <div className="note-preview-tags">
+                <TagList noteId={note.id} tags={note.tags} />
+              </div>
+            )}
             <NoteViewer content={note.content} />
             {note.attachments.length > 0 && <AttachmentList attachments={note.attachments} />}
             <LinkPreviews content={note.content} attachments={note.attachments} />

@@ -2,7 +2,6 @@ import { useRef, useCallback, forwardRef, useImperativeHandle, useState, memo, u
 import { LexicalEditor, LexicalEditorHandle } from './LexicalEditor'
 import { AttachmentList } from './AttachmentList'
 import { LinkPreviews } from './LinkPreviews'
-import { TagList } from './TagList'
 import { TagPopover } from './TagPopover'
 import { ProjectPopover } from './ProjectPopover'
 import { TemplatePopover } from './TemplatePopover'
@@ -11,18 +10,13 @@ import { NoteViewer } from './NoteViewer'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
+import { NoteTreeGuides, TREE_INDENT } from './NoteTreeGuides'
 import { NoteHistoryDialog } from './NoteHistoryDialog'
 import { CommentPanel } from './CommentPanel'
 import { useNotesStore } from '../stores/notes'
 import { useProfileStore } from '../stores/profile'
-import { formatRelativeTime } from '../lib/time-utils'
-import { nextPriority, priorityClassName } from '../lib/note-priority'
-import { toSingleLinePreview, countContentLinks } from '../lib/note-line'
-import {
-  resolveTrailingSlot,
-  shouldPinStatusStayVisible,
-  reservedActionsWidth,
-} from '../lib/note-card-trailing'
+import { toSingleLinePreview } from '../lib/note-line'
+import { resolveRowAdornments } from '../lib/note-row'
 import { resolveNoteCardView } from '../lib/note-edit-mode'
 import { shouldMountNoteBody } from '../lib/note-body-mount'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
@@ -84,11 +78,9 @@ export const NoteCard = memo(
       const [showPinDialog, setShowPinDialog] = useState(false)
       const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false)
       const [pinDialogMode, setPinDialogMode] = useState<PinDialogMode>('setup')
-      const [isHovered, setIsHovered] = useState(false)
 
       const {
         updateNote,
-        updateNotePriority,
         requestDeleteNote,
         addAttachment,
         removeAttachment,
@@ -105,19 +97,12 @@ export const NoteCard = memo(
         closeHistory,
         historyNoteId,
         clearNoteExport,
-        setFilterProject,
         setNoteType,
         toggleNoteCompleted,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
-      // 댓글은 노트가 아니라 별도 슬라이스에 있다 — 카드에는 개수만 온다 (BRU-63)
-      const storedCommentCount = useNotesStore((s) => s.commentCountByNote[note.id] ?? 0)
       const commentsNoteId = useNotesStore((s) => s.commentsNoteId)
       const openComments = useNotesStore((s) => s.openComments)
-      // 프로젝트는 카드에 이름만 필요하다 (BRU-83)
-      const project = useNotesStore((s) =>
-        note.projectId ? (s.allProjects.find((p) => p.id === note.projectId) ?? null) : null
-      )
       const closeComments = useNotesStore((s) => s.closeComments)
 
       // DB에서 잠금 상태이고 + 일시 해제되지 않은 경우에만 잠김
@@ -141,20 +126,14 @@ export const NoteCard = memo(
         () => (isLocked ? '' : toSingleLinePreview(note.content)),
         [isLocked, note.content]
       )
-      const linkCount = useMemo(
-        () => (isLocked ? 0 : countContentLinks(note.content)),
-        [isLocked, note.content]
-      )
-      const attachmentCount = isLocked ? 0 : note.attachments.length
-      // 잠긴 노트는 댓글이 몇 개인지도 흘리지 않는다 — 첨부·링크 개수와 같은 규칙
-      const commentCount = isLocked ? 0 : storedCommentCount
 
+      // 행에 무엇이 어디에 붙는지는 한 곳에서 정한다 (BRU-187).
       // 액션은 마우스를 올렸을 때만 나온다 (BRU-82). 키보드만 쓰는 경로는
       // 단축키와 `.note-card:focus-within` CSS 규칙이 따로 맡는다.
-      const trailingSlot = resolveTrailingSlot({ isHovered })
-      const showStatusIcons = shouldPinStatusStayVisible({
-        isPinned: note.isPinned,
-        isLocked: note.isLocked,
+      const row = resolveRowAdornments({
+        viewMode,
+        isTodo: isTodo(note),
+        isExported: note.linearIssueUrl !== null,
       })
 
       const handleAddFile = useCallback(
@@ -306,7 +285,11 @@ export const NoteCard = memo(
         [note.id, removeAttachment]
       )
 
-      const indentStyle = depth > 0 ? { marginLeft: `${depth * 24}px` } : undefined
+      // 들여쓰기는 카드를 미는 게 아니라 행 안쪽을 민다 (BRU-190).
+      // 카드가 전폭으로 남아야 그 안에 조상 레일을 그릴 수 있다 —
+      // 카드를 밀면 레일의 기준점도 함께 밀려 깊이별 정렬이 무너진다.
+      const indentStyle =
+        depth > 0 ? ({ '--note-indent': `${depth * TREE_INDENT}px` } as React.CSSProperties) : undefined
 
       // 헤더의 잠금 버튼 클릭: 잠금 설정 또는 완전 해제
       const handleLockToggle = () => {
@@ -353,11 +336,6 @@ export const NoteCard = memo(
         }
       }
 
-      const handlePriorityClick = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        updateNotePriority(note.id, nextPriority(note.priority))
-      }
-
       // 체크박스는 카드 클릭(포커스 이동)까지 번지면 안 된다 (BRU-175)
       const handleCompletedClick = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -390,36 +368,37 @@ export const NoteCard = memo(
             className={cardClassName}
             style={indentStyle}
             data-note-id={note.id}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
             onDragOver={isLocked ? undefined : handleDragOver}
             onDragLeave={isLocked ? undefined : handleDragLeave}
             onDrop={isLocked ? undefined : handleDrop}
           >
+            <NoteTreeGuides depth={depth} />
             <div className="note-line">
-              {viewMode === 'active' && (
-                <button
-                  className={`priority-dot ${priorityClassName(note.priority)}`}
-                  onClick={handlePriorityClick}
-                  title={`긴급도 ${note.priority}/3 (클릭하면 순환)`}
-                  aria-label={`긴급도 ${note.priority}/3`}
-                />
-              )}
-              {viewMode === 'active' && isTodo(note) && (
-                // 할일에만 그린다 (BRU-175). 일반 노트에 체크박스가 있으면
-                // "이 노트도 끝낼 수 있는 것"으로 읽힌다.
-                <button
-                  className={`todo-check ${note.completedAt ? 'completed' : ''}`}
-                  onClick={handleCompletedClick}
-                  title={note.completedAt ? '완료 해제' : '완료 표시'}
-                  aria-label={note.completedAt ? '완료 해제' : '완료 표시'}
-                  role="checkbox"
-                  aria-checked={!!note.completedAt}
-                >
-                  <Icon name={note.completedAt ? 'check-square' : 'square'} size={13} />
-                </button>
-              )}
-              <span className="note-id">#{note.displayId}</span>
+              {/* 상태칸 (BRU-187). 할일이 아니어도 자리를 비워 둔다 —
+                  노트와 할일이 섞인 목록에서 본문 x가 한 줄로 맞아야 한다. */}
+              <span className="note-line-slot">
+                {row.showsCheckbox && (
+                  <button
+                    className={`todo-check ${note.completedAt ? 'completed' : ''}`}
+                    onClick={handleCompletedClick}
+                    title={note.completedAt ? '완료 해제' : '완료 표시'}
+                    aria-label={note.completedAt ? '완료 해제' : '완료 표시'}
+                    role="checkbox"
+                    aria-checked={!!note.completedAt}
+                  >
+                    <Icon name={note.completedAt ? 'check-square' : 'square'} size={17} />
+                  </button>
+                )}
+                {row.showsNoteIcon && (
+                  // 노트형에도 아이콘을 둔다 (BRU-187). 칸이 비면 목록 왼쪽이
+                  // 이가 빠진 것처럼 보인다. 체크박스와 헷갈리지 않도록 사각형이
+                  // 아닌 문서 아이콘을 쓰고, 누를 수 없다는 뜻으로 흐리게 둔다.
+                  <span className="note-icon" aria-hidden="true">
+                    <Icon name="file-text" size={15} />
+                  </span>
+                )}
+              </span>
+
               <span className="note-line-content">
                 {isOpen ? null : isLocked ? (
                   <span className="note-line-placeholder">잠긴 노트</span>
@@ -429,87 +408,31 @@ export const NoteCard = memo(
                   <span className="note-line-placeholder">빈 노트</span>
                 )}
               </span>
-              {!isOpen && (attachmentCount > 0 || linkCount > 0 || commentCount > 0) && (
-                <span className="note-line-counts">
-                  {commentCount > 0 && (
-                    <span className="note-line-count" title={`댓글 ${commentCount}개`}>
-                      <Icon name="message-square" size={11} />
-                      {commentCount}
-                    </span>
-                  )}
-                  {attachmentCount > 0 && (
-                    <span className="note-line-count" title={`첨부 ${attachmentCount}개`}>
-                      <Icon name="paperclip" size={11} />
-                      {attachmentCount}
-                    </span>
-                  )}
-                  {linkCount > 0 && (
-                    <span className="note-line-count" title={`링크 ${linkCount}개`}>
-                      <Icon name="link" size={11} />
-                      {linkCount}
-                    </span>
-                  )}
+              {row.trailing.includes('export') && note.linearIssueUrl && (
+                // 반출 배지 (BRU-45). 기본 목록에서는 반출된 노트가 빠지므로
+                // 이 배지는 "반출된 노트 보기"를 켠 목록에서 주로 보인다.
+                <span className="note-export-badge" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="note-export-link"
+                    onClick={() => window.api.openExternal(note.linearIssueUrl!)}
+                    title={`Linear에서 열기 — ${note.linearIssueUrl}`}
+                  >
+                    <Icon name="link" size={11} />
+                    {note.linearIssueKey ?? 'Linear'}
+                  </button>
+                  <button
+                    className="note-export-clear"
+                    onClick={() => clearNoteExport(note.id)}
+                    title="반출 표시 지우기"
+                    aria-label="반출 표시 지우기"
+                  >
+                    <Icon name="x" size={11} />
+                  </button>
                 </span>
               )}
-              <div className="note-line-tags">
-                {project && (
-                  // 프로젝트 칩 (BRU-83). 누르면 그 프로젝트만 보는 필터가 걸린다 —
-                  // 태그 칩과 같은 동작이라 따로 배울 것이 없다.
-                  <button
-                    className="project-chip"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setFilterProject(project.id)
-                    }}
-                    title={`${project.name} 프로젝트만 보기`}
-                  >
-                    <Icon name="folder" size={10} />
-                    {project.name}
-                  </button>
-                )}
-                <TagList noteId={note.id} tags={note.tags} />
-                {note.linearIssueUrl && (
-                  // 반출 뱃지 (BRU-45). 기본 목록에서는 반출된 노트가 빠지므로
-                  // 이 뱃지는 "반출된 노트 보기"를 켠 목록에서 주로 보인다.
-                  <span className="note-export-badge" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="note-export-link"
-                      onClick={() => window.api.openExternal(note.linearIssueUrl!)}
-                      title={`Linear에서 열기 — ${note.linearIssueUrl}`}
-                    >
-                      <Icon name="link" size={11} />
-                      {note.linearIssueKey ?? 'Linear'}
-                    </button>
-                    <button
-                      className="note-export-clear"
-                      onClick={() => clearNoteExport(note.id)}
-                      title="반출 표시 지우기"
-                      aria-label="반출 표시 지우기"
-                    >
-                      <Icon name="x" size={11} />
-                    </button>
-                  </span>
-                )}
-              </div>
-              <div
-                className="note-card-trailing"
-                data-slot={trailingSlot}
-                // 액션이 들어갈 자리를 미리 비워 둔다 — 오버레이가 왼쪽으로
-                // 흘러나가 태그를 덮지 않게 하는 유일한 장치다 (BRU-57).
-                style={
-                  {
-                    '--actions-reserved': `${reservedActionsWidth(viewMode)}px`,
-                  } as React.CSSProperties
-                }
-              >
-                {showStatusIcons && (
-                  <span className="note-line-status" aria-hidden="true">
-                    {note.isPinned && <Icon name="pin" size={12} />}
-                    {note.isLocked && <Icon name="lock" size={12} />}
-                  </span>
-                )}
-                <span className="note-time">{formatRelativeTime(note.createdAt)}</span>
-                <div className="note-card-actions" onClick={(e) => e.stopPropagation()}>
+              {/* 액션은 hover에 겹쳐 뜬다 (BRU-187). 자리를 미리 비워 두지 않으므로
+                  본문이 예전의 예약 폭 206px을 되찾는다. */}
+              <div className="note-card-actions" onClick={(e) => e.stopPropagation()}>
                   {viewMode === 'active' && (
                     <>
                       {!isLocked && (
@@ -644,7 +567,6 @@ export const NoteCard = memo(
                     </>
                   )}
                 </div>
-              </div>
             </div>
             {isOpen &&
               (isLocked ? (

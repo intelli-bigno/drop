@@ -134,7 +134,9 @@ export const STYLEGUIDE_NOTES: Note[] = [
   PINNED,
   PARENT,
   makeNote({
-    content: '↳ Radix는 CSS를 한 줄도 안 들고 온다. "킷을 쓴다"에 해당하지 않는 이유.',
+    // 화살표 같은 글자를 넣지 않는다 — 계층은 앱이 그리는 것이지 본문에 적는 것이 아니다.
+    // 여기 '↳'를 박아 두었더니 쇼케이스가 "앱이 가지를 그린다"고 거짓말을 했다 (BRU-187).
+    content: 'Radix는 CSS를 한 줄도 안 들고 온다. "킷을 쓴다"에 해당하지 않는 이유.',
     parentId: PARENT.id,
     createdAt: minutesAgo(10),
     updatedAt: minutesAgo(10),

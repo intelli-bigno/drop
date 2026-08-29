@@ -198,14 +198,17 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  /* 목록 밀도 (BRU-56) — 노트 사이 간격 */
-  margin-bottom: 6px;
+  /* 상자를 없앤다 (BRU-187) — 보더·radius·카드 배경 대신 여백으로 나눈다.
+     한 줄짜리 목록에서 상자는 "영수증 더미"처럼 읽히고 세로 공간의 21%를 먹었다. */
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  /* 빠른 네비게이션을 위해 transition 최소화 */
-  transition: border-color 0.05s ease;
+  transition: background var(--transition-fast);
+}
+
+.note-card:hover {
+  background: var(--bg-hover);
 }
 
 .note-card::before {
@@ -255,66 +258,62 @@ body {
 .note-line {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  /* 목록 밀도 (BRU-56) — 카드 내부 상하 패딩 */
-  padding: var(--space-1) var(--space-4);
+  /* 어도먼트끼리는 좁게 붙고, 본문 앞뒤로만 숨을 준다 */
+  gap: 6px;
+  /* 상자가 없어진 만큼 세로 여백을 조금 키운다 — 밀도는 유지하되 줄이 붙지 않게.
+     들여쓰기는 카드를 미는 게 아니라 여기 왼쪽 패딩에 얹는다 (BRU-190) —
+     카드가 전폭으로 남아야 그 안에 조상 레일을 그릴 수 있다. */
+  padding: 5px var(--space-3);
+  padding-left: calc(var(--space-3) + var(--note-indent, 0px));
   min-width: 0;
   cursor: pointer;
 }
 
+/* 상태칸 (BRU-187). 할일이 아니어도 자리를 지킨다 —
+   노트와 할일이 섞인 목록에서 본문 x가 한 줄로 맞아야 한다. */
+.note-line-slot {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 본문 앞 상태 표식 — 핀·잠금. 읽기 전용이라 버튼이 아니다. */
+
+
+/* 우선순위 표식 (BRU-187).
+   점은 5px이지만 버튼은 24px이다 — 클릭 대상이 손가락에 맞아야 한다(WCAG 2.5.8).
+   priority 0에는 아예 그리지 않으므로 대부분의 줄에서 이 자리가 비어 있다. */
+
+
+
+
 /* 긴급도 = 맨 앞의 색 점 (클릭하면 0→1→2→3→0) */
-.priority-dot {
-  flex: 0 0 auto;
-  width: 5px;
-  height: 5px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--text-muted);
-  cursor: pointer;
-  transition:
-    transform var(--transition-fast),
-    background var(--transition-fast);
-}
 
-.priority-dot:hover {
-  transform: scale(1.6);
-}
 
-.priority-dot.priority-none {
-  background: var(--text-muted);
-}
 
-.priority-dot.priority-low {
-  background: var(--priority-low);
-}
 
-.priority-dot.priority-medium {
-  background: var(--cta);
-}
 
-.priority-dot.priority-high {
-  background: var(--danger);
-}
 
-.note-id {
-  flex: 0 0 auto;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  color: var(--text-tertiary);
-  letter-spacing: 0.02em;
-}
 
 /* 본문은 한 줄 — 넘치면 말줄임.
    flex-basis는 반드시 0이다: auto면 "줄바꿈 없는 본문 전체 폭"이 basis가 되어
    줄 전체의 shrink가 태그 쪽으로 몰리고, 태그 칩이 중간에서 잘린다 (BRU-55). */
 .note-line-content {
-  flex: 1 1 0;
+  /* 본문은 필요한 만큼만 차지한다 (BRU-187).
+     flex:1이면 상자가 줄 끝까지 늘어나 태그·카운트가 오른쪽 가장자리로 밀리고,
+     없앤 오른쪽 열이 그대로 되살아난다 — 실측으로 글자 끝에서 태그까지 426~597px이
+     비었다. 참조 이미지처럼 어도먼트가 글자 바로 뒤에 붙으려면 auto여야 한다.
+     길면 shrink되어 말줄임으로 잘린다. */
+  flex: 0 1 auto;
   min-width: 0;
   font-size: var(--text-base);
   line-height: 1.5;
-  color: var(--text-secondary);
+  /* 목록의 본문은 이 앱의 주 읽기 대상이다 (BRU-187).
+     secondary였을 때는 펼치면 primary로 바뀌어 같은 글이 색을 갈아입었다. */
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,67 +329,16 @@ body {
 }
 
 /* 접힌 줄에서 첨부·링크는 개수 표식만 */
-.note-line-counts {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-}
 
-.note-line-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
 
 /* 태그 영역은 줄이지 않는다 — 대신 줄 폭의 40%를 상한으로 두고,
    넘치는 태그는 TagList가 `+N` 배지로 접는다 (lib/tag-overflow.ts). */
-.note-line-tags {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  flex: 0 0 auto;
-  max-width: 40%;
-  overflow: hidden;
-}
 
-.note-line-tags .tag-list {
-  flex-wrap: nowrap;
-  overflow: hidden;
-}
 
 /* 프로젝트 칩 (BRU-83) — 태그 칩 왼쪽에 붙는다.
    태그와 다른 축이므로 모양도 다르게 둔다: 태그는 둥근 알약에 강조색,
    프로젝트는 각진 모서리에 중립색이다. 한 노트에 하나뿐이라 접기도 없다. */
-.project-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  margin-right: 6px;
-  padding: 2px 7px;
-  max-width: 160px;
-  background: var(--bg-secondary);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.5;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
 
-.project-chip:hover {
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-}
 
 /* 프로젝트가 지정된 노트는 카드 액션의 폴더 아이콘이 켜져 있다 */
 .project-btn.assigned {
@@ -487,17 +435,6 @@ body {
    오버레이가 왼쪽으로 흘러나가 태그를 덮었다. 자리를 미리 비워 두면 오버레이가
    상자 안에 갇혀 태그를 침범할 수 없다. 예약 폭이 실제 버튼 수와 무관하므로
    "줄 폭이 버튼 수에 따라 흔들리지 않는다"(BRU-46)도 그대로다. */
-.note-card-trailing {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-  min-width: var(--actions-reserved, 0px);
-  /* 줄 높이의 바닥값 — 액션 버튼 크기와 맞춘다 (BRU-56) */
-  min-height: 24px;
-}
 
 /* 핀·잠금은 상태다 — 켜져 있으면 호버 없이도 보인다 */
 .note-line-status {
@@ -507,45 +444,37 @@ body {
   color: var(--accent);
 }
 
-.note-time {
-  flex: 0 0 auto;
-  font-size: var(--text-sm);
-  font-weight: 400;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-}
 
-/* 예약된 상자(.note-card-trailing) 안에 완전히 들어간다 — 왼쪽으로 삐져나가지
-   않으므로 태그를 덮을 수 없다. padding-left도 뺐다: 그 12px이 곧 침범 폭이었다. */
 .note-card-actions {
   position: absolute;
-  right: 0;
+  right: var(--space-2);
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 2px;
-  background: var(--bg-card);
+  /* 행에 자리를 잡지 않고 **떠 있는 툴바**로 뜬다 (BRU-187).
+     행에서 프로젝트·태그·우선순위·카운트를 전부 뺐으므로 겹칠 것이 거의 없고,
+     겹치더라도 아래 글자가 비치지 않도록 자기 배경과 그림자를 갖는다.
+     brxce의 액션 툴바(fixed·rounded·shadow·backdrop-blur)와 같은 결이다. */
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 
+
 /* BRU-82 — 노출은 마우스 hover뿐이다. 키보드 포커스만으로는 켜지지 않는다.
-   `:focus-within`은 남겨 둔다: Tab으로 액션 버튼 자체에 도달한 키보드 사용자는
+   `:focus-within`은 남겨 둔다: Tab으로 액션 버튼에 도달한 키보드 사용자는
    자기가 무엇을 고르고 있는지 볼 수 있어야 한다(단축키와 별개의 대체 경로). */
-.note-card-trailing[data-slot='actions'] .note-card-actions,
+.note-card:hover .note-card-actions,
 .note-card-actions:focus-within {
   opacity: 1;
   pointer-events: auto;
-}
-
-.note-card-trailing[data-slot='actions'] .note-time,
-.note-card-trailing[data-slot='actions'] .note-line-status,
-.note-card-trailing:focus-within .note-time,
-.note-card-trailing:focus-within .note-line-status {
-  visibility: hidden;
 }
 
 /* Action Buttons Base Style */
@@ -588,14 +517,7 @@ body {
   color: var(--danger) !important;
 }
 
-.note-card-reply {
-  margin-left: 24px;
-  border-left: 2px solid var(--accent-subtle);
-}
 
-.note-card-reply::before {
-  display: none;
-}
 
 /* Note Editor Container */
 .note-editor {
@@ -1886,6 +1808,7 @@ h6.note-viewer-heading {
   white-space: nowrap;
 }
 
+
 .tag-chip {
   display: inline-flex;
   align-items: center;
@@ -1912,6 +1835,28 @@ h6.note-viewer-heading {
 
 .tag-name:hover {
   color: var(--accent-hover);
+}
+
+/* 삭제 글쇠는 평소에 숨는다 (BRU-187).
+   태그는 라벨로 읽혀야 하는데 매 행마다 × 가 붙어 있으면 "지울 것"으로 읽힌다.
+   폭도 칩당 ~24px씩 먹어 본문을 밀어냈다. 칩에 마우스를 올리거나 그 안으로
+   포커스가 들어오면 나타난다 — 키보드만 쓰는 경로도 막히지 않는다. */
+.tag-chip .tag-remove {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-left: -6px;
+  transition:
+    width var(--transition-fast),
+    opacity var(--transition-fast),
+    margin-left var(--transition-fast);
+}
+
+.tag-chip:hover .tag-remove,
+.tag-chip:focus-within .tag-remove {
+  width: 16px;
+  opacity: 1;
+  margin-left: 0;
 }
 
 .tag-remove {
@@ -3988,6 +3933,11 @@ h6.note-viewer-heading {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* 아이콘은 17px이지만 클릭 대상은 24px이다 (WCAG 2.5.8).
+     상태칸(20px) 밖으로 넘치는 4px은 음수 마진으로 흡수해 정렬을 흔들지 않는다. */
+  width: 24px;
+  height: 24px;
+  margin: -2px;
   padding: 0;
   border: none;
   background: none;
@@ -4011,8 +3961,7 @@ h6.note-viewer-heading {
    없어지면 무슨 일이 일어났는지 알 수 없다 (BRU-45 retainedNoteIds와 같은 판단).
    opacity 대신 색을 낮추는 이유는, 흐려진 카드에도 포커스 링·호버 액션이
    또렷하게 남아야 하기 때문이다. */
-.note-card.todo.completed .note-line-content,
-.note-card.todo.completed .note-id {
+.note-card.todo.completed .note-line-content {
   color: var(--text-muted);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
@@ -4157,4 +4106,70 @@ h6.note-viewer-heading {
   .note-preview-close {
     transition: none;
   }
+}
+
+/* 미리보기 패널의 태그 줄 (BRU-187).
+   행에서 태그를 뺐으므로 이름이 보이는 자리는 여기와 태그 팝오버뿐이다. */
+.note-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ============================================
+   들여쓰기 가이드 (BRU-190)
+   ============================================
+   brxce의 IndentationGuides를 그대로 가져왔다 (VS Code식).
+   레일은 레이아웃에 참여하지 않는다 — 들여쓰기는 .note-line의 왼쪽 패딩이 하고,
+   선은 카드 안 절대 배치로 그린다. 그래야 top/bottom 0으로 행 전체를 채워
+   형제 행끼리 하나의 척추로 이어진다. 전에는 자식 카드의 border-left라
+   자기 행 높이(33px)만큼만 있는 토막이었다.
+
+   색은 단색이다. brxce는 깊이가 곧 노드 타입이라 무지개 5색을 쓰지만
+   DROP의 답글은 타입이 아니라 그냥 중첩이다 — 색을 넣으면 없는 의미가 생긴다. */
+
+.note-tree-guides {
+  position: absolute;
+  /* 카드에 투명 보더 1px이 있어 inset:0이면 위아래로 1px씩 짧아진다.
+     그만큼 행 사이에 틈이 생겨 형제 레일이 끊긴다 — 보더 박스까지 늘린다. */
+  top: -1px;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.note-tree-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  /* box-shadow로 1px을 그린다 — 배율이 걸린 화면에서 보더가 흐려지지 않게
+     하는 VS Code 기법이고, brxce도 같은 이유로 이렇게 쓴다. */
+  box-shadow: 1px 0 0 0 var(--border-color);
+}
+
+/* 행 내용은 레일 위에 온다 */
+.note-line {
+  position: relative;
+  z-index: 1;
+}
+
+/* 노트형 아이콘 (BRU-187).
+   상태칸이 비면 목록 왼쪽이 이가 빠진 것처럼 보인다 — brxce도 모든 행에 타입
+   아이콘을 둔다. 체크박스보다 흐리게 둬서 "누를 수 있는 것"으로 읽히지 않게 한다. */
+.note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* 완료된 할일은 본문이 흐려지므로 아이콘도 함께 낮춘다 */
+.note-card.todo.completed .note-icon {
+  opacity: 0.6;
 }
