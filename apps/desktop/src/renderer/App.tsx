@@ -10,6 +10,7 @@ import { Toaster } from './components/Toaster'
 import { ShortcutCheatSheet } from './components/ShortcutCheatSheet'
 import { isCheatSheetShortcut } from './shortcuts/noteGlobal'
 import { isTextInputTarget } from './lib/dom-utils'
+import { resolveAppRoute } from './lib/app-route'
 
 // 디자인 시스템 쇼케이스 (BRU-172) — 개발 전용.
 // 프로덕션에서는 이 삼항이 죽은 가지가 되어 모듈째로 번들에서 사라진다.
@@ -21,10 +22,42 @@ const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
 const envLabel = isLocal ? 'LOCAL' : 'REMOTE'
 
 function App() {
+  const [route, setRoute] = useState(() => resolveAppRoute(window.location.hash))
+
+  // Handle hash-based routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      setRoute(resolveAppRoute(window.location.hash))
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  // Quick Capture route - minimal UI, separate window
+  // 여기서 걸러야 아래 MainApp이 마운트되지 않는다 — 훅은 조건부로 건너뛸 수
+  // 없으므로, 이 창에 데이터 로딩 이펙트가 돌지 않으려면 컴포넌트 자체를
+  // 아예 렌더하지 말아야 한다 (BRU-180).
+  if (route === 'quick-capture') {
+    return <QuickCapture />
+  }
+
+  // 디자인 시스템 쇼케이스 (BRU-172). 인증 앞단에서 갈라진다 — 로그인도 Supabase도 필요 없다.
+  // 마찬가지로 MainApp을 마운트하지 않아야 픽스처 위에 실제 노트가 덮이지 않는다.
+  if (Styleguide && route === 'styleguide') {
+    return (
+      <Suspense fallback={null}>
+        <Styleguide />
+      </Suspense>
+    )
+  }
+
+  return <MainApp />
+}
+
+function MainApp() {
   const { loadNotes, loadTags, loadProjects, subscribeToChanges, createNote } = useNotesStore()
   const { user, isAuthLoading, initializeAuth } = useAuthStore()
   const loadProfile = useProfileStore((s) => s.loadProfile)
-  const [route, setRoute] = useState(() => window.location.hash.replace('#', '') || 'main')
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false)
 
   // ⌘/ 또는 ? 로 단축키 치트시트. 맨 `/`는 편집 진입 키라 여기서 잡지 않는다 (BRU-53).
@@ -40,15 +73,6 @@ function App() {
     window.addEventListener('keydown', handleCheatSheetKey)
     return () => window.removeEventListener('keydown', handleCheatSheetKey)
   }, [handleCheatSheetKey])
-
-  // Handle hash-based routing
-  useEffect(() => {
-    const handleHashChange = () => {
-      setRoute(window.location.hash.replace('#', '') || 'main')
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
 
   // Listen for quick capture note creation from main process
   useEffect(() => {
@@ -94,20 +118,6 @@ function App() {
       unsubscribe()
     }
   }, [user, loadNotes, loadTags, loadProjects, loadProfile, subscribeToChanges])
-
-  // Quick Capture route - minimal UI, separate window
-  if (route === 'quick-capture') {
-    return <QuickCapture />
-  }
-
-  // 디자인 시스템 쇼케이스 (BRU-172). 인증 앞단에서 갈라진다 — 로그인도 Supabase도 필요 없다.
-  if (Styleguide && route.startsWith('styleguide')) {
-    return (
-      <Suspense fallback={null}>
-        <Styleguide />
-      </Suspense>
-    )
-  }
 
   // Show loading state while checking auth
   if (isAuthLoading) {
