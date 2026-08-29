@@ -60,6 +60,16 @@ const ICON_NAMES: IconName[] = [
   'message-square',
   'chevrons-down',
   'chevrons-up',
+  'square',
+  'check-square',
+  'list-todo',
+  'help-circle',
+  'tag',
+  'keyboard',
+  'copy',
+  'log-out',
+  'youtube',
+  'instagram',
 ]
 
 const PIN_MODES: PinDialogMode[] = ['setup', 'unlock-temp', 'unlock-permanent', 'unlock-all']
@@ -279,7 +289,7 @@ export function Components() {
       </Section>
 
       <Section title="사용자 메뉴">
-        <Specimen name="UserMenu" file="components/UserMenu.tsx" desc="Audit 섹션의 지적 대상">
+        <Specimen name="UserMenu" file="components/UserMenu.tsx" desc="하드코딩 색은 BRU-176으로 토큰 교체됨">
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <UserMenu onOpenCheatSheet={() => setOverlay('cheatsheet')} />
           </div>

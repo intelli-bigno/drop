@@ -16,15 +16,6 @@ interface Finding {
 
 const FINDINGS: Finding[] = [
   {
-    severity: 'danger',
-    title: 'UserMenu가 다크 단일 모드 시절 색을 그대로 쓴다',
-    body:
-      '팔레트가 웜 페이퍼 + 라이트/다크 2모드로 바뀌기 전(BRU-72)의 색이 남았다. ' +
-      '흰 글자·회색 글자가 하드코딩돼 있어 라이트 모드에서 밝은 표면 위에 흰 글자가 얹힌다. ' +
-      '토큰(--text-primary / --text-secondary / --text-on-accent)으로 갈아야 한다.',
-    where: 'components/UserMenu.tsx:380, 420, 438, 446, 518, 530 (#fff · #888 · #ccc)',
-  },
-  {
     severity: 'warning',
     title: 'Google 로그인 버튼이 두 모드 모두 흰 배경이다',
     body:
@@ -57,8 +48,12 @@ const MEASURED = [
   { label: '#fff / --danger', fg: '#ffffff', bg: '--danger', note: 'index.css:3876 위험 버튼' },
   { label: '#fff / --cta', fg: '#ffffff', bg: '--cta', note: '주요 행동 버튼에 흰 글자를 쓴다면' },
   { label: '--text-on-accent / #ffffff', fg: '--text-on-accent', bg: '#ffffff', note: 'AuthScreen:99 흰 버튼' },
-  { label: '#888 / --bg-elevated', fg: '#888888', bg: '--bg-elevated', note: 'UserMenu:446 이메일 줄' },
-  { label: '#ccc / --bg-elevated', fg: '#cccccc', bg: '--bg-elevated', note: 'UserMenu:518 메뉴 항목' },
+  {
+    label: '--text-on-accent / --accent',
+    fg: '--text-on-accent',
+    bg: '--accent',
+    note: 'UserMenu 아바타 플레이스홀더 (BRU-176로 토큰 교체됨)',
+  },
 ]
 
 function read(token: string): string {
@@ -74,7 +69,7 @@ export function Audit() {
         아래 대비 숫자는 지금 이 화면의 토큰 값으로 다시 잰 것이라, 테마를 바꾸면 함께 바뀐다.
       </PageHead>
 
-      <Section title="적발" note="2026-08-29 기준 실측. 고치는 것은 이 이슈의 범위가 아니다 — 보이게 하는 것까지가 여기 몫이다.">
+      <Section title="적발" note="2026-08-30 기준 실측(UserMenu 항목은 BRU-176으로 해소). 고치는 것은 이 이슈의 범위가 아니다 — 보이게 하는 것까지가 여기 몫이다.">
         {FINDINGS.map((finding) => (
           <div
             key={finding.title}

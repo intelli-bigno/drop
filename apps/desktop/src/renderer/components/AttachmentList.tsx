@@ -454,9 +454,7 @@ function YouTubeAttachment({
           <div className="attachment-youtube-info">
             <div className="attachment-youtube-header">
               <span className="attachment-youtube-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                </svg>
+                <Icon name="youtube" size={14} />
               </span>
               <span className="attachment-youtube-label">YouTube</span>
             </div>
@@ -481,9 +479,7 @@ function YouTubeAttachment({
         <div className="attachment-youtube-thumbnail">
           {hasError || !thumbUrl ? (
             <div className="attachment-youtube-placeholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-              </svg>
+              <Icon name="youtube" size={48} style={{ opacity: 0.5 }} />
             </div>
           ) : (
             <>
@@ -493,9 +489,7 @@ function YouTubeAttachment({
                 onError={() => setHasError(true)}
               />
               <div className="attachment-youtube-play">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Icon name="play" size={48} fill="#fff" stroke="none" />
               </div>
             </>
           )}
@@ -503,9 +497,7 @@ function YouTubeAttachment({
         <div className="attachment-youtube-info">
           <div className="attachment-youtube-header">
             <span className="attachment-youtube-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-              </svg>
+              <Icon name="youtube" size={14} />
             </span>
             <span className="attachment-youtube-label">YouTube</span>
           </div>
@@ -574,9 +566,7 @@ function InstagramAttachment({
           <div className="attachment-instagram-info">
             <div className="attachment-instagram-header">
               <span className="attachment-instagram-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2.5A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V7A2.5 2.5 0 0 0 17 4.5H7zm10.5 1.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" />
-                </svg>
+                <Icon name="instagram" size={14} />
               </span>
               <span className="attachment-instagram-label">Instagram</span>
             </div>
@@ -612,9 +602,7 @@ function InstagramAttachment({
         <div className="attachment-instagram-info">
           <div className="attachment-instagram-header">
             <span className="attachment-instagram-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2.5A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V7A2.5 2.5 0 0 0 17 4.5H7zm10.5 1.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" />
-              </svg>
+              <Icon name="instagram" size={14} />
             </span>
             <span className="attachment-instagram-label">Instagram</span>
           </div>

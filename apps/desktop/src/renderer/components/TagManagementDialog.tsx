@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, KeyboardEvent } from 'react'
 import { useNotesStore } from '../stores/notes'
+import { Icon } from './Icon'
 
 interface Props {
   onClose: () => void
@@ -126,37 +127,12 @@ export function TagManagementDialog({ onClose }: Props) {
         <div className="tag-management-header">
           <h2 className="tag-management-title">태그 관리</h2>
           <button className="tag-management-close" onClick={onClose} aria-label="닫기">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <Icon name="x" size={20} />
           </button>
         </div>
 
         <div className="tag-management-search">
-          <svg
-            className="tag-management-search-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Icon name="search" size={16} className="tag-management-search-icon" />
           <input
             ref={inputRef}
             type="text"
@@ -229,19 +205,7 @@ export function TagManagementDialog({ onClose }: Props) {
                         onClick={() => handleDeleteClick(tag.id)}
                         aria-label="태그 삭제"
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
+                        <Icon name="trash" size={16} />
                       </button>
                     </>
                   )}

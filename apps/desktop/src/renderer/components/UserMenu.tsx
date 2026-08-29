@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useToastStore } from '../stores/toast'
 import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
 import { describeUpdateStatus, type UpdateStatus } from '../lib/update-status'
+import { Icon } from './Icon'
 import { TagManagementDialog } from './TagManagementDialog'
 import { ShortcutSettingsDialog } from './ShortcutSettingsDialog'
 import { CHEAT_SHEET_MENU_LABEL, formatKeyForDisplay } from '../shortcuts/catalog'
@@ -193,76 +194,23 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         <div className="user-menu-divider" />
 
         <button type="button" className="user-menu-item" onClick={handleOpenCheatSheet}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <path d="M12 17h.01" />
-          </svg>
+          <Icon name="help-circle" size={16} />
           {CHEAT_SHEET_MENU_LABEL}
           <kbd className="user-menu-item-key">{formatKeyForDisplay(KEYS.cheatSheetAlt[0])}</kbd>
         </button>
 
         <button className="user-menu-item" onClick={handleOpenTagManagement}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-            <line x1="7" y1="7" x2="7.01" y2="7" />
-          </svg>
+          <Icon name="tag" size={16} />
           태그 관리
         </button>
 
         <button className="user-menu-item" onClick={handleOpenShortcutSettings}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="2" y="6" width="20" height="12" rx="2" ry="2" />
-            <line x1="6" y1="10" x2="6.01" y2="10" />
-            <line x1="10" y1="10" x2="10.01" y2="10" />
-            <line x1="14" y1="10" x2="14.01" y2="10" />
-            <line x1="18" y1="10" x2="18.01" y2="10" />
-            <line x1="8" y1="14" x2="16" y2="14" />
-          </svg>
+          <Icon name="keyboard" size={16} />
           전역 단축키
         </button>
 
         <button className="user-menu-item" onClick={handleCopyMcpToken}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
+          <Icon name="copy" size={16} />
           {tokenCopied ? 'Copied!' : 'Copy MCP Token'}
         </button>
 
@@ -293,20 +241,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         <div className="user-menu-divider" />
 
         <button className="user-menu-item" onClick={handleSignOut}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
+          <Icon name="log-out" size={16} />
           Sign out
         </button>
       </div>,
@@ -377,7 +312,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
           height: 32px;
           border-radius: 50%;
           background: var(--accent);
-          color: #fff;
+          color: var(--text-on-accent);
           font-size: 14px;
           font-weight: 600;
           display: flex;
@@ -417,7 +352,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
           height: 40px;
           border-radius: 50%;
           background: var(--accent);
-          color: #fff;
+          color: var(--text-on-accent);
           font-size: 18px;
           font-weight: 600;
           display: flex;
@@ -435,7 +370,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         .user-name {
           font-size: 14px;
           font-weight: 600;
-          color: #fff;
+          color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -443,7 +378,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         .user-email {
           font-size: 12px;
-          color: #888;
+          color: var(--text-secondary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -515,7 +450,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
           width: 100%;
           padding: 12px 16px;
           font-size: 14px;
-          color: #ccc;
+          color: var(--text-secondary);
           background: transparent;
           border: none;
           cursor: pointer;
@@ -527,7 +462,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         .user-menu-item:hover {
           background: var(--bg-tertiary);
-          color: #fff;
+          color: var(--text-primary);
         }
 
         .user-menu-item svg {
