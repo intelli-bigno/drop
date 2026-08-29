@@ -179,6 +179,23 @@ export const STYLEGUIDE_NOTES: Note[] = [
     updatedAt: minutesAgo(1500),
   }),
   makeNote({
+    content: '토큰 대비 미달 3건 고치기 — BRU-177',
+    type: 'todo',
+    completedAt: null,
+    tags: [TAG_DESIGN],
+    projectId: PROJECT_DROP.id,
+    createdAt: minutesAgo(60),
+    updatedAt: minutesAgo(60),
+  }),
+  makeNote({
+    content: '쇼케이스 라우트 올리기',
+    type: 'todo',
+    completedAt: minutesAgo(15),
+    projectId: PROJECT_DROP.id,
+    createdAt: minutesAgo(180),
+    updatedAt: minutesAgo(15),
+  }),
+  makeNote({
     content: '',
     createdAt: minutesAgo(2),
     updatedAt: minutesAgo(2),

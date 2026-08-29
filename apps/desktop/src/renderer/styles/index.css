@@ -4028,3 +4028,133 @@ h6.note-viewer-heading {
 .todo-btn.active {
   color: var(--accent);
 }
+
+/* ============================================
+   노트 미리보기 패널 (BRU-179)
+   ============================================
+   Space로 열리는 Quick Look 자리. 모달이 아니라 backdrop이 없고,
+   피드 폭을 건드리지 않는다 — 목록이 움직이지 않는 것이 이 기능의 목적이라
+   자리를 차지하지 않고 오른쪽에 겹쳐 뜬다. */
+
+.note-preview {
+  position: fixed;
+  top: 60px;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: 380px;
+  max-width: 38vw;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.note-preview-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.note-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.note-preview-meta span:first-child {
+  font-family: var(--font-mono);
+}
+
+.note-preview-meta span + span::before {
+  content: '·';
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+}
+
+.note-preview-close {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--transition-normal),
+    color var(--transition-normal);
+}
+
+.note-preview-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.note-preview-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+}
+
+.note-preview-locked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.note-preview-foot {
+  flex: none;
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.note-preview-foot kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 1px 5px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* 창이 좁으면 겹침이 아니라 아래에서 올라오는 시트가 낫다 —
+   380px 패널이 노트 본문을 통째로 덮는 폭이기 때문이다. */
+@media (max-width: 900px) {
+  .note-preview {
+    top: auto;
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+    max-width: none;
+    height: 42vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-preview-close {
+    transition: none;
+  }
+}

@@ -32,6 +32,7 @@ import { LinkPreviews } from '../../components/LinkPreviews'
 import { LockedNoteOverlay } from '../../components/LockedNoteOverlay'
 import { NoteViewer } from '../../components/NoteViewer'
 import { CommentPanel } from '../../components/CommentPanel'
+import { NotePreviewPanel } from '../../components/NotePreviewPanel'
 import { UserMenu } from '../../components/UserMenu'
 import { useToastStore } from '../../stores/toast'
 
@@ -73,6 +74,7 @@ type OverlayId =
   | 'history'
   | 'shortcuts'
   | 'comments'
+  | 'preview'
   | PinDialogMode
 
 export function Components() {
@@ -259,6 +261,9 @@ export function Components() {
             <button className="sg-btn" onClick={() => setOverlay('comments')}>
               CommentPanel
             </button>
+            <button className="sg-btn" onClick={() => setOverlay('preview')}>
+              NotePreviewPanel (Space)
+            </button>
           </div>
         </Specimen>
 
@@ -307,6 +312,9 @@ export function Components() {
       {overlay === 'history' && <NoteHistoryDialog noteId={noteWithComments.id} onClose={close} />}
       {overlay === 'shortcuts' && <ShortcutSettingsDialog onClose={close} />}
       {overlay === 'comments' && <CommentPanel noteId={noteWithComments.id} onClose={close} />}
+      {/* 유일한 비모달 오버레이 (BRU-179) — backdrop이 없고 포커스를 가져가지 않는다.
+          피드에서는 열린 채로 j/k가 뒤 목록을 계속 움직인다. */}
+      {overlay === 'preview' && <NotePreviewPanel note={noteWithFiles} onClose={close} />}
       {overlay !== null && PIN_MODES.includes(overlay as PinDialogMode) && (
         <PinDialog mode={overlay as PinDialogMode} onSuccess={close} onCancel={close} />
       )}

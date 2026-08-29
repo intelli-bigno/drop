@@ -42,6 +42,8 @@ describe('makeNote', () => {
       'linearIssueKey',
       'linearExportedAt',
       'projectId',
+      'type',
+      'completedAt',
     ] as const
 
     for (const key of required) {
@@ -86,6 +88,8 @@ describe('STYLEGUIDE_NOTES', () => {
     ['자식 노트', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.parentId !== null],
     ['링크 포함', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.hasLink],
     ['빈 본문', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.content.trim() === ''],
+    ['할일 (미완료)', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.type === 'todo' && n.completedAt === null],
+    ['할일 (완료)', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.type === 'todo' && n.completedAt !== null],
   ])('%s 노트를 하나 이상 담고 있다', (_label, predicate) => {
     expect(STYLEGUIDE_NOTES.some(predicate)).toBe(true)
   })

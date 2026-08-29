@@ -33,9 +33,12 @@ describe('resolveNoteCardView', () => {
     expect(resolveNoteCardView({ isFocused: false, isEditing: false })).toBe('one-line')
   })
 
-  // BRU-59 — 포커스만 옮겨도 본문이 펼쳐지되, 읽기 전용 viewer여야 한다.
-  it('shouldShowViewerWhenFocused', () => {
-    expect(resolveNoteCardView({ isFocused: true, isEditing: false })).toBe('viewer')
+  // BRU-179 — 포커스는 이제 펼치지 않는다. 훑는 동작(j/k)마다 카드가 열리면
+  // 행 높이가 38px→77px로 뛰고 본문 글자가 55px 왼쪽·한 줄 아래로 이동해
+  // 훑기 자체가 망가진다(실측). 본문을 보는 길은 Space 미리보기 패널로 옮겼다.
+  // BRU-59가 세운 "읽기는 읽기 전용 viewer로" 원칙은 그 패널이 이어받는다.
+  it('shouldStayOnOneLineWhenOnlyFocused', () => {
+    expect(resolveNoteCardView({ isFocused: true, isEditing: false })).toBe('one-line')
   })
 
   // BRU-66 재발 방지의 핵심 — 포커스만으로는 절대 editor가 되지 않는다.

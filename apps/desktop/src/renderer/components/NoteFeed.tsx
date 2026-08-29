@@ -37,7 +37,9 @@ import {
   type VisualSelection,
 } from '../lib/note-selection'
 import { buildBulkDeleteConfirmMessage, type BulkActionId } from '../lib/bulk-actions'
+import { previewTargetNoteId, resolveEscapeAction, shouldTogglePreview } from '../lib/note-preview'
 import { mapWithConcurrency } from '../lib/concurrency'
+import { NotePreviewPanel } from './NotePreviewPanel'
 import { SelectionActionBar } from './SelectionActionBar'
 import { BulkTagPopover } from './BulkTagPopover'
 
@@ -93,6 +95,9 @@ export function NoteFeed() {
     selectNote,
   } = useNotesStore()
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
+  // 미리보기 패널 (BRU-179). 열림 여부만 든다 — 무엇을 보여줄지는 포커스가 정한다.
+  // 패널이 노트 id를 따로 붙들면 j/k로 옮긴 순간 화면과 어긋난다.
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   // 비주얼 선택 (BRU-80). 앵커·헤드만 들고 범위는 lib/note-selection.ts가 계산한다.
   const [selection, setSelection] = useState<VisualSelection | null>(null)
   const [showBulkTagPopover, setShowBulkTagPopover] = useState(false)
@@ -227,6 +232,12 @@ export function NoteFeed() {
   useEffect(() => {
     focusedIndexRef.current = focusedIndex
   }, [focusedIndex])
+
+  // 키 핸들러가 ref 패턴이라 패널 상태도 같은 방식으로 최신값을 들고 있어야 한다
+  const isPreviewOpenRef = useRef(isPreviewOpen)
+  useEffect(() => {
+    isPreviewOpenRef.current = isPreviewOpen
+  }, [isPreviewOpen])
 
   useEffect(() => {
     selectionRef.current = selection
@@ -399,6 +410,16 @@ export function NoteFeed() {
     () => resolveSelectedNotes(selection, orderedNoteList),
     [selection, orderedNoteList]
   )
+
+  // 미리보기에 그릴 노트 (BRU-179). 포커스에서 매번 다시 푼다 —
+  // 패널이 노트를 붙들지 않으므로 j/k가 곧 내용 전환이 된다.
+  const previewNote = useMemo(() => {
+    const focusedNoteId =
+      focusedIndex !== null ? (orderedNotes[focusedIndex]?.note.id ?? null) : null
+    const targetId = previewTargetNoteId({ isPreviewOpen, focusedNoteId })
+    if (!targetId) return null
+    return orderedNoteList.find((note) => note.id === targetId) ?? null
+  }, [isPreviewOpen, focusedIndex, orderedNotes, orderedNoteList])
 
   const selectedNoteIdSet = useMemo(
     () => new Set(selectedNotes.map((note) => note.id)),
@@ -703,6 +724,13 @@ export function NoteFeed() {
       // 예전에는 선택이 없으면 여기서 핸들러를 통째로 끝내 버려 아래 clearFocus로 내려가지
       // 못했다 — 피드 바깥(body 등)에 포커스가 있으면 Esc가 통째로 죽는 자리였다 (BRU-109).
       if (selectionAction === 'exitVisual') {
+        // 미리보기가 가장 바깥 층이다 (BRU-179) — 열려 있으면 그것만 닫고
+        // 선택·포커스는 남긴다. 한 번에 다 풀리면 훑던 자리를 잃는다.
+        if (resolveEscapeAction({ isPreviewOpen: isPreviewOpenRef.current }) === 'close-preview') {
+          e.preventDefault()
+          setIsPreviewOpen(false)
+          return
+        }
         const escape = resolveFeedEscape({
           isConfirmDialogOpen: pendingBulkDeleteRef.current !== null,
           hasSelection: selectionRef.current !== null,
@@ -745,6 +773,29 @@ export function NoteFeed() {
 
       const action = resolveNoteFeedShortcut(e as unknown as React.KeyboardEvent)
       if (!action) return
+
+      // Space = 미리보기 토글 (BRU-179). 브라우저 기본은 스크롤이라 반드시 막는다.
+      if (action === 'togglePreview') {
+        e.preventDefault()
+        const focusedNoteId =
+          currentFocusedIndex !== null
+            ? (currentOrderedNotes[currentFocusedIndex]?.note.id ?? null)
+            : null
+        if (isPreviewOpenRef.current) {
+          setIsPreviewOpen(false)
+          return
+        }
+        if (
+          shouldTogglePreview({
+            focusedNoteId,
+            isSelecting: selectionRef.current !== null,
+            isEditing: isTextInputTarget(e.target),
+          })
+        ) {
+          setIsPreviewOpen(true)
+        }
+        return
+      }
 
       if (action === 'focusNext') {
         e.preventDefault()
@@ -1191,6 +1242,12 @@ export function NoteFeed() {
         ))
         )}
       </div>
+      {/* Space 미리보기 (BRU-179). 대상은 언제나 지금 포커스된 노트라
+          패널을 연 채 j/k로 넘기면 내용이 따라온다 (Quick Look과 같은 결). */}
+      {previewNote && (
+        <NotePreviewPanel note={previewNote} onClose={() => setIsPreviewOpen(false)} />
+      )}
+
       {/* 선택이 실제로 가리키는 노트가 있을 때만 띄운다 — realtime 삭제로 범위가 비면
           "0개 선택" 바만 남는다 */}
       {selectedNotes.length > 0 && (

@@ -2,7 +2,7 @@
 //
 // 상태는 셋이다 (BRU-53 · BRU-59 · BRU-79):
 //
-//   one-line — 접힌 한 줄 미리보기. 기본값이다.
+//   one-line — 접힌 한 줄 미리보기. 기본값이고, 포커스를 받아도 이대로다 (BRU-179).
 //   viewer   — 본문을 렌더링해 펼친 **읽기 전용** 표현.
 //   editor   — Lexical 입력 에디터. 여기서만 본문이 저장 경로에 닿는다.
 //
@@ -12,7 +12,7 @@
 // 없다 — 원문 보존은 조건문이 아니라 구조로 지킨다.
 
 export interface NoteCardViewInput {
-  /** 피드에서 이 카드가 포커스를 받고 있는가 */
+  /** 피드에서 이 카드가 포커스를 받고 있는가. 편집 성립 조건일 뿐 펼침과는 무관하다 (BRU-179) */
   isFocused: boolean
   /** `/`·`i`로 편집에 들어와 있는가 */
   isEditing: boolean
@@ -29,8 +29,11 @@ export function resolveNoteCardView({
 }: NoteCardViewInput): NoteCardView {
   // 편집은 포커스가 있는 카드에서만 성립한다 — 포커스를 잃으면 편집도 끝난다.
   if (isFocused && isEditing) return 'editor'
-  // 포커스만 옮겨도 본문은 보인다. 단 읽기 전용이다 (BRU-59).
-  if (isFocused) return 'viewer'
+  // 포커스는 더 이상 펼치지 않는다 (BRU-179). j/k로 훑을 때마다 카드가 열리면
+  // 행 높이가 38px→77px로 뛰고 본문 글자가 55px 왼쪽·한 줄 아래로 이동해
+  // 훑기 자체가 망가진다(실측). 본문을 읽는 길은 Space 미리보기 패널로 옮겼고,
+  // BRU-59가 세운 "읽기는 에디터를 마운트하지 않는 viewer로" 원칙은 그 패널이
+  // 그대로 이어받는다 — 원문 보존의 구조는 건드리지 않았다.
   // 일괄 펼치기도 viewer까지만이다 — 절대 editor로 가지 않는다 (BRU-79).
   if (expandAll) return 'viewer'
   return 'one-line'

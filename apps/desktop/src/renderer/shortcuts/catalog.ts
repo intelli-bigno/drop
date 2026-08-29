@@ -31,6 +31,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 탐색
   { keyId: 'focusNext', label: '다음 노트', group: '탐색', scope: 'feed' },
   { keyId: 'focusPrev', label: '이전 노트', group: '탐색', scope: 'feed' },
+  { keyId: 'togglePreview', label: '미리보기 (열어 둔 채 j/k로 넘길 수 있다)', group: '탐색', scope: 'feed' },
   { keyId: 'openFocused', label: '편집 모드로 들어가기', group: '탐색', scope: 'feed' },
   { keyId: 'clearFocus', label: '포커스 해제', group: '탐색', scope: 'feed' },
   { keyId: 'search', label: '검색', group: '탐색', scope: 'global', modifier: 'primary' },
@@ -123,6 +124,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
 ]
 
 const NAMED_KEYS: Record<string, string> = {
+  ' ': 'Space',
   ArrowDown: '↓',
   ArrowUp: '↑',
   ArrowLeft: '←',

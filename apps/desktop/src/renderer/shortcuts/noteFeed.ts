@@ -17,6 +17,7 @@ export type NoteFeedShortcutAction =
   | 'setPriority1'
   | 'setPriority2'
   | 'setPriority3'
+  | 'togglePreview'
 
 // Enter는 수식키에 따라 갈라지므로 키 룩업이 아니라 아래에서 따로 처리한다.
 const KEY_LOOKUP: NoteFeedShortcutAction[] = [
@@ -61,6 +62,13 @@ export function resolveNoteFeedShortcut(event: KeyEventLike): NoteFeedShortcutAc
   if (isPrimaryModifier(event) && matchesCopyKey(event.key)) {
     if (event.altKey) return null
     return event.shiftKey ? 'copyFocusedReference' : 'copyFocused'
+  }
+
+  // Space는 미리보기다 (BRU-179). ⌘Space는 Spotlight, ⌃Space는 입력기 전환이라
+  // 수식키가 붙으면 우리 것이 아니다 — 아래 Shift 필터보다 먼저 잘라낸다.
+  if (matchesKey('togglePreview', event.key)) {
+    if (isPrimaryModifier(event) || event.shiftKey || event.altKey) return null
+    return 'togglePreview'
   }
 
   // Shift가 눌린 글쇠는 피드 액션이 아니다 (BRU-63).

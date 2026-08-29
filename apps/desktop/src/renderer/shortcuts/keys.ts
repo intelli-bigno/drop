@@ -11,6 +11,9 @@ export const KEYS = {
   openFocused: ['/', 'i', 'ㅑ'],
   replyToFocused: ['Enter'],
   createSibling: ['Enter'],
+  // 미리보기 패널 (BRU-179). Finder의 Quick Look과 같은 자리다.
+  // 편집 중에는 글자이고 선택 모드에서는 선택의 자리라 그 층에서 비켜선다.
+  togglePreview: [' '],
 
   // 다중 선택 (BRU-80). Shift+J/K는 영문에서는 대문자로, 한글 입력 상태에서는
   // ㅓ/ㅏ 그대로 찍히므로 둘 다 별칭으로 둔다.
