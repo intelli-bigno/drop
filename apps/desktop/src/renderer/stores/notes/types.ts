@@ -1,4 +1,13 @@
-import type { Note, Attachment, Tag, NoteRevision, NoteComment, Project } from '@drop/shared'
+import type {
+  Note,
+  Attachment,
+  Tag,
+  NoteRevision,
+  NoteComment,
+  Project,
+  NoteType,
+} from '@drop/shared'
+import type { TodoFilter } from '../../lib/note-filters'
 
 // Notes slice
 export interface NotesSlice {
@@ -147,6 +156,17 @@ export interface ExportSlice {
   clearNoteExport: (noteId: string) => Promise<void>
 }
 
+// 노트 타입과 할일 완료 (BRU-175)
+export interface TodoSlice {
+  /** 할일만 보기. null이면 걸러내지 않는다 */
+  todoFilter: TodoFilter
+  setTodoFilter: (filter: TodoFilter) => void
+  /** 노트 종류 바꾸기. 일반 노트로 되돌리면 완료 시각도 함께 지워진다 */
+  setNoteType: (noteId: string, type: NoteType) => Promise<void>
+  /** 완료 뒤집기. 할일이 아닌 노트에는 아무 일도 하지 않는다 */
+  toggleNoteCompleted: (noteId: string) => Promise<void>
+}
+
 // View mode for notes (active, archived, trash)
 export type NoteViewMode = 'active' | 'archived' | 'trash'
 
@@ -184,4 +204,5 @@ export interface NotesState
     CategoryFilterSlice,
     InboxSlice,
     ExportSlice,
+    TodoSlice,
     TrashSlice {}

@@ -28,6 +28,7 @@ import { shouldMountNoteBody } from '../lib/note-body-mount'
 import { reconcileSerializedMarkdown } from '../lib/markdown-fidelity'
 import { shouldOpenTemplateMenu, type NoteTemplate } from '../lib/note-templates'
 import { useDragAndDrop, useHasEnteredViewport } from '../hooks'
+import { isTodo } from '@drop/shared'
 import type { Note } from '@drop/shared'
 import type { NoteViewMode } from '../stores/notes/types'
 
@@ -105,6 +106,8 @@ export const NoteCard = memo(
         historyNoteId,
         clearNoteExport,
         setFilterProject,
+        setNoteType,
+        toggleNoteCompleted,
       } = useNotesStore()
       const hasPin = useProfileStore((s) => s.hasPin)
       // 댓글은 노트가 아니라 별도 슬라이스에 있다 — 카드에는 개수만 온다 (BRU-63)
@@ -355,12 +358,25 @@ export const NoteCard = memo(
         updateNotePriority(note.id, nextPriority(note.priority))
       }
 
+      // 체크박스는 카드 클릭(포커스 이동)까지 번지면 안 된다 (BRU-175)
+      const handleCompletedClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        toggleNoteCompleted(note.id)
+      }
+
+      const handleTypeToggle = () => {
+        setNoteType(note.id, isTodo(note) ? 'note' : 'todo')
+      }
+
       const cardClassName = [
         'note-card',
         isFocused && 'focused',
         isDragOver && 'drag-over',
         depth > 0 && 'note-card-reply',
         isLocked && 'locked',
+        // 끝난 할일은 목록에서 사라지지 않고 흐려진다 (BRU-175)
+        isTodo(note) && 'todo',
+        isTodo(note) && note.completedAt && 'completed',
         isOpen ? 'open' : 'one-line',
         `note-card-${view}`,
       ]
@@ -388,6 +404,20 @@ export const NoteCard = memo(
                   title={`긴급도 ${note.priority}/3 (클릭하면 순환)`}
                   aria-label={`긴급도 ${note.priority}/3`}
                 />
+              )}
+              {viewMode === 'active' && isTodo(note) && (
+                // 할일에만 그린다 (BRU-175). 일반 노트에 체크박스가 있으면
+                // "이 노트도 끝낼 수 있는 것"으로 읽힌다.
+                <button
+                  className={`todo-check ${note.completedAt ? 'completed' : ''}`}
+                  onClick={handleCompletedClick}
+                  title={note.completedAt ? '완료 해제' : '완료 표시'}
+                  aria-label={note.completedAt ? '완료 해제' : '완료 표시'}
+                  role="checkbox"
+                  aria-checked={!!note.completedAt}
+                >
+                  <Icon name={note.completedAt ? 'check-square' : 'square'} size={13} />
+                </button>
               )}
               <span className="note-id">#{note.displayId}</span>
               <span className="note-line-content">
@@ -482,6 +512,19 @@ export const NoteCard = memo(
                 <div className="note-card-actions" onClick={(e) => e.stopPropagation()}>
                   {viewMode === 'active' && (
                     <>
+                      {!isLocked && (
+                        // 할일로 올리고 내리는 유일한 입구 (BRU-175).
+                        // 체크박스는 "끝났나"를, 이 버튼은 "할일인가"를 다룬다.
+                        <button
+                          className={`todo-btn ${isTodo(note) ? 'active' : ''}`}
+                          onClick={handleTypeToggle}
+                          title={isTodo(note) ? '일반 노트로 되돌리기' : '할일로 바꾸기'}
+                          aria-label={isTodo(note) ? '일반 노트로 되돌리기' : '할일로 바꾸기'}
+                          aria-pressed={isTodo(note)}
+                        >
+                          <Icon name="list-todo" />
+                        </button>
+                      )}
                       <button
                         className={`pin-btn ${note.isPinned ? 'pinned' : ''}`}
                         onClick={() => togglePinNote(note.id)}

@@ -277,6 +277,7 @@ export type Database = {
       notes: {
         Row: {
           archived_at: string | null
+          completed_at: string | null
           content: string | null
           created_at: string
           deleted_at: string | null
@@ -296,11 +297,13 @@ export type Database = {
           priority: number
           project_id: string | null
           source: string
+          type: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
           archived_at?: string | null
+          completed_at?: string | null
           content?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -320,11 +323,13 @@ export type Database = {
           priority?: number
           project_id?: string | null
           source: string
+          type?: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           archived_at?: string | null
+          completed_at?: string | null
           content?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -344,6 +349,7 @@ export type Database = {
           priority?: number
           project_id?: string | null
           source?: string
+          type?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -500,6 +506,7 @@ export type Database = {
           p_content: string
           p_parent_id?: string
           p_tag_names?: string[]
+          p_type?: string
         }
         Returns: Json
       }
@@ -572,6 +579,10 @@ export type Database = {
         }
         Returns: Json
       }
+      mcp_set_note_completed: {
+        Args: { api_key: string; p_completed?: boolean; p_note_id: string }
+        Returns: Json
+      }
       mcp_set_note_export: {
         Args: {
           api_key: string
@@ -579,6 +590,10 @@ export type Database = {
           p_issue_url: string
           p_note_id: string
         }
+        Returns: Json
+      }
+      mcp_set_note_type: {
+        Args: { api_key: string; p_note_id: string; p_type: string }
         Returns: Json
       }
       mcp_update_note: {

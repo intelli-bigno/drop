@@ -5,6 +5,15 @@ export type NoteSource = 'mobile' | 'desktop' | 'web' | 'mcp'
 
 export type AttachmentType = 'image' | 'audio' | 'video' | 'file' | 'text' | 'instagram' | 'youtube' | 'book'
 
+/**
+ * 노트의 종류 (BRU-175).
+ *
+ * `note` = 생각·메모·레퍼런스 등 읽고 정리하는 것. `todo` = 그 자체가 할일이라
+ * 끝났는지 여부를 갖는 것. 이 둘은 **둘 다 노트다** — 목록·검색·Inbox에서
+ * 제외되는 쪽이 없고, 필터 축이 하나 늘 뿐이다(BRU-61의 `kind`와 다른 점).
+ */
+export type NoteType = 'note' | 'todo'
+
 // Database row types (snake_case - Supabase 컬럼명과 일치)
 export interface NoteRow {
   id: string
@@ -34,6 +43,9 @@ export interface NoteRow {
   linear_exported_at: string | null
   // 프로젝트 (BRU-83). NULL이면 미분류
   project_id: string | null
+  // 타입·완료 (BRU-175)
+  type: NoteType
+  completed_at: string | null
 }
 
 export interface AttachmentRow {
@@ -111,6 +123,13 @@ export interface Note {
   linearExportedAt: Date | null
   /** 이 노트가 속한 프로젝트 (BRU-83). null이면 미분류. 노트는 프로젝트 하나에만 속한다. */
   projectId: string | null
+  /** 노트의 종류 (BRU-175). 기본은 'note' */
+  type: NoteType
+  /**
+   * 할일을 끝낸 시각 (BRU-175). null이면 미완료.
+   * `type === 'todo'`일 때만 채워진다 — DB CHECK(notes_todo_state_consistent)가 강제한다.
+   */
+  completedAt: Date | null
 }
 
 export interface Attachment {
@@ -199,7 +218,25 @@ export function noteRowToNote(
     linearIssueKey: row.linear_issue_key ?? null,
     linearExportedAt: row.linear_exported_at ? new Date(row.linear_exported_at) : null,
     projectId: row.project_id ?? null,
+    // 백필 이전 행이나 type을 안 보내는 옛 클라이언트를 DB 기본값 쪽으로 넘어뜨린다
+    type: row.type ?? 'note',
+    completedAt: row.completed_at ? new Date(row.completed_at) : null,
   }
+}
+
+/** 그 자체가 할일인 노트인가 (BRU-175) */
+export function isTodo(note: Pick<Note, 'type'>): boolean {
+  return note.type === 'todo'
+}
+
+/**
+ * 끝난 할일인가 (BRU-175).
+ *
+ * 완료 시각만 보지 않고 타입도 함께 본다. DB CHECK가 이미 조합을 막지만, 제약이
+ * 한 겹 뚫려도 일반 노트에 취소선이 그어지는 일은 없어야 한다.
+ */
+export function isCompleted(note: Pick<Note, 'type' | 'completedAt'>): boolean {
+  return isTodo(note) && note.completedAt !== null
 }
 
 export function userProfileRowToUserProfile(row: UserProfileRow): UserProfile {

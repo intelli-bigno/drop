@@ -112,6 +112,8 @@ function row(overrides: Partial<NoteRow> = {}): NoteRow {
     linear_issue_key: null,
     linear_exported_at: null,
     project_id: null,
+    type: 'note',
+    completed_at: null,
     ...overrides,
   }
 }

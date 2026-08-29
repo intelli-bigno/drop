@@ -24,6 +24,9 @@ export type IconName =
   | 'folder'
   | 'chevrons-down'
   | 'chevrons-up'
+  | 'square'
+  | 'check-square'
+  | 'list-todo'
 
 // Lucide-style 24x24 stroke icon paths (https://lucide.dev, ISC license)
 const ICON_PATHS: Record<IconName, React.ReactNode> = {
@@ -120,6 +123,22 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,
+  square: <rect width="18" height="18" x="3" y="3" rx="2" />,
+  'check-square': (
+    <>
+      <path d="M21 10.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      <path d="m9 11 3 3L22 4" />
+    </>
+  ),
+  'list-todo': (
+    <>
+      <rect x="3" y="5" width="6" height="6" rx="1" />
+      <path d="m3 17 2 2 4-4" />
+      <path d="M13 6h8" />
+      <path d="M13 12h8" />
+      <path d="M13 18h8" />
+    </>
+  ),
   plus: (
     <>
       <path d="M5 12h14" />

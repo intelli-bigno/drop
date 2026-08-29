@@ -6,6 +6,14 @@
 
 export type CategoryFilter = 'all' | 'link' | 'media' | 'files' | null
 
+/**
+ * 할일 필터 (BRU-175).
+ *
+ * `null` = 걸러내지 않음, `todo` = 할일 전부(끝난 것 포함), `open` = 아직 안 끝난 것만.
+ * 끝난 할일을 기본으로 숨기지 않는 이유는 `countOpenTodos` 주석 참조.
+ */
+export type TodoFilter = 'todo' | 'open' | null
+
 /** 필터가 실제로 들여다보는 필드만 요구한다 — 테스트가 Note 전체를 만들 필요가 없게 */
 export interface FilterableNote {
   id: string
@@ -18,6 +26,10 @@ export interface FilterableNote {
   linearIssueUrl?: string | null
   /** 이 노트가 속한 프로젝트. null이면 미분류 (BRU-83) */
   projectId?: string | null
+  /** 노트의 종류 (BRU-175). 없으면 일반 노트로 본다 */
+  type?: 'note' | 'todo'
+  /** 할일을 끝낸 시각 (BRU-175). null이면 미완료 */
+  completedAt?: Date | null
 }
 
 /**
@@ -42,6 +54,8 @@ export interface NoteFilterOptions {
   inboxOnly?: boolean
   /** 반출된 노트도 함께 보기 (기본은 숨김, BRU-45) */
   showExported?: boolean
+  /** 할일만 보기 (BRU-175). null이면 걸러내지 않는다 */
+  todoFilter?: TodoFilter
   /**
    * Inbox에서 방금 태그가 붙었지만 아직 자리를 지켜야 하는 노트들.
    * 태그 팝오버가 열려 있는 동안 그 노트가 목록에서 빠지면 팝오버가 허공에 뜬다.
@@ -96,6 +110,29 @@ function matchesProject(
   return projectId === filterProjectId
 }
 
+/**
+ * 할일인가 (BRU-175).
+ *
+ * 완료 시각이 아니라 **타입**이 기준이다. DB CHECK(notes_todo_state_consistent)가
+ * 일반 노트에 완료 시각이 남는 조합을 막지만, 제약이 한 겹 뚫려도 그 노트가
+ * 할일 목록에 끼어들면 안 된다.
+ */
+export function isTodoNote(note: Pick<FilterableNote, 'type'>): boolean {
+  return note.type === 'todo'
+}
+
+/** 끝난 할일인가 (BRU-175) */
+export function isCompletedTodo(note: Pick<FilterableNote, 'type' | 'completedAt'>): boolean {
+  return isTodoNote(note) && !!note.completedAt
+}
+
+function matchesTodo(note: FilterableNote, todoFilter: TodoFilter): boolean {
+  if (!todoFilter) return true
+  if (!isTodoNote(note)) return false
+  // 'todo'는 끝난 것까지 포함한다 — 무엇을 했는지 함께 보는 것이 목록의 쓸모다
+  return todoFilter === 'todo' || !isCompletedTodo(note)
+}
+
 function matchesInbox(
   note: FilterableNote,
   inboxOnly: boolean,
@@ -118,6 +155,7 @@ export function applyNoteFilters<T extends FilterableNote>(
     filterProjectId = null,
     inboxOnly = false,
     showExported = false,
+    todoFilter = null,
     retainedNoteIds,
   }: NoteFilterOptions
 ): T[] {
@@ -127,6 +165,7 @@ export function applyNoteFilters<T extends FilterableNote>(
       matchesCategory(note, categoryFilter) &&
       matchesProject(note, filterProjectId, retainedNoteIds) &&
       matchesInbox(note, inboxOnly, retainedNoteIds) &&
+      matchesTodo(note, todoFilter) &&
       matchesExport(note, showExported, retainedNoteIds)
   )
 }
@@ -162,5 +201,26 @@ export function countInboxNotes(
   return notes.filter(
     // 반출된 노트는 태그가 없어도 처리가 끝난 것이다 — Inbox 수에서 뺀다 (BRU-45).
     (note) => note.parentId === null && isUntaggedNote(note) && !isExportedNote(note)
+  ).length
+}
+
+/**
+ * 할일 뱃지에 띄울 수 — **아직 끝나지 않은 최상위** 할일 수 (BRU-175).
+ *
+ * 끝난 할일은 목록에서는 흐리게 남지만 숫자에서는 빠진다. 숫자는 "남은 일이
+ * 몇 개인가"에 답해야 하고, 목록은 "무엇을 했나"까지 보여 주는 것이 쓸모다 —
+ * 둘의 질문이 다르므로 답도 다르다.
+ *
+ * 답글을 세지 않는 것도, 반출된 것을 빼는 것도 countInboxNotes와 같은 규칙이다.
+ */
+export function countOpenTodos(
+  notes: Array<Pick<FilterableNote, 'parentId' | 'type' | 'completedAt' | 'linearIssueUrl'>>
+): number {
+  return notes.filter(
+    (note) =>
+      note.parentId === null &&
+      isTodoNote(note) &&
+      !isCompletedTodo(note) &&
+      !isExportedNote(note)
   ).length
 }

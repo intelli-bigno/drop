@@ -175,3 +175,29 @@ describe('selectionScopeKey', () => {
     }
   })
 })
+
+// 할일 필터도 목록을 바꾸는 축이다 (BRU-175) — 바뀌면 선택을 버려야 한다
+describe('selectionScopeKey — 할일 필터 축 (BRU-175)', () => {
+  const base = {
+    viewMode: 'active',
+    filterTag: null,
+    categoryFilter: null,
+    inboxOnly: false,
+    showExported: false,
+    todoFilter: null,
+  } as const
+
+  it('할일 필터가 켜지면 지문이 달라진다', () => {
+    expect(selectionScopeKey({ ...base, todoFilter: 'todo' })).not.toBe(selectionScopeKey(base))
+  })
+
+  it("'todo'와 'open'도 서로 다른 축이다", () => {
+    expect(selectionScopeKey({ ...base, todoFilter: 'todo' })).not.toBe(
+      selectionScopeKey({ ...base, todoFilter: 'open' })
+    )
+  })
+
+  it('다른 축이 그대로면 지문도 그대로다', () => {
+    expect(selectionScopeKey({ ...base })).toBe(selectionScopeKey({ ...base }))
+  })
+})

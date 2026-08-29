@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   applyNoteFilters,
   countInboxNotes,
+  countOpenTodos,
   isExportedNote,
   isUntaggedNote,
   UNASSIGNED_PROJECT_ID,
   type FilterableNote,
+  type NoteFilterOptions,
 } from '../note-filters'
 
 type TestNote = FilterableNote
@@ -347,5 +349,87 @@ describe('countInboxNotes', () => {
 
   it('비어 있으면 0이다', () => {
     expect(countInboxNotes([])).toBe(0)
+  })
+})
+
+// ============================================================
+// 할일 필터 (BRU-175)
+// ============================================================
+
+/** 타입·완료 상태를 갖춘 노트 — 기존 note()는 두 필드를 모르므로 여기서 채운다 */
+function todoNote(id: string, overrides: Partial<TestNote> = {}): TestNote {
+  return note(id, { type: 'note', completedAt: null, ...overrides })
+}
+
+const filterTodo = (notes: TestNote[], opts: Partial<NoteFilterOptions>) =>
+  applyNoteFilters(notes, { filterTag: null, categoryFilter: null, ...opts })
+
+describe('할일 필터 — todoFilter (BRU-175)', () => {
+  const plain = todoNote('plain')
+  const open = todoNote('open', { type: 'todo' })
+  const done = todoNote('done', { type: 'todo', completedAt: new Date('2026-08-29') })
+  const all = [plain, open, done]
+
+  it('기본(null)은 아무것도 걸러내지 않는다', () => {
+    expect(ids(filterTodo(all, { todoFilter: null }))).toEqual(['plain', 'open', 'done'])
+  })
+
+  // 완료된 것을 빼지 않는 이유: 방금 끝낸 것이 눈앞에서 사라지면 무슨 일이
+  // 일어났는지 알 수 없다. 목록에는 남기고 화면에서 흐리게 그린다.
+  it("'todo'는 할일만 남긴다 — 완료된 것도 포함", () => {
+    expect(ids(filterTodo(all, { todoFilter: 'todo' }))).toEqual(['open', 'done'])
+  })
+
+  it("'open'은 아직 안 끝난 할일만 남긴다", () => {
+    expect(ids(filterTodo(all, { todoFilter: 'open' }))).toEqual(['open'])
+  })
+
+  it('일반 노트는 어떤 할일 필터에도 걸리지 않는다', () => {
+    expect(ids(filterTodo([plain], { todoFilter: 'todo' }))).toEqual([])
+    expect(ids(filterTodo([plain], { todoFilter: 'open' }))).toEqual([])
+  })
+
+  it('다른 필터와 AND로 걸린다', () => {
+    const tagged = todoNote('tagged', { type: 'todo', tags: [{ name: 'work' }] })
+    const result = filterTodo([...all, tagged], { todoFilter: 'todo', filterTag: 'work' })
+    expect(ids(result)).toEqual(['tagged'])
+  })
+
+  // 완료 시각이 남은 일반 노트는 DB CHECK가 막지만, 제약이 한 겹 뚫려도
+  // 그 노트가 할일 목록에 끼어들면 안 된다
+  it('타입이 note면 완료 시각이 있어도 할일이 아니다', () => {
+    const impossible = todoNote('impossible', { completedAt: new Date() })
+    expect(ids(filterTodo([impossible], { todoFilter: 'todo' }))).toEqual([])
+  })
+})
+
+describe('countOpenTodos — 미완료 할일 수 (BRU-175)', () => {
+  it('완료되지 않은 할일만 센다', () => {
+    const notes = [
+      todoNote('a', { type: 'todo' }),
+      todoNote('b', { type: 'todo', completedAt: new Date() }),
+      todoNote('c'),
+    ]
+    expect(countOpenTodos(notes)).toBe(1)
+  })
+
+  // 답글은 피드에서 줄로 서지 않는다 — countInboxNotes와 같은 규칙이다
+  it('답글은 세지 않는다', () => {
+    const notes = [
+      todoNote('root', { type: 'todo' }),
+      todoNote('reply', { type: 'todo', parentId: 'root' }),
+    ]
+    expect(countOpenTodos(notes)).toBe(1)
+  })
+
+  it('반출된 할일은 세지 않는다', () => {
+    const notes = [
+      todoNote('a', { type: 'todo' }),
+      todoNote('b', {
+        type: 'todo',
+        linearIssueUrl: 'https://linear.app/intellieffect/issue/BRU-96/x',
+      }),
+    ]
+    expect(countOpenTodos(notes)).toBe(1)
   })
 })

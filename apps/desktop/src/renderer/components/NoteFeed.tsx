@@ -6,6 +6,7 @@ import { NoteCard, NoteCardHandle } from './NoteCard'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
 import { InboxFilter } from './InboxFilter'
+import { TodoFilter } from './TodoFilter'
 import { ProjectFilter } from './ProjectFilter'
 import { ExportedFilter } from './ExportedFilter'
 import { ViewModeSelector } from './ViewModeSelector'
@@ -73,6 +74,7 @@ export function NoteFeed() {
     inboxOnly,
     setInboxOnly,
     showExported,
+    todoFilter,
     lockNote,
     temporarilyUnlockNote,
     temporarilyUnlockAll,
@@ -176,6 +178,7 @@ export function NoteFeed() {
       filterProjectId,
       inboxOnly,
       showExported,
+      todoFilter,
       retainedNoteIds,
     })
   }, [
@@ -186,6 +189,7 @@ export function NoteFeed() {
     filterProjectId,
     inboxOnly,
     showExported,
+    todoFilter,
     retainedNoteIds,
   ])
 
@@ -415,6 +419,7 @@ export function NoteFeed() {
     categoryFilter,
     inboxOnly,
     showExported,
+    todoFilter,
   })
   const [selectionScope, setSelectionScope] = useState(scopeKey)
   if (selectionScope !== scopeKey) {
@@ -1044,6 +1049,7 @@ export function NoteFeed() {
             <>
               <div className="feed-header-divider" />
               <InboxFilter />
+              <TodoFilter />
               <ExportedFilter />
               <div className="feed-header-divider" />
               <ProjectFilter />
