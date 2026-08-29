@@ -1,5 +1,5 @@
 .PHONY: help install setup test test-db db-test clean tokens tokens-check \
-        electron-rebuild electron-dev electron-dev-local electron-dev-remote desktop-browser \
+        electron-rebuild electron-dev electron-dev-local electron-dev-remote desktop-browser desktop-styleguide \
         electron-build electron-build-local electron-build-remote \
         ios-config ios-generate ios-test ios-build ios-build-remote ios-dev ios-dev-remote ios-open ios-clean \
         android-config android-config-remote android-test android-build android-install android-clean \
@@ -35,6 +35,7 @@ help:
 	@echo "    make electron-build-local - 로컬 Supabase 설정으로 빌드"
 	@echo "    make electron-build-remote - 리모트 Supabase 설정으로 빌드"
 	@echo "    make desktop-browser      - 렌더러만 브라우저로 (aside 실측용, Electron 창 없음)"
+	@echo "    make desktop-styleguide   - 디자인 시스템 쇼케이스 (#styleguide, Supabase 불필요)"
 	@echo ""
 	@echo "  iOS (apps/ios)"
 	@echo "    make ios-config           - 환경변수 → Config-*.xcconfig 생성"
@@ -171,6 +172,28 @@ desktop-browser:
 		exit 1; }
 	@echo "→ http://localhost:5173 (Electron 창은 뜨지 않는다)"
 	pnpm exec vite --config $(DESKTOP_DIR)/vite.browser.config.ts --mode localdev
+
+# 디자인 시스템 쇼케이스 (BRU-172) — 토큰·컴포넌트·레이아웃·상태를 한자리에서 본다.
+#
+# desktop-browser와 달리 **Supabase가 필요 없다**. 쇼케이스는 인증 앞단에서 갈라지는
+# 라우트이고 픽스처를 스토어에 직접 부어 쓴다 — 그래서 시드 로그인 게이트를 지나지 않는다.
+# .env.localdev가 필요한 이유는 lib/supabase.ts가 import 시점에 환경변수를 요구하기 때문이고,
+# 값이 가리키는 서버가 떠 있을 필요는 없다.
+#
+# 포트가 이미 쓰이고 있으면: make desktop-styleguide PORT=5174
+PORT ?= 5173
+
+desktop-styleguide:
+	@test -x node_modules/.bin/vite || { \
+		echo "✗ vite가 없습니다 (node_modules/.bin/vite)."; \
+		echo "  → pnpm install"; \
+		exit 1; }
+	@test -f $(DESKTOP_DIR)/.env.localdev || { \
+		echo "✗ $(DESKTOP_DIR)/.env.localdev 가 없습니다."; \
+		echo "  → cp $(DESKTOP_DIR)/.env.localdev.example $(DESKTOP_DIR)/.env.localdev"; \
+		exit 1; }
+	@echo "→ http://localhost:$(PORT)/#styleguide"
+	pnpm exec vite --config $(DESKTOP_DIR)/vite.browser.config.ts --mode localdev --port $(PORT)
 
 # ============================================
 # iOS (apps/ios) — SwiftUI 네이티브. Flutter 앱은 BRU-22에서 제거됐다.

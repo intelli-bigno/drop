@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { useNotesStore } from './stores/notes'
 import { useAuthStore } from './stores/auth'
 import { useProfileStore } from './stores/profile'
@@ -10,6 +10,12 @@ import { Toaster } from './components/Toaster'
 import { ShortcutCheatSheet } from './components/ShortcutCheatSheet'
 import { isCheatSheetShortcut } from './shortcuts/noteGlobal'
 import { isTextInputTarget } from './lib/dom-utils'
+
+// 디자인 시스템 쇼케이스 (BRU-172) — 개발 전용.
+// 프로덕션에서는 이 삼항이 죽은 가지가 되어 모듈째로 번들에서 사라진다.
+const Styleguide = import.meta.env.DEV
+  ? lazy(() => import('./styleguide').then((m) => ({ default: m.Styleguide })))
+  : null
 
 const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('127.0.0.1')
 const envLabel = isLocal ? 'LOCAL' : 'REMOTE'
@@ -92,6 +98,15 @@ function App() {
   // Quick Capture route - minimal UI, separate window
   if (route === 'quick-capture') {
     return <QuickCapture />
+  }
+
+  // 디자인 시스템 쇼케이스 (BRU-172). 인증 앞단에서 갈라진다 — 로그인도 Supabase도 필요 없다.
+  if (Styleguide && route.startsWith('styleguide')) {
+    return (
+      <Suspense fallback={null}>
+        <Styleguide />
+      </Suspense>
+    )
   }
 
   // Show loading state while checking auth
