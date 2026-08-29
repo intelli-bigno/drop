@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  새 노트·카메라·갤러리 위젯이 함께 쓰는 레이아웃 (BRU-189).
+  iOS `DropWidget.swift`의 `ShortcutView`와 같은 이유로 한 벌만 둔다 — 아이콘과
+  행선지만 다른 것을 세 벌로 베껴 두면 한쪽만 고쳐지는 자리가 생긴다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/widget_surface"
+    android:padding="@dimen/drop_space_x3">
+
+    <ImageView
+        android:id="@+id/widget_shortcut_icon"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:contentDescription="@string/widget_compose_title"
+        android:src="@drawable/ic_widget_compose" />
+
+    <TextView
+        android:id="@+id/widget_shortcut_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x1"
+        android:maxLines="1"
+        android:textColor="@color/drop_text_secondary"
+        android:textSize="@dimen/drop_text_sm"
+        android:textStyle="bold" />
+</LinearLayout>

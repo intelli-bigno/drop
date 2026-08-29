@@ -6,6 +6,10 @@
  *   iOS       apps/ios/Packages/DropUI/Sources/DropUI/DropTokens.swift
  *   Android   apps/android/app/src/main/kotlin/com/intellieffect/drop/android/DropTokens.kt
  *   Flutter   apps/mobile/lib/theme/drop_tokens.g.dart
+ *   위젯      apps/mobile/android/app/src/main/res/values{,-night}/drop_tokens.xml
+ *
+ * 위젯 산출물이 따로 있는 이유: 홈 화면 위젯은 RemoteViews라 색을 **리소스**로만 받는다
+ * (BRU-189). Compose용 Kotlin 토큰(위 Android 항목)은 동결된 네이티브 앱 전용이라 못 쓴다.
  *
  * 왜 Style Dictionary가 아니라 이 스크립트인가:
  * 산출 형식 셋이 전부 이 레포 전용이다 — CSS는 기존 변수명을 글자 그대로 지켜야 하고,
@@ -343,6 +347,60 @@ function buildKotlin() {
   return lines.join('\n');
 }
 
+// ── 생성: Android 리소스 XML (Flutter 앱의 홈 화면 위젯, BRU-189) ────────────
+
+/** 리소스 이름은 `[a-z0-9_]`만 받는다 — `danger-hover` → `drop_danger_hover`. */
+const resourceName = (path) => ['drop', ...path.flatMap((part) => part.split('-'))].join('_');
+
+/** Android 색 리터럴은 `#AARRGGBB`. */
+function toAndroidHex(raw) {
+  const { r, g, b, a } = parseColor(raw);
+  const byte = (n) => Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase();
+  return `#${byte(a)}${byte(r)}${byte(g)}${byte(b)}`;
+}
+
+/**
+ * 한 모드의 색 리소스. 다크는 `values-night/`로 따로 나가고, 시스템이 골라 준다 —
+ * 위젯 코드가 모드를 판정하면 다크 전환이 위젯 갱신 때까지 밀린다.
+ *
+ * 치수(dimen)는 모드와 무관하므로 기본 모드 파일에만 넣는다.
+ */
+function buildAndroidResources(mode, { withDimensions }) {
+  const lines = [
+    `<?xml version="1.0" encoding="utf-8"?>`,
+    `<!--`,
+    ...BANNER_LINES.map((line) => `  ${line}`),
+    `-->`,
+    `<resources>`,
+  ];
+
+  for (const color of colors) {
+    lines.push(`    <color name="${resourceName(color.path)}">${toAndroidHex(valueFor(color.value, mode))}</color>`);
+  }
+
+  if (withDimensions) {
+    lines.push(``);
+    for (const [key, value] of Object.entries(tokens.space)) {
+      if (isMeta(key)) continue;
+      lines.push(`    <dimen name="drop_space_x${key}">${value}dp</dimen>`);
+    }
+    lines.push(``);
+    for (const [key, value] of Object.entries(tokens.radius)) {
+      if (isMeta(key)) continue;
+      lines.push(`    <dimen name="drop_radius_${key}">${value}dp</dimen>`);
+    }
+    lines.push(``);
+    for (const [key, value] of Object.entries(tokens['text-size'])) {
+      if (isMeta(key)) continue;
+      // `2xl`은 리소스 이름이 못 되므로 숫자 앞에 `x`를 붙인다.
+      lines.push(`    <dimen name="drop_text_${key.replace(/^(\d)/, 'x$1')}">${value}sp</dimen>`);
+    }
+  }
+
+  lines.push(`</resources>`, ``);
+  return lines.join('\n');
+}
+
 // ── 생성: Dart ──────────────────────────────────────────────────────────────
 
 /**
@@ -413,6 +471,14 @@ const OUTPUTS = [
     build: buildKotlin,
   },
   { path: 'apps/mobile/lib/theme/drop_tokens.g.dart', build: buildDart },
+  {
+    path: 'apps/mobile/android/app/src/main/res/values/drop_tokens.xml',
+    build: () => buildAndroidResources(MODES[0], { withDimensions: true }),
+  },
+  {
+    path: 'apps/mobile/android/app/src/main/res/values-night/drop_tokens.xml',
+    build: () => buildAndroidResources('dark', { withDimensions: false }),
+  },
 ];
 
 let stale = false;

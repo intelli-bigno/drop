@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  위젯 고르는 화면의 미리보기 (BRU-189). 실제 레이아웃(widget_shortcut)은 아이콘·문구를
+  런타임에 넣기 때문에 그대로 미리보기로 쓰면 세 위젯이 전부 같은 그림으로 보인다
+  (에뮬레이터 실측). 미리보기는 정적이어야 하므로 위젯마다 한 장씩 둔다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/widget_surface"
+    android:padding="@dimen/drop_space_x3">
+
+    <ImageView
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:contentDescription="@string/widget_gallery_title"
+        android:src="@drawable/ic_widget_gallery" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x1"
+        android:maxLines="1"
+        android:text="@string/widget_gallery_title"
+        android:textColor="@color/drop_text_secondary"
+        android:textSize="@dimen/drop_text_sm"
+        android:textStyle="bold" />
+</LinearLayout>

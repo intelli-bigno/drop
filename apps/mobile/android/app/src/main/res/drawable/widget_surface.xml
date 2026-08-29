@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 홈 화면 위젯도 앱과 같은 웜 페이퍼를 쓴다 (BRU-75). 시스템 기본 채움을 두면
+     위젯만 회색으로 떠 다른 앱처럼 보인다. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/drop_bg_card" />
+    <corners android:radius="@dimen/drop_radius_xl" />
+</shape>

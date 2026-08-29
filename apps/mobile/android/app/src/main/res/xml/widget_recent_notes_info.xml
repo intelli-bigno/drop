@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  최근 노트 위젯 메타 (BRU-189).
+
+  updatePeriodMillis=0 — 시스템 주기 갱신을 쓰지 않는다. 앱이 노트를 불러올 때마다
+  NativeShellChannel.reloadWidgets가 브로드캐스트하므로 그쪽이 정본이고, 주기 갱신은
+  최소 30분이라 어차피 늦다(배터리만 쓴다).
+
+  previewLayout은 API 31+, previewImage는 그 아래에서 쓰인다 — 미리보기 이미지가 없어
+  앱 아이콘으로 뜨는 자리를 남기지 않으려고 둘 다 준다.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_recent_notes_description"
+    android:previewLayout="@layout/widget_preview_recent_notes"
+    android:previewImage="@mipmap/ic_launcher"
+    android:initialLayout="@layout/widget_recent_notes"
+    android:updatePeriodMillis="0" />

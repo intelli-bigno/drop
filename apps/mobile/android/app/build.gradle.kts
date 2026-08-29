@@ -21,6 +21,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // 릴리스 서명 (BRU-161). CI(release.yml)가 keystore 시크릿을 풀어 환경변수로 넘긴다.
@@ -48,6 +49,16 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    // android.jar의 org.json은 메서드가 전부 예외를 던지는 껍데기다 — JVM 테스트에서
+    // 실제 구현을 앞에 놓아야 위젯의 스냅샷 파싱을 에뮬레이터 없이 시험할 수 있다.
+    testImplementation("org.json:json:20240303")
+    // 위젯 갱신 경로는 기기에서만 확인할 수 있다 (AppWidgetManager·홈 화면 위젯).
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
 
 kotlin {

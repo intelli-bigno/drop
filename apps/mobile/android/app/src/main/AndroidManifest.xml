@@ -24,7 +24,70 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- 딥링크를 Flutter 엔진의 라우터로 넘기지 않는다.
+                 켜 두면 엔진이 들어온 URI를 go_router의 **경로 문자열**로 밀어 넣어
+                 `GoException: no routes for location: drop://note/…` 화면이 뜬다
+                 (에뮬레이터 실측). iOS에서는 URL이 네이티브 콜백으로만 와서 이 문제가
+                 없다 — Android만의 함정이다. 링크 해석은 `app_links` → DeepLinkRouter가 한다. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
+            <!-- 딥링크 (BRU-160의 Android 몫, BRU-189에서 배선). 위젯·공유가 여는
+                 `drop://…`를 받는다. 해석은 앱(drop_core `DropLink`)이 한다. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="drop"/>
+            </intent-filter>
         </activity>
+
+        <!-- 홈 화면 위젯 (BRU-189). iOS `DropWidget` 확장의 네 위젯에 대응한다.
+             exported=true 여야 런처가 붙일 수 있다. -->
+        <receiver
+            android:name=".widget.RecentNotesWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_recent_notes_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recent_notes_info"/>
+        </receiver>
+        <receiver
+            android:name=".widget.QuickComposeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_compose_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_compose_info"/>
+        </receiver>
+        <receiver
+            android:name=".widget.CameraWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_camera_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_camera_info"/>
+        </receiver>
+        <receiver
+            android:name=".widget.GalleryWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_gallery_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_gallery_info"/>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

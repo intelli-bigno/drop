@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  이 파일은 생성물이다 — 직접 고치지 마라.
+  정본: design-system/drop/tokens.json
+  재생성: make tokens
+-->
+<resources>
+    <color name="drop_bg_primary">#FFF7F6F3</color>
+    <color name="drop_bg_secondary">#FFF1EFEA</color>
+    <color name="drop_bg_card">#FFFFFFFF</color>
+    <color name="drop_bg_elevated">#FFFFFFFF</color>
+    <color name="drop_bg_tertiary">#FFEDEAE3</color>
+    <color name="drop_bg_hover">#FFEDEAE3</color>
+    <color name="drop_accent">#FFD9730D</color>
+    <color name="drop_accent_hover">#FFB45309</color>
+    <color name="drop_accent_subtle">#1FD9730D</color>
+    <color name="drop_cta">#FFC2410C</color>
+    <color name="drop_cta_hover">#FF9A3412</color>
+    <color name="drop_text_on_accent">#FF1A1A1A</color>
+    <color name="drop_text_primary">#FF37352F</color>
+    <color name="drop_text_secondary">#FF6B6862</color>
+    <color name="drop_text_tertiary">#FF9B9A97</color>
+    <color name="drop_text_muted">#FFB4B2AC</color>
+    <color name="drop_border_color">#1F37352F</color>
+    <color name="drop_border_subtle">#0F37352F</color>
+    <color name="drop_border_focus">#FFD9730D</color>
+    <color name="drop_priority_low">#FF6B7280</color>
+    <color name="drop_priority_medium">#FFF59E0B</color>
+    <color name="drop_priority_high">#FFEF4444</color>
+    <color name="drop_success">#FF22C55E</color>
+    <color name="drop_warning">#FFF59E0B</color>
+    <color name="drop_danger">#FFDC2626</color>
+    <color name="drop_danger_hover">#FFB91C1C</color>
+    <color name="drop_brand_instagram">#FFE1306C</color>
+    <color name="drop_brand_youtube">#FFFF0000</color>
+
+    <dimen name="drop_space_x1">4dp</dimen>
+    <dimen name="drop_space_x2">8dp</dimen>
+    <dimen name="drop_space_x3">12dp</dimen>
+    <dimen name="drop_space_x4">16dp</dimen>
+    <dimen name="drop_space_x5">24dp</dimen>
+    <dimen name="drop_space_x6">32dp</dimen>
+    <dimen name="drop_space_x7">48dp</dimen>
+    <dimen name="drop_space_x8">64dp</dimen>
+
+    <dimen name="drop_radius_sm">6dp</dimen>
+    <dimen name="drop_radius_md">8dp</dimen>
+    <dimen name="drop_radius_lg">12dp</dimen>
+    <dimen name="drop_radius_xl">16dp</dimen>
+
+    <dimen name="drop_text_xs">11sp</dimen>
+    <dimen name="drop_text_sm">12sp</dimen>
+    <dimen name="drop_text_base">14sp</dimen>
+    <dimen name="drop_text_lg">16sp</dimen>
+    <dimen name="drop_text_xl">20sp</dimen>
+    <dimen name="drop_text_x2xl">28sp</dimen>
+</resources>

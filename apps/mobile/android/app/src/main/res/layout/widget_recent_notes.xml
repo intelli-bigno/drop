@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  최근 노트 위젯 (BRU-189). iOS `DropWidget.swift`의 `RecentNotesView` 대응.
+
+  줄 수를 미리 고정해 두고 프로바이더가 보이기/숨기기만 한다 — RemoteViews는
+  런타임에 자식 뷰를 만들지 못한다(ListView는 별도 서비스가 필요한데, 세 줄에
+  RemoteViewsService를 붙이는 것은 과하다).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_surface"
+    android:padding="@dimen/drop_space_x3">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/widget_brand"
+            android:textColor="@color/drop_text_secondary"
+            android:textSize="@dimen/drop_text_xs"
+            android:textStyle="bold" />
+
+        <!-- 위젯 어디를 눌러도 최소한 작성 화면으로는 가야 한다. -->
+        <ImageView
+            android:id="@+id/widget_compose"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@string/widget_compose_title"
+            android:src="@drawable/ic_widget_compose" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_empty_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x2"
+        android:text="@string/widget_empty_title"
+        android:textColor="@color/drop_text_secondary"
+        android:textSize="@dimen/drop_text_sm" />
+
+    <TextView
+        android:id="@+id/widget_empty_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_empty_hint"
+        android:textColor="@color/drop_text_tertiary"
+        android:textSize="@dimen/drop_text_xs" />
+
+    <LinearLayout
+        android:id="@+id/widget_note_0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x2"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_note_0_excerpt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/drop_text_primary"
+            android:textSize="@dimen/drop_text_sm" />
+
+        <TextView
+            android:id="@+id/widget_note_0_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="@color/drop_text_tertiary"
+            android:textSize="@dimen/drop_text_xs" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_note_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x2"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_note_1_excerpt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/drop_text_primary"
+            android:textSize="@dimen/drop_text_sm" />
+
+        <TextView
+            android:id="@+id/widget_note_1_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="@color/drop_text_tertiary"
+            android:textSize="@dimen/drop_text_xs" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_note_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/drop_space_x2"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_note_2_excerpt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/drop_text_primary"
+            android:textSize="@dimen/drop_text_sm" />
+
+        <TextView
+            android:id="@+id/widget_note_2_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="@color/drop_text_tertiary"
+            android:textSize="@dimen/drop_text_xs" />
+    </LinearLayout>
+</LinearLayout>

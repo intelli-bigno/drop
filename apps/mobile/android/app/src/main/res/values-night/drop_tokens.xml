@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  이 파일은 생성물이다 — 직접 고치지 마라.
+  정본: design-system/drop/tokens.json
+  재생성: make tokens
+-->
+<resources>
+    <color name="drop_bg_primary">#FF191919</color>
+    <color name="drop_bg_secondary">#FF1C1C1C</color>
+    <color name="drop_bg_card">#FF202020</color>
+    <color name="drop_bg_elevated">#FF262626</color>
+    <color name="drop_bg_tertiary">#FF2A2A2A</color>
+    <color name="drop_bg_hover">#FF2E2E2E</color>
+    <color name="drop_accent">#FFE9A23B</color>
+    <color name="drop_accent_hover">#FFF2B45A</color>
+    <color name="drop_accent_subtle">#24E9A23B</color>
+    <color name="drop_cta">#FFF97316</color>
+    <color name="drop_cta_hover">#FFFB923C</color>
+    <color name="drop_text_on_accent">#FF1A1A1A</color>
+    <color name="drop_text_primary">#FFD4D4D4</color>
+    <color name="drop_text_secondary">#FFA8A6A1</color>
+    <color name="drop_text_tertiary">#FF8C8C8C</color>
+    <color name="drop_text_muted">#FF6B6A66</color>
+    <color name="drop_border_color">#17FFFFFF</color>
+    <color name="drop_border_subtle">#0DFFFFFF</color>
+    <color name="drop_border_focus">#FFE9A23B</color>
+    <color name="drop_priority_low">#FF6B7280</color>
+    <color name="drop_priority_medium">#FFF59E0B</color>
+    <color name="drop_priority_high">#FFEF4444</color>
+    <color name="drop_success">#FF22C55E</color>
+    <color name="drop_warning">#FFF59E0B</color>
+    <color name="drop_danger">#FFEF4444</color>
+    <color name="drop_danger_hover">#FFF87171</color>
+    <color name="drop_brand_instagram">#FFE1306C</color>
+    <color name="drop_brand_youtube">#FFFF0000</color>
+</resources>
