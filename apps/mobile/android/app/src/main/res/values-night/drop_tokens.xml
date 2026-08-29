@@ -16,7 +16,7 @@
     <color name="drop_accent_subtle">#24E9A23B</color>
     <color name="drop_cta">#FFF97316</color>
     <color name="drop_cta_hover">#FFFB923C</color>
-    <color name="drop_text_on_accent">#FF1A1A1A</color>
+    <color name="drop_text_on_accent">#FF000000</color>
     <color name="drop_text_primary">#FFD4D4D4</color>
     <color name="drop_text_secondary">#FFA8A6A1</color>
     <color name="drop_text_tertiary">#FF8C8C8C</color>

@@ -14,12 +14,12 @@
   --accent: #d9730d;
   --accent-hover: #b45309;
   --accent-subtle: rgba(217, 115, 13, 0.12);
-  --cta: #c2410c;
+  --cta: #d0460d;
   --cta-hover: #9a3412;
-  --text-on-accent: #1a1a1a;
+  --text-on-accent: #000000;
   --text-primary: #37352f;
   --text-secondary: #6b6862;
-  --text-tertiary: #9b9a97;
+  --text-tertiary: #8d8c89;
   --text-muted: #b4b2ac;
   --border-color: rgba(55, 53, 47, 0.12);
   --border-subtle: rgba(55, 53, 47, 0.06);
@@ -29,7 +29,7 @@
   --priority-high: #ef4444;
   --success: #22c55e;
   --warning: #f59e0b;
-  --danger: #dc2626;
+  --danger: #da2323;
   --danger-hover: #b91c1c;
   --brand-instagram: #e1306c;
   --brand-youtube: #ff0000;
@@ -79,7 +79,7 @@
     --accent-subtle: rgba(233, 162, 59, 0.14);
     --cta: #f97316;
     --cta-hover: #fb923c;
-    --text-on-accent: #1a1a1a;
+    --text-on-accent: #000000;
     --text-primary: #d4d4d4;
     --text-secondary: #a8a6a1;
     --text-tertiary: #8c8c8c;
@@ -114,7 +114,7 @@
   --accent-subtle: rgba(233, 162, 59, 0.14);
   --cta: #f97316;
   --cta-hover: #fb923c;
-  --text-on-accent: #1a1a1a;
+  --text-on-accent: #000000;
   --text-primary: #d4d4d4;
   --text-secondary: #a8a6a1;
   --text-tertiary: #8c8c8c;

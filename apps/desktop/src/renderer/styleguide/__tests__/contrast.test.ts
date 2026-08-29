@@ -55,6 +55,37 @@ describe('contrastRatio', () => {
     // 완전 투명한 검정을 흰 배경에 얹으면 흰색과 같아진다 → 1:1
     expect(contrastRatio('rgba(0, 0, 0, 0)', '#ffffff')).toBeCloseTo(1, 2)
   })
+
+  // BRU-177: 라이트 모드 실측(2026-08-29)에서 세 짝이 WCAG에 미달했다.
+  // 토큰(design-system/drop/tokens.json)을 고쳐 넘겼고, 여기 값이 다시 어긋나면
+  // 누군가 tokens.json을 되돌렸거나 이 테스트 없이 값을 또 바꾼 것이다.
+  it('BRU-177: 라이트 메타 글자 / 앱 배경은 큰 글자 기준(3:1)을 넘는다', () => {
+    // --text-tertiary #8d8c89 / --bg-primary #f7f6f3 (전: #9b9a97, 2.60:1 — 실패)
+    const ratio = contrastRatio('#8d8c89', '#f7f6f3')
+    expect(ratio).toBeGreaterThanOrEqual(3)
+    expect(wcagVerdict(ratio, { largeText: true }).passes).toBe(true)
+  })
+
+  it('BRU-177: 라이트 CTA 위 글자는 본문 기준(4.5:1)을 넘는다', () => {
+    // --text-on-accent #000000 / --cta #d0460d (전: #1a1a1a / #c2410c, 3.36:1 — 실패)
+    const ratio = contrastRatio('#000000', '#d0460d')
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+    expect(wcagVerdict(ratio).passes).toBe(true)
+  })
+
+  it('BRU-177: 라이트 위험 색 / 앱 배경은 본문 기준(4.5:1)을 넘는다', () => {
+    // --danger #da2323 / --bg-primary #f7f6f3 (전: #dc2626, 4.47:1 — 0.03 차로 실패)
+    const ratio = contrastRatio('#da2323', '#f7f6f3')
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+    expect(wcagVerdict(ratio).passes).toBe(true)
+  })
+
+  it('BRU-177: 이미 통과하던 짝은 --text-on-accent를 검정으로 낮춰도 계속 통과한다', () => {
+    // 라이트/다크 액센트, 다크 CTA — 셋 다 이미 4.5:1을 넘었고 검정 글자로는 더 오른다.
+    expect(contrastRatio('#000000', '#d9730d')).toBeGreaterThanOrEqual(4.5) // 라이트 accent
+    expect(contrastRatio('#000000', '#e9a23b')).toBeGreaterThanOrEqual(4.5) // 다크 accent
+    expect(contrastRatio('#000000', '#f97316')).toBeGreaterThanOrEqual(4.5) // 다크 cta
+  })
 })
 
 describe('wcagVerdict', () => {
