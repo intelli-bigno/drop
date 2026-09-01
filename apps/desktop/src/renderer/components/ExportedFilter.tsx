@@ -25,16 +25,16 @@ export function ExportedFilter() {
 
   return (
     <button
-      className={`inbox-filter-btn ${showExported ? 'active' : ''}`}
+      className={`count-filter-btn ${showExported ? 'active' : ''}`}
       onClick={() => setShowExported(!showExported)}
       title={showExported ? '반출된 노트 숨기기' : 'Linear로 반출된 노트도 보기'}
       aria-pressed={showExported}
     >
-      <span className="inbox-filter-icon">
+      <span className="count-filter-icon">
         <Icon name="link" size={13} />
       </span>
-      <span className="inbox-filter-label">반출됨</span>
-      <span className="inbox-filter-count">{count}</span>
+      <span className="count-filter-label">반출됨</span>
+      <span className="count-filter-count">{count}</span>
     </button>
   )
 }

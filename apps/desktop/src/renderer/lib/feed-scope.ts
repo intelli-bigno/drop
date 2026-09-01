@@ -16,6 +16,21 @@ export type FeedScope = 'inbox' | 'todo' | 'open' | null
  */
 export const FEED_SCOPE_CYCLE: readonly FeedScope[] = [null, 'inbox', 'todo', 'open']
 
+/**
+ * 이 범위가 태그 필터와 겹칠 수 없는가 (BRU-204).
+ *
+ * **규칙의 단일 출처다.** 태그 슬라이스와 범위 슬라이스가 서로를 끄는 두 방향을
+ * 각자 삼항으로 판단하면 방향이 어긋난다 — 실제로 어긋나 있었다. 범위 쪽은
+ * Inbox일 때만 태그를 껐는데 태그 쪽은 범위를 통째로 껐고, 그래서
+ * "#work 태그가 붙은 할일만 보기"에 닿을 길이 없었다.
+ *
+ * Inbox만 배타인 이유: Inbox는 "태그가 하나도 없는 노트"라 태그 필터와 겹치면
+ * 목록이 항상 빈다 (BRU-50). 할일 갈래는 타입 축이라 태그와 얼마든지 함께 선다.
+ */
+export function scopeExcludesTag(scope: FeedScope): boolean {
+  return scope === 'inbox'
+}
+
 export function nextFeedScope(scope: FeedScope): FeedScope {
   const index = FEED_SCOPE_CYCLE.indexOf(scope)
   // 모르는 값이 들어오면 처음으로 돌린다 — 눌러도 아무 일이 없는 것보다 낫다

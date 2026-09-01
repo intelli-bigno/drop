@@ -5,6 +5,7 @@ import { tagRowToTag } from '@drop/shared'
 import type { TagRow } from '@drop/shared'
 import type { Note, Tag } from '@drop/shared'
 import type { NotesState, TagsSlice } from './types'
+import { scopeExcludesTag } from '../../lib/feed-scope'
 import {
   applyTagAttach,
   applyTagDetach,
@@ -235,8 +236,18 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
   },
 
   setFilterTag: (tagName) => {
-    // 태그 필터를 켜면 Inbox 필터는 꺼진다 — 둘이 겹치면 결과가 항상 비어 있다 (BRU-50)
-    set(tagName ? { filterTag: tagName, feedScope: null } : { filterTag: null })
+    // 태그 필터를 켜면 Inbox 범위는 꺼진다 — 둘이 겹치면 결과가 항상 비어 있다 (BRU-50).
+    // **할일 범위는 끄지 않는다** — "#work 태그가 붙은 할일"은 얼마든지 있다 (BRU-204).
+    // 판정은 setFeedScope와 같은 함수에서 뽑는다. 방향마다 따로 적으면 어긋난다.
+    if (!tagName) {
+      set({ filterTag: null })
+      return
+    }
+    set(
+      scopeExcludesTag(get().feedScope)
+        ? { filterTag: tagName, feedScope: null }
+        : { filterTag: tagName }
+    )
   },
 
   updateTag: async (tagId, newName) => {

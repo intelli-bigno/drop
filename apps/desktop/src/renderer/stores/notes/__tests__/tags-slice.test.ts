@@ -81,6 +81,9 @@ interface Seed {
   archivedNotes?: TestNote[]
   trashedNotes?: TestNote[]
   allTags?: NotesState['allTags']
+  /** 태그 필터와 상호배제를 보는 테스트가 쓴다 (BRU-204) */
+  filterTag?: NotesState['filterTag']
+  feedScope?: NotesState['feedScope']
 }
 
 function makeStore(seed: Seed = {}) {
@@ -300,5 +303,47 @@ describe('removeTagFromNote — 보관함·휴지통 노트', () => {
     expect(store.getState().notes[0].tags).toEqual([])
     const del = h.calls.find((c) => c.table === 'note_tags' && c.op === 'delete')
     expect(del?.filters).toEqual({ note_id: 'n1', tag_id: 't1' })
+  })
+})
+
+// 태그 필터와 피드 범위의 상호배제 (BRU-204).
+//
+// 규칙의 정본은 `lib/feed-scope.ts`의 scopeExcludesTag다. 여기서 지키는 것은
+// **방향의 대칭**이다 — setFeedScope는 Inbox일 때만 태그를 껐는데 setFilterTag는
+// 범위를 통째로 끄고 있었다. 그래서 "#work 태그가 붙은 할일만 보기"에 닿을 수 없었다.
+describe('setFilterTag — 피드 범위와의 상호배제', () => {
+  it('할일 범위에서 태그를 골라도 범위가 남는다', () => {
+    const store = makeStore({ feedScope: 'todo' })
+
+    store.getState().setFilterTag('work')
+
+    expect(store.getState().filterTag).toBe('work')
+    expect(store.getState().feedScope).toBe('todo')
+  })
+
+  it('남은 할일 범위도 마찬가지다', () => {
+    const store = makeStore({ feedScope: 'open' })
+
+    store.getState().setFilterTag('work')
+
+    expect(store.getState().feedScope).toBe('open')
+  })
+
+  it('Inbox 범위에서 태그를 고르면 범위가 풀린다 — 겹치면 목록이 항상 빈다 (BRU-50)', () => {
+    const store = makeStore({ feedScope: 'inbox' })
+
+    store.getState().setFilterTag('work')
+
+    expect(store.getState().filterTag).toBe('work')
+    expect(store.getState().feedScope).toBeNull()
+  })
+
+  it('태그 필터를 해제하는 것만으로는 범위를 건드리지 않는다', () => {
+    const store = makeStore({ feedScope: 'inbox', filterTag: 'work' })
+
+    store.getState().setFilterTag(null)
+
+    expect(store.getState().filterTag).toBeNull()
+    expect(store.getState().feedScope).toBe('inbox')
   })
 })

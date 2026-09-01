@@ -2708,13 +2708,18 @@ h6.note-viewer-heading {
 }
 
 /* ============================================
-   헤더의 개수 필터 — Inbox(BRU-50) · 할일(BRU-175)
+   헤더의 개수 필터 — 범위(BRU-199) · 반출됨(BRU-45)
    숫자는 0이어도 숨기지 않는다. 줄어드는 게 보이는 것이 핵심이다.
-   둘은 같은 자리에 나란히 서므로 규칙을 공유한다 — 값을 베껴 두 벌로 두면
+   같은 자리에 나란히 서므로 규칙을 공유한다 — 값을 베껴 두 벌로 두면
    한쪽만 고쳐져 서로 어긋난다.
+
+   이름이 `count-filter-*`인 이유 (BRU-204): 원래는 `inbox-filter-*`였는데
+   InboxFilter가 BRU-199에서 사라진 뒤에도 ExportedFilter가 그 이름을 빌려
+   쓰고 있었다. 컴포넌트 하나의 이름을 공용 규칙에 박아 두면 그 컴포넌트가
+   없어진 뒤 남은 이름이 거짓말을 한다.
    ============================================ */
 
-.inbox-filter-btn,
+.count-filter-btn,
 .scope-filter-btn {
   display: flex;
   align-items: center;
@@ -2731,27 +2736,27 @@ h6.note-viewer-heading {
   -webkit-app-region: no-drag;
 }
 
-.inbox-filter-btn:hover,
+.count-filter-btn:hover,
 .scope-filter-btn:hover {
   color: var(--text-secondary);
 }
 
-.inbox-filter-btn.active,
+.count-filter-btn.active,
 .scope-filter-btn.active {
   color: var(--text-primary);
 }
 
-.inbox-filter-icon {
+.count-filter-icon {
   display: flex;
   align-items: center;
 }
 
-.inbox-filter-label,
+.count-filter-label,
 .scope-filter-label {
   font-size: 12px;
 }
 
-.inbox-filter-count,
+.count-filter-count,
 .scope-filter-count {
   min-width: 16px;
   padding: 1px 5px;
@@ -2764,7 +2769,7 @@ h6.note-viewer-heading {
   text-align: center;
 }
 
-.inbox-filter-btn.active .inbox-filter-count {
+.count-filter-btn.active .count-filter-count {
   background: var(--accent);
   color: var(--text-on-accent);
 }
@@ -3778,7 +3783,7 @@ h6.note-viewer-heading {
 
 .view-mode-icon .icon,
 .category-filter-icon .icon,
-.inbox-filter-icon .icon,
+.count-filter-icon .icon,
 .scope-filter-count .icon,
 .search-dialog-icon .icon,
 .attachment-text-icon .icon {
