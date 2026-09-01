@@ -3212,6 +3212,29 @@ h6.note-viewer-heading {
   color: white;
 }
 
+/* 버튼 안에 붙는 글쇠 표시 (BRU-196).
+   치트시트 kbd와 같은 모양이되 한 단계 작고 흐리다 — 라벨이 주인공이고
+   글쇠는 "이렇게도 된다"는 귀띔이라 버튼 이름보다 세면 안 된다. */
+.confirm-dialog-actions .confirm-dialog-key {
+  display: inline-block;
+  min-width: 14px;
+  margin-left: 6px;
+  padding: 1px 4px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.12);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+/* 강조·위험 버튼은 바탕이 짙어서 검은 반투명이 묻힌다 — 흰 반투명으로 뒤집는다 */
+.confirm-dialog-actions button.confirm-dialog-primary .confirm-dialog-key,
+.confirm-dialog-actions button.confirm-dialog-danger .confirm-dialog-key {
+  background: rgb(255 255 255 / 0.22);
+}
+
 /* ============================================
    Shortcut Cheat Sheet (⌘/)
    ============================================ */
