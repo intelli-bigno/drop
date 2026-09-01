@@ -98,8 +98,8 @@ describe('seedStyleguideStores', () => {
     useNotesStore.getState().setFilterTag('design')
     expect(useNotesStore.getState().filterTag).toBe('design')
 
-    useNotesStore.getState().setInboxOnly(true)
-    expect(useNotesStore.getState().inboxOnly).toBe(true)
+    useNotesStore.getState().setFeedScope('inbox')
+    expect(useNotesStore.getState().feedScope).toBe('inbox')
   })
 
   it('삭제 확인 대기 같은 로컬 전이도 그대로 동작한다', () => {

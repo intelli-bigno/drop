@@ -5,8 +5,7 @@ import { useProfileStore } from '../stores/profile'
 import { NoteCard, NoteCardHandle } from './NoteCard'
 import { TagManagementDialog } from './TagManagementDialog'
 import { CategoryFilter } from './CategoryFilter'
-import { InboxFilter } from './InboxFilter'
-import { TodoFilter } from './TodoFilter'
+import { ScopeFilter } from './ScopeFilter'
 import { ProjectFilter } from './ProjectFilter'
 import { ExportedFilter } from './ExportedFilter'
 import { ViewModeSelector } from './ViewModeSelector'
@@ -73,10 +72,9 @@ export function NoteFeed() {
     setFilterTag,
     filterProjectId,
     categoryFilter,
-    inboxOnly,
-    setInboxOnly,
+    feedScope,
+    setFeedScope,
     showExported,
-    todoFilter,
     lockNote,
     temporarilyUnlockNote,
     temporarilyUnlockAll,
@@ -181,9 +179,8 @@ export function NoteFeed() {
       filterTag,
       categoryFilter,
       filterProjectId,
-      inboxOnly,
+      feedScope,
       showExported,
-      todoFilter,
       retainedNoteIds,
     })
   }, [
@@ -192,9 +189,8 @@ export function NoteFeed() {
     filterTag,
     categoryFilter,
     filterProjectId,
-    inboxOnly,
+    feedScope,
     showExported,
-    todoFilter,
     retainedNoteIds,
   ])
 
@@ -438,9 +434,8 @@ export function NoteFeed() {
     viewMode,
     filterTag,
     categoryFilter,
-    inboxOnly,
+    feedScope,
     showExported,
-    todoFilter,
   })
   const [selectionScope, setSelectionScope] = useState(scopeKey)
   if (selectionScope !== scopeKey) {
@@ -1099,8 +1094,7 @@ export function NoteFeed() {
           {viewMode === 'active' && (
             <>
               <div className="feed-header-divider" />
-              <InboxFilter />
-              <TodoFilter />
+              <ScopeFilter />
               <ExportedFilter />
               <div className="feed-header-divider" />
               <ProjectFilter />
@@ -1185,10 +1179,14 @@ export function NoteFeed() {
                   필터 해제
                 </button>
               </>
-            ) : inboxOnly ? (
+            ) : feedScope ? (
               <>
-                <p>분류할 노트가 없습니다 — Inbox가 비었어요</p>
-                <button className="feed-empty-action" onClick={() => setInboxOnly(false)}>
+                <p>
+                  {feedScope === 'inbox'
+                    ? '분류할 노트가 없습니다 — Inbox가 비었어요'
+                    : '이 범위에 보여 줄 노트가 없습니다'}
+                </p>
+                <button className="feed-empty-action" onClick={() => setFeedScope(null)}>
                   전체 노트 보기
                 </button>
               </>

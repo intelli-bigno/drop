@@ -39,7 +39,7 @@ const LOCAL_ONLY_ACTIONS = new Set<string>([
   'setFilterTag',
   'setFilterProject',
   'setCategoryFilter',
-  'setInboxOnly',
+  'setFeedScope',
   'setShowExported',
   'setViewMode',
   'temporarilyUnlockNote',
@@ -114,7 +114,7 @@ export function seedStyleguideStores(): void {
     filterTag: null,
     filterProjectId: null,
     categoryFilter: null,
-    inboxOnly: false,
+    feedScope: null,
     showExported: false,
     temporarilyUnlockedNoteIds: new Set<string>(),
   } as never)

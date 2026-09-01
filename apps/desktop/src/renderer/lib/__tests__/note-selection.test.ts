@@ -152,7 +152,7 @@ describe('selectionScopeKey', () => {
     viewMode: 'active',
     filterTag: null,
     categoryFilter: 'all',
-    inboxOnly: false,
+    feedScope: null,
     showExported: false,
   }
 
@@ -166,7 +166,7 @@ describe('selectionScopeKey', () => {
       { ...base, viewMode: 'archived' },
       { ...base, filterTag: 'work' },
       { ...base, categoryFilter: 'link' },
-      { ...base, inboxOnly: true },
+      { ...base, feedScope: 'inbox' },
       { ...base, showExported: true },
     ]
 
@@ -176,24 +176,24 @@ describe('selectionScopeKey', () => {
   })
 })
 
-// 할일 필터도 목록을 바꾸는 축이다 (BRU-175) — 바뀌면 선택을 버려야 한다
-describe('selectionScopeKey — 할일 필터 축 (BRU-175)', () => {
+// 피드 범위는 목록을 바꾸는 축이다 (BRU-175 → BRU-199) — 바뀌면 선택을 버려야 한다.
+// 위 블록이 축이 바뀌는지를 보고, 여기서는 **같은 축 안의 값들끼리도** 갈리는지를 본다.
+describe('selectionScopeKey — 피드 범위 축 (BRU-175 → BRU-199)', () => {
   const base = {
     viewMode: 'active',
     filterTag: null,
     categoryFilter: null,
-    inboxOnly: false,
     showExported: false,
-    todoFilter: null,
+    feedScope: null,
   } as const
 
-  it('할일 필터가 켜지면 지문이 달라진다', () => {
-    expect(selectionScopeKey({ ...base, todoFilter: 'todo' })).not.toBe(selectionScopeKey(base))
+  it('할일 범위가 켜지면 지문이 달라진다', () => {
+    expect(selectionScopeKey({ ...base, feedScope: 'todo' })).not.toBe(selectionScopeKey(base))
   })
 
   it("'todo'와 'open'도 서로 다른 축이다", () => {
-    expect(selectionScopeKey({ ...base, todoFilter: 'todo' })).not.toBe(
-      selectionScopeKey({ ...base, todoFilter: 'open' })
+    expect(selectionScopeKey({ ...base, feedScope: 'todo' })).not.toBe(
+      selectionScopeKey({ ...base, feedScope: 'open' })
     )
   })
 

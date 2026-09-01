@@ -8,7 +8,7 @@ import { createInstagramSlice } from './instagram-slice'
 import { createYouTubeSlice } from './youtube-slice'
 import { createRevisionsSlice } from './revisions-slice'
 import { createLockSlice, createCategoryFilterSlice } from './lock-slice'
-import { createInboxSlice } from './inbox-slice'
+import { createFeedScopeSlice } from './feed-scope-slice'
 import { createExportSlice } from './export-slice'
 import { createTodoSlice } from './todo-slice'
 import { createTrashSlice } from './trash-slice'
@@ -26,7 +26,7 @@ export const useNotesStore = create<NotesState>()((...a) => ({
   ...createRevisionsSlice(...a),
   ...createLockSlice(...a),
   ...createCategoryFilterSlice(...a),
-  ...createInboxSlice(...a),
+  ...createFeedScopeSlice(...a),
   ...createExportSlice(...a),
   ...createTodoSlice(...a),
   ...createTrashSlice(...a),

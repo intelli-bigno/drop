@@ -14,7 +14,7 @@ import { PinDialog, type PinDialogMode } from '../../components/PinDialog'
 import { TagList } from '../../components/TagList'
 import { SelectionActionBar } from '../../components/SelectionActionBar'
 import { CategoryFilter } from '../../components/CategoryFilter'
-import { InboxFilter } from '../../components/InboxFilter'
+import { ScopeFilter } from '../../components/ScopeFilter'
 import { ExportedFilter } from '../../components/ExportedFilter'
 import { ProjectFilter } from '../../components/ProjectFilter'
 import { ViewModeSelector } from '../../components/ViewModeSelector'
@@ -173,9 +173,9 @@ export function Components() {
         <Specimen name="ProjectFilter" file="components/ProjectFilter.tsx">
           <ProjectFilter />
         </Specimen>
-        <Specimen name="InboxFilter · ExportedFilter" file="components/InboxFilter.tsx">
+        <Specimen name="ScopeFilter · ExportedFilter" file="components/ScopeFilter.tsx">
           <div className="sg-row">
-            <InboxFilter />
+            <ScopeFilter />
             <ExportedFilter />
           </div>
         </Specimen>

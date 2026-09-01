@@ -93,14 +93,14 @@ describe('applyNoteFilters', () => {
     expect(ids(notes)).toEqual(['a', 'b'])
   })
 
-  describe('inboxOnly (BRU-50)', () => {
+  describe('feedScope — Inbox 갈래 (BRU-50 → BRU-199)', () => {
     it('태그가 하나도 없는 노트만 남긴다', () => {
       const notes = [note('untagged'), note('tagged', { tags: [{ name: 'work' }] })]
 
       const result = applyNoteFilters(notes, {
         filterTag: null,
         categoryFilter: null,
-        inboxOnly: true,
+        feedScope: 'inbox',
       })
 
       expect(ids(result)).toEqual(['untagged'])
@@ -112,7 +112,7 @@ describe('applyNoteFilters', () => {
       const result = applyNoteFilters(notes, {
         filterTag: null,
         categoryFilter: null,
-        inboxOnly: false,
+        feedScope: null,
       })
 
       expect(ids(result)).toEqual(['untagged', 'tagged'])
@@ -128,7 +128,7 @@ describe('applyNoteFilters', () => {
       const result = applyNoteFilters(notes, {
         filterTag: null,
         categoryFilter: 'link',
-        inboxOnly: true,
+        feedScope: 'inbox',
       })
 
       expect(ids(result)).toEqual(['untagged-link'])
@@ -141,7 +141,7 @@ describe('applyNoteFilters', () => {
       const result = applyNoteFilters(notes, {
         filterTag: null,
         categoryFilter: null,
-        inboxOnly: true,
+        feedScope: 'inbox',
         retainedNoteIds: new Set(['being-tagged']),
       })
 
@@ -154,20 +154,20 @@ describe('applyNoteFilters', () => {
       const result = applyNoteFilters(notes, {
         filterTag: null,
         categoryFilter: 'link',
-        inboxOnly: true,
+        feedScope: 'inbox',
         retainedNoteIds: new Set(['being-tagged']),
       })
 
       expect(ids(result)).toEqual([])
     })
 
-    it('inboxOnly가 꺼져 있으면 유예 목록은 아무 영향이 없다', () => {
+    it('범위 필터가 꺼져 있으면 유예 목록은 아무 영향이 없다', () => {
       const notes = [note('a'), note('b', { tags: [{ name: 'work' }] })]
 
       const result = applyNoteFilters(notes, {
         filterTag: 'work',
         categoryFilter: null,
-        inboxOnly: false,
+        feedScope: null,
         retainedNoteIds: new Set(['a']),
       })
 
@@ -212,7 +212,7 @@ describe('반출된 노트 (BRU-45)', () => {
     const result = applyNoteFilters(notes, {
       filterTag: null,
       categoryFilter: null,
-      inboxOnly: true,
+      feedScope: 'inbox',
     })
 
     expect(ids(result)).toEqual(['a'])
@@ -365,34 +365,34 @@ function todoNote(id: string, overrides: Partial<TestNote> = {}): TestNote {
 const filterTodo = (notes: TestNote[], opts: Partial<NoteFilterOptions>) =>
   applyNoteFilters(notes, { filterTag: null, categoryFilter: null, ...opts })
 
-describe('할일 필터 — todoFilter (BRU-175)', () => {
+describe('feedScope — 할일 갈래 (BRU-175 → BRU-199)', () => {
   const plain = todoNote('plain')
   const open = todoNote('open', { type: 'todo' })
   const done = todoNote('done', { type: 'todo', completedAt: new Date('2026-08-29') })
   const all = [plain, open, done]
 
   it('기본(null)은 아무것도 걸러내지 않는다', () => {
-    expect(ids(filterTodo(all, { todoFilter: null }))).toEqual(['plain', 'open', 'done'])
+    expect(ids(filterTodo(all, { feedScope: null }))).toEqual(['plain', 'open', 'done'])
   })
 
   // 완료된 것을 빼지 않는 이유: 방금 끝낸 것이 눈앞에서 사라지면 무슨 일이
   // 일어났는지 알 수 없다. 목록에는 남기고 화면에서 흐리게 그린다.
   it("'todo'는 할일만 남긴다 — 완료된 것도 포함", () => {
-    expect(ids(filterTodo(all, { todoFilter: 'todo' }))).toEqual(['open', 'done'])
+    expect(ids(filterTodo(all, { feedScope: 'todo' }))).toEqual(['open', 'done'])
   })
 
   it("'open'은 아직 안 끝난 할일만 남긴다", () => {
-    expect(ids(filterTodo(all, { todoFilter: 'open' }))).toEqual(['open'])
+    expect(ids(filterTodo(all, { feedScope: 'open' }))).toEqual(['open'])
   })
 
   it('일반 노트는 어떤 할일 필터에도 걸리지 않는다', () => {
-    expect(ids(filterTodo([plain], { todoFilter: 'todo' }))).toEqual([])
-    expect(ids(filterTodo([plain], { todoFilter: 'open' }))).toEqual([])
+    expect(ids(filterTodo([plain], { feedScope: 'todo' }))).toEqual([])
+    expect(ids(filterTodo([plain], { feedScope: 'open' }))).toEqual([])
   })
 
   it('다른 필터와 AND로 걸린다', () => {
     const tagged = todoNote('tagged', { type: 'todo', tags: [{ name: 'work' }] })
-    const result = filterTodo([...all, tagged], { todoFilter: 'todo', filterTag: 'work' })
+    const result = filterTodo([...all, tagged], { feedScope: 'todo', filterTag: 'work' })
     expect(ids(result)).toEqual(['tagged'])
   })
 
@@ -400,7 +400,7 @@ describe('할일 필터 — todoFilter (BRU-175)', () => {
   // 그 노트가 할일 목록에 끼어들면 안 된다
   it('타입이 note면 완료 시각이 있어도 할일이 아니다', () => {
     const impossible = todoNote('impossible', { completedAt: new Date() })
-    expect(ids(filterTodo([impossible], { todoFilter: 'todo' }))).toEqual([])
+    expect(ids(filterTodo([impossible], { feedScope: 'todo' }))).toEqual([])
   })
 })
 
@@ -470,7 +470,7 @@ describe('Inbox 필터에 타입 축이 걸린다 (BRU-181)', () => {
   const todo = todoNote('todo', { type: 'todo' })
 
   it('Inbox는 아직 분류되지 않은 노트만 남긴다', () => {
-    const result = filterTodo([plain, tagged, todo], { inboxOnly: true })
+    const result = filterTodo([plain, tagged, todo], { feedScope: 'inbox' })
     expect(ids(result)).toEqual(['plain'])
   })
 
@@ -478,7 +478,7 @@ describe('Inbox 필터에 타입 축이 걸린다 (BRU-181)', () => {
   // 두 번째 태그를 달 길이 없어진다 (BRU-50)
   it('유예된 노트는 할일이 되어도 자리를 지킨다', () => {
     const result = filterTodo([plain, todo], {
-      inboxOnly: true,
+      feedScope: 'inbox',
       retainedNoteIds: new Set(['todo']),
     })
     expect(ids(result)).toEqual(['plain', 'todo'])

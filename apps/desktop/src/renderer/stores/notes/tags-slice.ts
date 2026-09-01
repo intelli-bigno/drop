@@ -236,7 +236,7 @@ export const createTagsSlice: StateCreator<NotesState, [], [], TagsSlice> = (set
 
   setFilterTag: (tagName) => {
     // 태그 필터를 켜면 Inbox 필터는 꺼진다 — 둘이 겹치면 결과가 항상 비어 있다 (BRU-50)
-    set(tagName ? { filterTag: tagName, inboxOnly: false } : { filterTag: null })
+    set(tagName ? { filterTag: tagName, feedScope: null } : { filterTag: null })
   },
 
   updateTag: async (tagId, newName) => {

@@ -74,7 +74,7 @@ describe('노트 피드 파이프라인 (필터 → 계층)', () => {
     const rows = feed([부모, 답글, 남], {
       filterTag: null,
       categoryFilter: null,
-      inboxOnly: true,
+      feedScope: 'inbox',
     })
 
     expect(rows.map((r) => r.note.id)).toEqual(['부모', '답글', '남'])

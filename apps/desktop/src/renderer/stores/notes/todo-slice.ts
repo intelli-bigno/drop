@@ -11,14 +11,12 @@ import { withNoteType, toggleCompleted, toTodoStatePatch, applyTodoState } from 
  * 두 동작 모두 **본문을 건드리지 않는다** — 분류를 옮기거나 상태를 뒤집는 것은
  * 노트를 고친 것이 아니다. 그래서 note_revisions 스냅샷도 남지 않는다.
  *
+ * 할일 **필터**는 여기 없다 — Inbox와 한 축으로 합쳐져 feed-scope-slice로 갔다 (BRU-199).
+ *
  * 상태 전이 규칙은 `lib/note-todo.ts`에 있다. 낙관적 갱신은 화면이 취할 다음
  * 모습과 서버에 보낼 값이 같아야 하므로, 둘을 같은 함수에서 뽑는다 (BRU-114).
  */
 export const createTodoSlice: StateCreator<NotesState, [], [], TodoSlice> = (set, get) => ({
-  todoFilter: null,
-
-  setTodoFilter: (todoFilter) => set({ todoFilter }),
-
   setNoteType: async (noteId, type) => {
     const prevNote = get().notes.find((n) => n.id === noteId)
     if (!prevNote) return

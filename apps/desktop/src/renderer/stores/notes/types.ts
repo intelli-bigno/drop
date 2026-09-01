@@ -7,7 +7,7 @@ import type {
   Project,
   NoteType,
 } from '@drop/shared'
-import type { TodoFilter } from '../../lib/note-filters'
+import type { FeedScope } from '../../lib/feed-scope'
 
 // Notes slice
 export interface NotesSlice {
@@ -141,10 +141,11 @@ export interface CategoryFilterSlice {
   setCategoryFilter: (filter: 'all' | 'link' | 'media' | 'files' | null) => void
 }
 
-// Inbox filter slice — 태그 없는 활성 노트만 (BRU-50)
-export interface InboxSlice {
-  inboxOnly: boolean
-  setInboxOnly: (inboxOnly: boolean) => void
+// 피드 범위 필터 — Inbox와 할일을 합친 한 축 (BRU-50 → BRU-175 → BRU-199)
+export interface FeedScopeSlice {
+  /** null이면 걸러내지 않는다. 순환 순서는 lib/feed-scope.ts */
+  feedScope: FeedScope
+  setFeedScope: (scope: FeedScope) => void
 }
 
 // Linear 반출 표시 (BRU-45) — 이슈 생성은 에이전트가 하고, 앱은 표시만 다룬다
@@ -158,9 +159,6 @@ export interface ExportSlice {
 
 // 노트 타입과 할일 완료 (BRU-175)
 export interface TodoSlice {
-  /** 할일만 보기. null이면 걸러내지 않는다 */
-  todoFilter: TodoFilter
-  setTodoFilter: (filter: TodoFilter) => void
   /** 노트 종류 바꾸기. 일반 노트로 되돌리면 완료 시각도 함께 지워진다 */
   setNoteType: (noteId: string, type: NoteType) => Promise<void>
   /** 완료 뒤집기. 할일이 아닌 노트에는 아무 일도 하지 않는다 */
@@ -202,7 +200,7 @@ export interface NotesState
     RevisionsSlice,
     LockSlice,
     CategoryFilterSlice,
-    InboxSlice,
+    FeedScopeSlice,
     ExportSlice,
     TodoSlice,
     TrashSlice {}

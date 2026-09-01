@@ -4,15 +4,9 @@
 // 렌더링을 거치지 않고 테스트할 수 있어야 필터가 하나 늘 때마다
 // 조합(태그 × 카테고리)을 눈으로 확인하는 일을 그만둘 수 있다.
 
-export type CategoryFilter = 'all' | 'link' | 'media' | 'files' | null
+import type { FeedScope } from './feed-scope'
 
-/**
- * 할일 필터 (BRU-175).
- *
- * `null` = 걸러내지 않음, `todo` = 할일 전부(끝난 것 포함), `open` = 아직 안 끝난 것만.
- * 끝난 할일을 기본으로 숨기지 않는 이유는 `countOpenTodos` 주석 참조.
- */
-export type TodoFilter = 'todo' | 'open' | null
+export type CategoryFilter = 'all' | 'link' | 'media' | 'files' | null
 
 /** 필터가 실제로 들여다보는 필드만 요구한다 — 테스트가 Note 전체를 만들 필요가 없게 */
 export interface FilterableNote {
@@ -50,12 +44,13 @@ export interface NoteFilterOptions {
    * UNASSIGNED_PROJECT_ID면 아직 프로젝트가 없는 노트만 (BRU-83)
    */
   filterProjectId?: string | null
-  /** Inbox — 태그가 하나도 없는 노트만 (BRU-50) */
-  inboxOnly?: boolean
+  /**
+   * 피드 범위 — Inbox·할일을 합친 단일 축 (BRU-199).
+   * null이면 이 축으로 걸러내지 않는다. 순환 순서는 `lib/feed-scope.ts`.
+   */
+  feedScope?: FeedScope
   /** 반출된 노트도 함께 보기 (기본은 숨김, BRU-45) */
   showExported?: boolean
-  /** 할일만 보기 (BRU-175). null이면 걸러내지 않는다 */
-  todoFilter?: TodoFilter
   /**
    * Inbox에서 방금 태그가 붙었지만 아직 자리를 지켜야 하는 노트들.
    * 태그 팝오버가 열려 있는 동안 그 노트가 목록에서 빠지면 팝오버가 허공에 뜬다.
@@ -145,20 +140,31 @@ export function isCompletedTodo(note: Pick<FilterableNote, 'type' | 'completedAt
   return isTodoNote(note) && !!note.completedAt
 }
 
-function matchesTodo(note: FilterableNote, todoFilter: TodoFilter): boolean {
-  if (!todoFilter) return true
-  if (!isTodoNote(note)) return false
-  // 'todo'는 끝난 것까지 포함한다 — 무엇을 했는지 함께 보는 것이 목록의 쓸모다
-  return todoFilter === 'todo' || !isCompletedTodo(note)
-}
-
-function matchesInbox(
+/**
+ * 피드 범위 한 축 (BRU-199) — 예전의 Inbox 필터와 할일 필터를 합친 것.
+ *
+ * 둘을 합칠 수 있는 근거는 BRU-181이다. "할일로 분류된 노트는 Inbox를 떠난다"로
+ * Inbox 정의에 타입 축이 들어간 뒤로, 두 필터를 동시에 켜면 결과가 항상 비었다 —
+ * 배타인 값을 축 둘로 들고 있었던 셈이다.
+ *
+ * 유예(retainedNoteIds)는 **Inbox 갈래에만** 걸린다. 합치기 전 `matchesInbox`가
+ * 그랬고 `matchesTodo`는 유예를 보지 않았다 — 이번 변경으로 그 규칙이 달라지면
+ * 필터 합치기가 아니라 다른 일을 한 것이 된다.
+ */
+function matchesScope(
   note: FilterableNote,
-  inboxOnly: boolean,
+  feedScope: FeedScope,
   retainedNoteIds: ReadonlySet<string> | undefined
 ): boolean {
-  if (!inboxOnly) return true
-  return isUnclassifiedNote(note) || (retainedNoteIds?.has(note.id) ?? false)
+  if (!feedScope) return true
+
+  if (feedScope === 'inbox') {
+    return isUnclassifiedNote(note) || (retainedNoteIds?.has(note.id) ?? false)
+  }
+
+  if (!isTodoNote(note)) return false
+  // 'todo'는 끝난 것까지 포함한다 — 무엇을 했는지 함께 보는 것이 목록의 쓸모다
+  return feedScope === 'todo' || !isCompletedTodo(note)
 }
 
 /**
@@ -172,9 +178,8 @@ export function applyNoteFilters<T extends FilterableNote>(
     filterTag,
     categoryFilter,
     filterProjectId = null,
-    inboxOnly = false,
+    feedScope = null,
     showExported = false,
-    todoFilter = null,
     retainedNoteIds,
   }: NoteFilterOptions
 ): T[] {
@@ -183,8 +188,7 @@ export function applyNoteFilters<T extends FilterableNote>(
       matchesTag(note, filterTag) &&
       matchesCategory(note, categoryFilter) &&
       matchesProject(note, filterProjectId, retainedNoteIds) &&
-      matchesInbox(note, inboxOnly, retainedNoteIds) &&
-      matchesTodo(note, todoFilter) &&
+      matchesScope(note, feedScope, retainedNoteIds) &&
       matchesExport(note, showExported, retainedNoteIds)
   )
 }
