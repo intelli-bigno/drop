@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../environment/providers.dart';
+import '../theme/drop_theme.dart';
 
 class AuthScreen extends ConsumerWidget {
   const AuthScreen({super.key});
@@ -20,10 +21,7 @@ class AuthScreen extends ConsumerWidget {
         child: Column(
           children: [
             const Spacer(),
-            const Text(
-              'DROP',
-              style: TextStyle(fontSize: 44, fontWeight: FontWeight.bold),
-            ),
+            const Text('DROP', style: DropText.wordmark),
             const SizedBox(height: 12),
             Text(
               '떠오르면 바로 던져넣기',
@@ -36,8 +34,7 @@ class AuthScreen extends ConsumerWidget {
                 child: Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: DropText.meta.copyWith(
                     color: Theme.of(context).colorScheme.error,
                   ),
                 ),

@@ -74,5 +74,6 @@ public enum DropTokens {
         public static let lg: CGFloat = 16
         public static let xl: CGFloat = 20
         public static let _2xl: CGFloat = 28
+        public static let _3xl: CGFloat = 44
     }
 }

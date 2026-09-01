@@ -10,8 +10,10 @@ library;
 import 'package:flutter/material.dart';
 
 import 'drop_tokens.g.dart';
+import 'drop_typography.dart';
 
 export 'drop_tokens.g.dart';
+export 'drop_typography.dart';
 
 /// 간격. iOS `DropTheme.Spacing`과 같은 이름·값 — 정본은 토큰의 4px 스케일이다.
 abstract final class DropSpacing {
@@ -27,6 +29,37 @@ abstract final class DropRadius {
   /// 목록 한 줄 행. 카드보다 조금 작게 — 행이 겹겹이 쌓여도 답답하지 않게 (iOS와 동일).
   static const double row = 10;
   static const double sheet = 20;
+
+  /// 칩·배지처럼 글자를 감싸는 알약. 카드보다 작아야 "누르는 작은 것"으로 읽힌다.
+  static const double chip = DropTokenRadius.sm; // 6
+
+  /// 썸네일. 첨부 미리보기가 카드 안에 들어앉는 자리 (BRU-193 이전엔
+  /// attachment_thumbnail이 8을 직접 적고 있었다).
+  static const double thumbnail = DropTokenRadius.md; // 8
+}
+
+/// 아이콘 크기. 토큰이 아니라 **컴포넌트 결정**이라 여기 산다 — `DropRadius.row`와 같은 계층.
+///
+/// 이름을 붙이는 이유는 값을 아끼려는 게 아니라 **자리를 구분하려는** 것이다.
+/// 흩어진 13·14·20·22·28·40을 그대로 두면 다음 위젯이 21을 적어도 아무도 모른다.
+abstract final class DropIconSize {
+  /// 메타 줄(시각·태그 옆)의 작은 표식.
+  static const double meta = 13;
+
+  /// 제목 줄에 끼어드는 표식 — 핀·미아 답글 화살표.
+  static const double inline = 14;
+
+  /// 눌러서 상태를 바꾸는 것 — 체크박스·선택 동그라미.
+  static const double control = 20;
+
+  /// 액션 바의 동작 아이콘.
+  static const double action = 22;
+
+  /// 썸네일을 못 그렸을 때의 자리표시.
+  static const double placeholder = 28;
+
+  /// 빈 상태의 큰 아이콘.
+  static const double empty = 40;
 }
 
 /// 지금 모드(라이트·다크)의 토큰 색 한 벌.
@@ -88,11 +121,7 @@ abstract final class DropTheme {
         backgroundColor: colors.bgSecondary,
         foregroundColor: colors.textPrimary,
         elevation: 0,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(
-          color: colors.textPrimary,
-          fontSize: DropTokenTextSize.xl,
-          fontWeight: FontWeight.w600,
-        ),
+        titleTextStyle: DropText.sectionTitle.copyWith(color: colors.textPrimary),
       ),
       cardColor: colors.surfaceCard,
       dividerColor: colors.borderColor,
@@ -101,10 +130,23 @@ abstract final class DropTheme {
         textColor: colors.textPrimary,
         iconColor: colors.textSecondary,
       ),
-      textTheme: base.textTheme.apply(
-        bodyColor: colors.textPrimary,
-        displayColor: colors.textPrimary,
-      ),
+      // 머티리얼의 스케일을 우리 역할로 갈아 끼운다. 이걸 안 하면 위젯이
+      // `bodyMedium`을 부르는 순간 머티리얼 기본 크기(14/12가 아니라 그쪽 스케일)로
+      // 새는데, 그 새는 자리가 눈에 안 보여 조용히 갈라진다.
+      textTheme: base.textTheme
+          .copyWith(
+            headlineSmall: DropText.screenTitle,
+            titleLarge: DropText.sectionTitle,
+            titleMedium: DropText.cardTitle,
+            bodyLarge: DropText.body,
+            bodyMedium: DropText.body,
+            bodySmall: DropText.meta,
+            labelSmall: DropText.caption,
+          )
+          .apply(
+            bodyColor: colors.textPrimary,
+            displayColor: colors.textPrimary,
+          ),
       progressIndicatorTheme:
           ProgressIndicatorThemeData(color: colors.accent),
     );

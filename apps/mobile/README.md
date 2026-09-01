@@ -10,6 +10,8 @@ DROP의 모바일 앱 — **Flutter 재구축 트랙 (BRU-152)**. 옛 Flutter �
 apps/mobile/
   packages/drop_core/    # 도메인 로직 — Flutter SDK 의존 0, `dart test`로 검증
   lib/                   # 앱: 화면 조립 + 플랫폼 배선
+  lib/showcase/          # 디자인 시스템 쇼케이스 (별도 엔트리포인트, 출시 번들 밖)
+  web/                   # 쇼케이스를 브라우저에 띄우기 위한 호스트 (앱 배포용 아님)
   .config/               # make mobile-config 생성물 (커밋 금지)
 ```
 
@@ -24,6 +26,8 @@ apps/mobile/
 | `make mobile-analyze` | dart analyze (drop_core + 앱) |
 | `make mobile-dev` / `mobile-dev-remote` | 시뮬레이터에서 실행 (로컬 / 리모트 Supabase) |
 | `make mobile-build` | iOS 시뮬레이터용 빌드 |
+| `make mobile-showcase` | 디자인 시스템 쇼케이스를 Chrome에 띄운다 (자격증명 불필요) |
+| `make mobile-showcase-build` | 쇼케이스 정적 빌드 → `build/web` |
 | `make mobile-clean` | 생성물 정리 |
 
 ## 자격증명 없이 띄우기 — 프리뷰 모드
@@ -40,7 +44,25 @@ flutter run --dart-define=DROP_PREVIEW=true
 
 - `lib/theme/drop_tokens.g.dart` — 생성물. 라이트·다크 색 한 벌씩(`DropTokenColors.light/.dark`) + 간격·모서리·글자 크기. **직접 고치지 마라.**
 - `lib/theme/drop_theme.dart` — 손으로 쓰는 의미 계층 (iOS `DropUI/DropTheme.swift` 대응). 토큰 → `ThemeData`(웜 페이퍼), `DropColors.of(context)`(현재 모드의 토큰), `DropSpacing`·`DropRadius`, 표면 역할(`surfacePage`·`surfaceCard`·`surfaceSelected`·`surfaceField`).
-- **화면에 리터럴 색(`Colors.*`, `Color(0x…)`)을 적지 않는다.** `test/design_system_audit_test.dart`(iOS `DesignSystemAuditTests` 포팅)가 소스를 읽어 잡는다.
+- `lib/theme/drop_typography.dart` — 글자의 **역할** 이름 (BRU-193). `wordmark`·`screenTitle`·`sectionTitle`·`cardTitle`·`body`·`meta`·`caption`. **색은 들지 않는다** — 같은 `body`가 카드 위와 메타 줄에서 다른 색이라, 역할이 색까지 쥐면 두 자리를 한 이름으로 못 쓴다. `ThemeData.textTheme`이 이 역할로 갈아 끼워져 있어 `bodyMedium`을 부르던 기존 위젯도 토큰 크기로 따라온다.
+- 감사 규칙 둘, `test/design_system_audit_test.dart`(iOS `DesignSystemAuditTests` 포팅)가 **소스를 읽어** 잡는다:
+  - 리터럴 색(`Colors.*`, `Color(0x…)`)을 적지 않는다.
+  - 글자 크기를 숫자로 적지 않는다 (`fontSize: 11` → `DropText.caption`).
+  - 대상은 `lib/screens` · `lib/widgets` · `lib/showcase` + `drop_theme.dart`. **검사받지 않는 디렉토리는 반드시 새는 자리가 된다** — `lib/widgets`가 오래 빠져 있었다.
+
+## 디자인 시스템 쇼케이스 (BRU-193)
+
+```
+make mobile-showcase        # Chrome에 뜬다
+```
+
+데스크톱 `#styleguide`(BRU-172)의 Flutter판. Foundations(토큰) · Components(실물 위젯) · Patterns(목록의 규칙) · States(빈·로딩·오류) 넷이고 라이트/다크를 전환한다.
+
+- **별도 엔트리포인트**(`lib/showcase/main.dart`)다. 앱 부팅은 Supabase·구글 로그인·딥링크를 지나므로 라우트로 얹으면 로그인 없이는 아무것도 못 본다. 덤으로 **출시 번들에도 들어가지 않는다** — 빌드는 `lib/main.dart`만 따라간다.
+- **진열대와 물건을 가른다.** `lib/showcase/parts.dart`가 진열대이고, 진열되는 것은 `lib/widgets`의 실물이다. 쇼케이스 전용 복제품을 만들면 쇼케이스에서만 예쁜 컴포넌트가 태어나고 진짜 화면은 그대로 남는다.
+- **값을 베껴 적지 않는다.** Foundations는 생성물의 `all` 지도(`DropTokenColors.all`·`DropTokenSpace.all` …)를 훑어 그린다 — `make tokens`를 돌리면 쇼케이스가 바로 따라온다.
+- 표본 데이터는 `lib/showcase/fixtures.dart`. 긴 제목·빈 본문·깊은 답글·끝난 할일처럼 **어려운 경우**를 고른다.
+- `test/showcase_test.dart`가 페이지마다 한 번씩 그려 본다 — 쇼케이스는 아무도 자동으로 열지 않아서 위젯 생성자가 바뀌면 조용히 죽는다.
 
 ## 구성값이 흐르는 경로
 

@@ -2,7 +2,9 @@
 ///
 /// 날짜 묶기·계층 들여쓰기·필터·정렬은 전부 drop_core의 순수 로직이 정하고,
 /// 이 화면은 그 결과(`NoteSection` → `NoteRow`)를 그대로 그리기만 한다.
-/// 스타일은 Material 기본값 — 토큰 테마는 BRU-159가 얹는다.
+///
+/// 목록의 조각(행·섹션 머리글·빈 상태)은 전부 `lib/widgets`의 위젯이다 —
+/// 화면 안 private 메서드로 두면 쇼케이스도 테스트도 그 자리에 닿지 못한다 (BRU-193).
 library;
 
 import 'dart:async';
@@ -22,7 +24,9 @@ import '../notes/comments_controller.dart';
 import '../notes/note_tap.dart';
 import '../notes/notes_controller.dart';
 import '../widgets/note_card.dart';
+import '../widgets/note_empty_state.dart';
 import '../widgets/note_filter_bar.dart';
+import '../widgets/note_section_header.dart';
 import '../widgets/selection_action_bar.dart';
 import 'composer_sheet.dart';
 
@@ -405,7 +409,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return _fillViewport(context, const CircularProgressIndicator());
     }
     if (rows.isEmpty) {
-      return _fillViewport(context, _emptyState(context, store));
+      return _fillViewport(
+        context,
+        NoteEmptyState(
+          viewMode: store.viewMode,
+          isSearching: store.searchText.trim().isNotEmpty,
+        ),
+      );
     }
 
     final sections = _grouper.sections(rows);
@@ -413,15 +423,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         for (final section in sections) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(
-              section.title,
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
+          NoteSectionHeader(title: section.title),
           for (final row in section.rows)
             NoteCard(
               key: ValueKey('note-${row.id}'),
@@ -478,26 +480,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ),
   );
 
-  Widget _emptyState(BuildContext context, NotesStore store) {
-    final message = store.searchText.trim().isNotEmpty
-        ? '검색 결과가 없습니다'
-        : switch (store.viewMode) {
-            NoteViewMode.active => '아직 노트가 없습니다',
-            NoteViewMode.archived => '보관한 노트가 없습니다',
-            NoteViewMode.trash => '휴지통이 비어 있습니다',
-          };
-    final icon = switch (store.viewMode) {
-      NoteViewMode.active => Icons.inbox_outlined,
-      NoteViewMode.archived => Icons.archive_outlined,
-      NoteViewMode.trash => Icons.delete_outline,
-    };
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 40),
-        const SizedBox(height: 8),
-        Text(message),
-      ],
-    );
-  }
 }

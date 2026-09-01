@@ -100,5 +100,6 @@ object DropTokens {
         val lg = 16.sp
         val xl = 20.sp
         val _2xl = 28.sp
+        val _3xl = 44.sp
     }
 }

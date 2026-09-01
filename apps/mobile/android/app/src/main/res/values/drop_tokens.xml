@@ -54,4 +54,5 @@
     <dimen name="drop_text_lg">16sp</dimen>
     <dimen name="drop_text_xl">20sp</dimen>
     <dimen name="drop_text_x2xl">28sp</dimen>
+    <dimen name="drop_text_x3xl">44sp</dimen>
 </resources>

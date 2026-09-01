@@ -65,6 +65,8 @@ help:
 	@echo "    make mobile-dev           - 시뮬레이터에서 실행 (로컬 Supabase)"
 	@echo "    make mobile-dev-remote    - 시뮬레이터에서 실행 (리모트 Supabase)"
 	@echo "    make mobile-build         - iOS 시뮬레이터용 빌드"
+	@echo "    make mobile-showcase      - 디자인 시스템 쇼케이스 (Chrome, Supabase 불필요)"
+	@echo "    make mobile-showcase-build - 쇼케이스 정적 빌드 (build/web)"
 	@echo "    make mobile-clean         - 생성물 정리"
 	@echo ""
 	@echo "  Release — 버전의 정본은 태그다 (BRU-192)"
@@ -344,6 +346,24 @@ mobile-dev:
 mobile-dev-remote:
 	@test -f $(MOBILE_DIR)/.config/remote.json || { echo "❌ .config/remote.json이 없습니다 → make mobile-config"; exit 1; }
 	cd $(MOBILE_DIR) && flutter run --dart-define-from-file=.config/remote.json
+
+# 디자인 시스템 쇼케이스 (BRU-193). 데스크톱의 `make desktop-styleguide` 대응.
+#
+# 별도 엔트리포인트라 Supabase도 로그인도 타지 않는다 — .config/*.json이 없어도 뜬다.
+# 출시 번들에는 들어가지 않는다(빌드는 lib/main.dart만 따라간다).
+MOBILE_SHOWCASE_PORT ?= 5199
+
+mobile-showcase:
+	@echo "→ http://localhost:$(MOBILE_SHOWCASE_PORT) (Chrome이 열립니다)"
+	cd $(MOBILE_DIR) && flutter run -d chrome \
+		-t lib/showcase/main.dart \
+		--web-port=$(MOBILE_SHOWCASE_PORT)
+
+# 정적 산출물. 팀에 링크로 보여 줄 때 쓴다 — 결과는 apps/mobile/build/web/.
+mobile-showcase-build:
+	cd $(MOBILE_DIR) && flutter build web \
+		-t lib/showcase/main.dart \
+		--base-href=/
 
 mobile-build:
 	cd $(MOBILE_DIR) && flutter build ios --simulator

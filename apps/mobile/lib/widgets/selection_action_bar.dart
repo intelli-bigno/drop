@@ -6,6 +6,7 @@ import 'package:drop_core/drop_core.dart';
 import 'package:flutter/material.dart';
 
 import '../notes/notes_controller.dart';
+import '../theme/drop_theme.dart';
 
 class SelectionActionBar extends StatelessWidget {
   final NotesController controller;
@@ -68,7 +69,7 @@ class SelectionActionBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 22, color: color),
-          Text(title, style: TextStyle(fontSize: 11, color: color)),
+          Text(title, style: DropText.caption.copyWith(color: color)),
         ],
       ),
     );

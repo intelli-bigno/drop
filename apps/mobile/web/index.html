@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    이 web 타겟은 **디자인 시스템 쇼케이스를 띄우기 위한 것**이다 (BRU-193).
+    DROP을 웹앱으로 내보내려는 것이 아니다 — 출시 대상은 iOS·Android 둘뿐이고,
+    쇼케이스 엔트리포인트(lib/showcase/main.dart)는 Supabase·인증을 타지 않는다.
+  -->
+  <meta name="description" content="DROP 디자인 시스템 쇼케이스 (개발 전용)">
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>DROP 디자인 시스템</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* 부팅 전 흰 화면 대신 웜 페이퍼 바탕을 깔아 둔다 — 첫 프레임이 그려질 때
+       배경색이 튀지 않게. 값은 tokens.json의 bg-primary 라이트/다크. */
+    :root { color-scheme: light dark; }
+    body { margin: 0; background: #F7F6F3; }
+    @media (prefers-color-scheme: dark) { body { background: #191919; } }
+  </style>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

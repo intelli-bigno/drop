@@ -132,6 +132,38 @@ class DropTokenColors {
     brandInstagram: Color(0xFFE1306C),
     brandYoutube: Color(0xFFFF0000),
   );
+
+  /// 이름 → 값. 쇼케이스·감사처럼 토큰 전체를 훑어야 하는 쪽을 위한 것이다.
+  Map<String, Color> get all => {
+    'bg-primary': bgPrimary,
+    'bg-secondary': bgSecondary,
+    'bg-card': bgCard,
+    'bg-elevated': bgElevated,
+    'bg-tertiary': bgTertiary,
+    'bg-hover': bgHover,
+    'accent': accent,
+    'accent-hover': accentHover,
+    'accent-subtle': accentSubtle,
+    'cta': cta,
+    'cta-hover': ctaHover,
+    'text-on-accent': textOnAccent,
+    'text-primary': textPrimary,
+    'text-secondary': textSecondary,
+    'text-tertiary': textTertiary,
+    'text-muted': textMuted,
+    'border-color': borderColor,
+    'border-subtle': borderSubtle,
+    'border-focus': borderFocus,
+    'priority-low': priorityLow,
+    'priority-medium': priorityMedium,
+    'priority-high': priorityHigh,
+    'success': success,
+    'warning': warning,
+    'danger': danger,
+    'danger-hover': dangerHover,
+    'brand-instagram': brandInstagram,
+    'brand-youtube': brandYoutube,
+  };
 }
 
 abstract final class DropTokenSpace {
@@ -143,6 +175,18 @@ abstract final class DropTokenSpace {
   static const double x6 = 32;
   static const double x7 = 48;
   static const double x8 = 64;
+
+  /// 이름 → 값. 쇼케이스가 스케일을 훑을 때 쓴다.
+  static const Map<String, double> all = {
+    'space-1': x1,
+    'space-2': x2,
+    'space-3': x3,
+    'space-4': x4,
+    'space-5': x5,
+    'space-6': x6,
+    'space-7': x7,
+    'space-8': x8,
+  };
 }
 
 abstract final class DropTokenRadius {
@@ -150,6 +194,14 @@ abstract final class DropTokenRadius {
   static const double md = 8;
   static const double lg = 12;
   static const double xl = 16;
+
+  /// 이름 → 값. 쇼케이스가 스케일을 훑을 때 쓴다.
+  static const Map<String, double> all = {
+    'radius-sm': sm,
+    'radius-md': md,
+    'radius-lg': lg,
+    'radius-xl': xl,
+  };
 }
 
 abstract final class DropTokenTextSize {
@@ -159,4 +211,16 @@ abstract final class DropTokenTextSize {
   static const double lg = 16;
   static const double xl = 20;
   static const double x2xl = 28;
+  static const double x3xl = 44;
+
+  /// 이름 → 값. 쇼케이스가 스케일을 훑을 때 쓴다.
+  static const Map<String, double> all = {
+    'text-xs': xs,
+    'text-sm': sm,
+    'text-base': base,
+    'text-lg': lg,
+    'text-xl': xl,
+    'text-2xl': x2xl,
+    'text-3xl': x3xl,
+  };
 }

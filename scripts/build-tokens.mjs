@@ -441,25 +441,54 @@ function buildDart() {
     lines.push(`  );`);
   }
 
+  // 이름 → 값 지도. 쇼케이스(BRU-193)가 토큰을 손으로 베껴 적지 않게 하려는 것이다 —
+  // 베끼는 순간 tokens.json과 갈라지고 쇼케이스가 거짓말을 시작한다.
+  // 이름은 CSS 변수와 같은 kebab이라 데스크톱 쇼케이스와 나란히 놓고 볼 수 있다.
+  lines.push(
+    ``,
+    `  /// 이름 → 값. 쇼케이스·감사처럼 토큰 전체를 훑어야 하는 쪽을 위한 것이다.`,
+    `  Map<String, Color> get all => {`,
+    ...colors.map((color) => `    '${kebab(color.path)}': ${colorField(color)},`),
+    `  };`,
+  );
+
   lines.push(`}`, ``, `abstract final class DropTokenSpace {`);
+  const scaleEntries = [];
   for (const [key, value] of Object.entries(tokens.space)) {
     if (isMeta(key)) continue;
     lines.push(`  static const double x${key} = ${value};`);
+    scaleEntries.push([`space-${key}`, `x${key}`]);
   }
+  lines.push(...dartScaleMap(scaleEntries.map(([name, ident]) => [name, ident])));
   lines.push(`}`, ``, `abstract final class DropTokenRadius {`);
+  const radiusEntries = [];
   for (const [key, value] of Object.entries(tokens.radius)) {
     if (isMeta(key)) continue;
     lines.push(`  static const double ${dartIdent([key])} = ${value};`);
+    radiusEntries.push([`radius-${key}`, dartIdent([key])]);
   }
+  lines.push(...dartScaleMap(radiusEntries));
   lines.push(`}`, ``, `abstract final class DropTokenTextSize {`);
+  const textEntries = [];
   for (const [key, value] of Object.entries(tokens['text-size'])) {
     if (isMeta(key)) continue;
     lines.push(`  static const double ${dartIdent([key])} = ${value};`);
+    textEntries.push([`text-${key}`, dartIdent([key])]);
   }
+  lines.push(...dartScaleMap(textEntries));
   lines.push(`}`, ``);
 
   return lines.join('\n');
 }
+
+/** 숫자 스케일의 이름 → 값 지도. 색의 `all`과 같은 목적이다. */
+const dartScaleMap = (entries) => [
+  ``,
+  `  /// 이름 → 값. 쇼케이스가 스케일을 훑을 때 쓴다.`,
+  `  static const Map<String, double> all = {`,
+  ...entries.map(([name, ident]) => `    '${name}': ${ident},`),
+  `  };`,
+];
 
 // ── 쓰기 ────────────────────────────────────────────────────────────────────
 

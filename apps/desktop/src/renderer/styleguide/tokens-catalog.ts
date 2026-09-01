@@ -66,6 +66,9 @@ export const TEXT_TOKENS = [
   '--text-lg',
   '--text-xl',
   '--text-2xl',
+  // 로그인 워드마크 전용 (BRU-193). 데스크톱은 아직 안 쓰지만 정본에 있는 값은
+  // 여기 다 보여야 한다 — 목록에서 빠지면 토큰이 조용히 사라진 것처럼 보인다.
+  '--text-3xl',
 ]
 
 export const SHADOW_TOKENS = ['--shadow-sm', '--shadow-md', '--shadow-lg']
