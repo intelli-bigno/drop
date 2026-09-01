@@ -519,6 +519,16 @@ body {
 
 
 
+/* 펼친 카드의 본문 영역 (BRU-197).
+   한 줄(.note-line)은 자기 왼쪽 패딩으로 들여쓰는데, 그 아래 본문·편집기·첨부는
+   카드의 형제라 아무것도 받지 못했다. 그래서 편집 모드로 열면 본문이 카드 왼쪽
+   끝에서 시작해 조상 레일을 가로질렀다 — 레일이 잘못 그려진 것이 아니라
+   본문이 들여쓰기 밖으로 빠져나간 것이었다.
+   여기 한 곳에서 받으면 안에 무엇을 더해도 자리가 맞는다. */
+.note-card-body {
+  padding-left: var(--note-indent, 0px);
+}
+
 /* Note Editor Container */
 .note-editor {
   padding: 4px 16px 12px;

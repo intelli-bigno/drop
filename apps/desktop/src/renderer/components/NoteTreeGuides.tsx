@@ -13,8 +13,10 @@
 // 패딩이 하고, 선은 여기가 절대 배치로 그린다. 그래야 `top: 0; bottom: 0`으로
 // 행 전체를 채워 형제 행끼리 자연히 이어진다.
 
-/** 한 단 들여쓰기 폭. NoteCard의 패딩 계산과 같은 값이어야 한다. */
-export const TREE_INDENT = 24
+// 한 단 들여쓰기 폭은 lib/note-indent.ts가 정본이다 (BRU-197).
+// 레일 간격과 카드 안쪽 패딩이 같은 수에서 나와야 어긋나지 않는다.
+export { TREE_INDENT } from '../lib/note-indent'
+import { TREE_INDENT } from '../lib/note-indent'
 
 /** 레일이 서는 x — 들여쓰기 칸 안에서 상태칸 중심과 맞춘 위치. */
 export const TREE_RAIL_OFFSET = 22

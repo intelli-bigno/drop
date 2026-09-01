@@ -10,7 +10,8 @@ import { NoteViewer } from './NoteViewer'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
-import { NoteTreeGuides, TREE_INDENT } from './NoteTreeGuides'
+import { NoteTreeGuides } from './NoteTreeGuides'
+import { noteIndentVars } from '../lib/note-indent'
 import { NoteHistoryDialog } from './NoteHistoryDialog'
 import { CommentPanel } from './CommentPanel'
 import { useNotesStore } from '../stores/notes'
@@ -288,8 +289,8 @@ export const NoteCard = memo(
       // 들여쓰기는 카드를 미는 게 아니라 행 안쪽을 민다 (BRU-190).
       // 카드가 전폭으로 남아야 그 안에 조상 레일을 그릴 수 있다 —
       // 카드를 밀면 레일의 기준점도 함께 밀려 깊이별 정렬이 무너진다.
-      const indentStyle =
-        depth > 0 ? ({ '--note-indent': `${depth * TREE_INDENT}px` } as React.CSSProperties) : undefined
+      // 들여쓰기는 CSS 변수 하나로 내려보내고 카드 안쪽 요소들이 받아 쓴다 (BRU-197)
+      const indentStyle = noteIndentVars(depth) as React.CSSProperties | undefined
 
       // 헤더의 잠금 버튼 클릭: 잠금 설정 또는 완전 해제
       const handleLockToggle = () => {
@@ -568,8 +569,12 @@ export const NoteCard = memo(
                   )}
                 </div>
             </div>
-            {isOpen &&
-              (isLocked ? (
+            {/* 펼친 본문은 한 줄(.note-line)의 형제라 들여쓰기를 따로 받아야 한다 (BRU-197).
+                편집기만 이 밖에 있었을 때 본문이 카드 왼쪽 끝에서 시작해 조상 레일을
+                가로질렀다. 래퍼 하나로 묶어 두면 앞으로 본문에 무엇을 더해도 같이 따라온다. */}
+            {isOpen && (
+              <div className="note-card-body">
+              {isLocked ? (
                 // 잠긴 노트는 펼쳐도 본문을 흘리지 않는다 — viewer도 예외가 아니다
                 <LockedNoteOverlay
                   onTemporaryUnlock={handleTemporaryUnlock}
@@ -603,7 +608,9 @@ export const NoteCard = memo(
                   />
                   <LinkPreviews content={note.content} attachments={note.attachments} />
                 </>
-              ))}
+              )}
+              </div>
+            )}
           </div>
           {showTagPopover && !isLocked && (
             // 카드 바깥에 둔다 — .note-card는 overflow:hidden이라 안에서는 잘린다
