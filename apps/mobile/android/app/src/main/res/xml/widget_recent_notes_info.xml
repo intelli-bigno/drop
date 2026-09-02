@@ -6,6 +6,10 @@
   NativeShellChannel.reloadWidgets가 브로드캐스트하므로 그쪽이 정본이고, 주기 갱신은
   최소 30분이라 어차피 늦다(배터리만 쓴다).
 
+  widgetCategory에 keyguard를 주지 않는다 (BRU-209) — 이 위젯은 노트 본문을 그대로
+  세 줄 띄우므로 잠금화면에 두면 폰을 열지 않아도 남이 읽는다. iOS 위젯도 같은 이유로
+  본문 위젯(RecentNotesWidget)에는 잠금화면 규격을 주지 않고 바로가기 셋에만 준다.
+
   previewLayout은 API 31+, previewImage는 그 아래에서 쓰인다 — 미리보기 이미지가 없어
   앱 아이콘으로 뜨는 자리를 남기지 않으려고 둘 다 준다.
 -->

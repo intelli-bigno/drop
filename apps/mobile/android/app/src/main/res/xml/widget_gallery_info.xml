@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 바로가기 위젯 메타 (BRU-189). 갱신할 내용이 없으므로 주기 갱신도 0이다. -->
+<!--
+  잠금화면에도 올린다 (BRU-209). 아이콘 하나에 행선지 하나뿐이라 잠긴 화면에 새어
+  나갈 내용이 없고, iOS의 같은 위젯도 잠금화면 규격(accessoryCircular)을 지원한다.
+-->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="60dp"
     android:minHeight="60dp"
@@ -8,7 +12,7 @@
     android:minResizeWidth="60dp"
     android:minResizeHeight="60dp"
     android:resizeMode="none"
-    android:widgetCategory="home_screen"
+    android:widgetCategory="home_screen|keyguard"
     android:description="@string/widget_gallery_description"
     android:previewLayout="@layout/widget_preview_gallery"
     android:previewImage="@mipmap/ic_launcher"
