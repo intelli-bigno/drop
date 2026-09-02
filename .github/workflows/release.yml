@@ -430,7 +430,7 @@ jobs:
       - name: Verify release signature
         working-directory: apps/mobile
         env:
-          EXPECTED_SHA1: A8:D1:12:55:A3:31:4B:C8:A8:1D:59:13:D4:43:2A:4A:01:78:60:17
+          EXPECTED_SHA1: B7:A3:F7:22:07:89:FB:19:58:D0:9D:F9:2E:31:29:76:5C:12:F3:C3
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
           ACTUAL=$("$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
