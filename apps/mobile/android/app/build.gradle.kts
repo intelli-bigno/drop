@@ -53,6 +53,14 @@ android {
             applicationIdSuffix = ".debug"
             manifestPlaceholders["appLabel"] = "DROP 개발"
         }
+        // profile도 같은 자리에 깔린다. 디자인·성능을 실기기에서 볼 때 쓰는 것이
+        // profile인데(디버그와 달리 AOT라 실제 속도가 나온다), 여기를 비워 두면
+        // 기본 applicationId로 빌드돼 실사용 앱을 덮어쓴다 — debug만 막아 둔 것은
+        // 반쪽짜리다.
+        getByName("profile") {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "DROP 개발"
+        }
         release {
             signingConfig = if (releaseKeystoreFile != null) {
                 signingConfigs.getByName("release")
