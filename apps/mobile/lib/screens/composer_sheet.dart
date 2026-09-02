@@ -12,7 +12,11 @@ import 'package:image_picker/image_picker.dart';
 
 import '../environment/providers.dart';
 import '../notes/notes_controller.dart';
+import '../theme/drop_theme.dart';
+import '../widgets/drop_action_sheet.dart';
+import '../widgets/drop_feedback.dart';
 import '../widgets/markdown_toolbar.dart';
+import '../widgets/markdown_view.dart';
 
 /// 어느 노트를 쓰는 중인가. iOS `ComposerTarget`(HomeView.swift) 대응.
 sealed class ComposerTarget {
@@ -30,26 +34,26 @@ sealed class ComposerTarget {
 
   /// 이미 있는 노트를 고치는 중이면 그 id. 새 노트·답글은 null — 만들고 나서 붙인다.
   String? get editingNoteId => switch (this) {
-        ExistingNoteTarget(:final note) => note.id,
-        _ => null,
-      };
+    ExistingNoteTarget(:final note) => note.id,
+    _ => null,
+  };
 
   bool get isNew => editingNoteId == null;
 
   String get seedText => switch (this) {
-        ExistingNoteTarget(:final note) => note.content,
-        NewNoteWithTextTarget(:final text) => text,
-        _ => '',
-      };
+    ExistingNoteTarget(:final note) => note.content,
+    NewNoteWithTextTarget(:final text) => text,
+    _ => '',
+  };
 
   /// 어느 노트에 딸리는 글인지 제목으로 알려 준다 — 답글 시트는 새 노트 시트와
   /// 생김새가 같아서, 표시가 없으면 무엇을 쓰는 중인지 알 수 없다 (BRU-69).
   String get title => switch (this) {
-        ExistingNoteTarget() => '노트 편집',
-        ReplyTarget(:final parent) =>
-          '답글 — ${parent.displayId > 0 ? '#${parent.displayId}' : '노트'}',
-        NewNoteTarget() || NewNoteWithTextTarget() => '새 노트',
-      };
+    ExistingNoteTarget() => '노트 편집',
+    ReplyTarget(:final parent) =>
+      '답글 — ${parent.displayId > 0 ? '#${parent.displayId}' : '노트'}',
+    NewNoteTarget() || NewNoteWithTextTarget() => '새 노트',
+  };
 }
 
 class NewNoteTarget extends ComposerTarget {
@@ -84,20 +88,25 @@ Future<void> showComposerSheet(
   ComposerTarget target = const ComposerTarget.newNote(),
   ComposerMediaPicker? pickMedia,
 }) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) => FractionallySizedBox(
-        // iOS presentationDetents([.medium, .large])의 근사 — 키보드가 올라오는
-        // 시트라 처음부터 크게 연다.
-        heightFactor: 0.92,
-        child: ComposerSheet(
-          controller: controller,
-          target: target,
-          pickMedia: pickMedia,
-        ),
-      ),
-    );
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  // 닫는 길은 X 하나다 — 스크림 탭·끌어내리기로 쓰던 글이 조용히 사라지면 안 된다.
+  // (닫기 전 버릴지 묻는 것은 ComposerSheet의 PopScope가 한다.)
+  isDismissible: false,
+  enableDrag: false,
+  showDragHandle: false,
+  builder: (sheetContext) => FractionallySizedBox(
+    // iOS presentationDetents([.medium, .large])의 근사 — 키보드가 올라오는
+    // 시트라 처음부터 크게 연다.
+    heightFactor: 0.92,
+    child: ComposerSheet(
+      controller: controller,
+      target: target,
+      pickMedia: pickMedia,
+    ),
+  ),
+);
 
 class ComposerSheet extends ConsumerStatefulWidget {
   final NotesController controller;
@@ -116,8 +125,9 @@ class ComposerSheet extends ConsumerStatefulWidget {
 }
 
 class _ComposerSheetState extends ConsumerState<ComposerSheet> {
-  late final TextEditingController _text =
-      TextEditingController(text: widget.target.seedText);
+  late final TextEditingController _text = TextEditingController(
+    text: widget.target.seedText,
+  );
 
   bool _isPreviewing = false;
 
@@ -146,42 +156,174 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
   /// 본문이 비어도 고른 파일이 있으면 제출할 수 있다 (BRU-131).
   bool get _canSubmit => _text.text.trim().isNotEmpty || _pending.isNotEmpty;
 
+  /// 열었을 때와 달라진 것이 있나 — 있으면 닫기 전에 묻는다.
+  bool get _isDirty =>
+      _text.text.trim() != widget.target.seedText.trim() || _pending.isNotEmpty;
+
+  /// 닫기. 쓰던 것이 있으면 버릴지 먼저 묻는다 — 저장 중에는 닫지 않는다.
+  Future<void> _close() async {
+    if (_isSaving) return;
+    if (_isDirty) {
+      final discard = await showDropConfirmSheet(
+        context,
+        title: '쓰던 내용을 버릴까요?',
+        message: '저장하지 않은 글과 첨부가 사라져요.',
+        confirmLabel: '버리기',
+        cancelLabel: '계속 쓰기',
+        isDestructive: true,
+      );
+      if (!discard || !mounted) return;
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      // 하단 액션 줄이 키보드 위에 서도록 (BRU-132).
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              widget.target.title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+    return PopScope(
+      // 뒤로 가기(안드로이드·키보드 Esc)도 X와 같은 길을 탄다.
+      canPop: !_isDirty && !_isSaving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _close();
+      },
+      child: Padding(
+        // 하단 액션 줄이 키보드 위에 서도록 (BRU-132).
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: DropTokenSpace.x3),
+            DropSheetHeader(title: widget.target.title, onClose: _close),
+            Expanded(
+              // 편집↔미리보기는 녹아들며 바뀐다.
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: KeyedSubtree(
+                  key: ValueKey(_isPreviewing),
+                  child: _editorOrPreview(),
+                ),
+              ),
             ),
-          ),
-          Expanded(child: _editorOrPreview()),
-          // 툴바는 키보드 위에 붙는다. 미리보기 중에는 칠 것이 없으니 걷는다.
-          if (!_isPreviewing) MarkdownToolbar(onCommand: _apply),
-          const Divider(height: 1),
-          _composerActions(),
+            if (_pending.isNotEmpty) _pendingStrip(),
+            // 툴바는 키보드 위에 붙는다. 미리보기 중에는 칠 것이 없으니 걷는다.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 160),
+              alignment: Alignment.bottomCenter,
+              child: _isPreviewing
+                  ? const SizedBox(width: double.infinity)
+                  : MarkdownToolbar(
+                      onCommand: (command) {
+                        DropHaptics.select();
+                        _apply(command);
+                      },
+                    ),
+            ),
+            const Divider(height: 1),
+            _composerActions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 고른 첨부의 미리보기 줄. 숫자("첨부 1")만으로는 무엇을 골랐는지 모른다 —
+  /// 썸네일로 보여 주고, 잘못 고른 것은 그 자리에서 뺀다.
+  Widget _pendingStrip() {
+    final colors = DropColors.of(context);
+    const size = 64.0;
+    return SizedBox(
+      height: size + DropTokenSpace.x3,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          DropLayout.gutter,
+          0,
+          DropLayout.gutter,
+          DropTokenSpace.x3,
+        ),
+        children: [
+          for (final item in _pending)
+            Padding(
+              padding: const EdgeInsets.only(right: DropTokenSpace.x2),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(DropRadius.thumbnail),
+                    child: Container(
+                      width: size,
+                      height: size,
+                      color: colors.surfaceField,
+                      child: item.type == AttachmentType.image
+                          ? Image.memory(
+                              item.data,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                              errorBuilder: (context, error, stack) => Icon(
+                                Icons.image_outlined,
+                                color: colors.textMuted,
+                              ),
+                            )
+                          : Icon(
+                              item.type == AttachmentType.video
+                                  ? Icons.videocam_outlined
+                                  : Icons.description_outlined,
+                              color: colors.textMuted,
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    top: -DropTokenSpace.x1,
+                    right: -DropTokenSpace.x1,
+                    child: Tooltip(
+                      message: '첨부 빼기',
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _isSaving
+                            ? null
+                            : () {
+                                DropHaptics.select();
+                                setState(() => _pending.remove(item));
+                              },
+                        child: Container(
+                          width: DropIconSize.control,
+                          height: DropIconSize.control,
+                          decoration: ShapeDecoration(
+                            color: colors.surfaceInverse,
+                            shape: const CircleBorder(),
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            size: DropIconSize.meta,
+                            color: colors.onInverse,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _editorOrPreview() {
+    final colors = DropColors.of(context);
     if (_isPreviewing) {
-      return _MarkdownPreview(source: _text.text);
+      // 뷰어와 같은 렌더러 — 쓰면서 본 것과 저장 뒤 읽는 것이 같아야 한다.
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DropLayout.gutter,
+          vertical: DropTokenSpace.x2,
+        ),
+        child: MarkdownView(source: _text.text),
+      );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: DropLayout.gutter),
       // 시트가 뜨자마자 키보드가 올라와야 "던져넣기"가 끊기지 않는다.
       child: TextField(
         controller: _text,
@@ -190,24 +332,25 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
         expands: true,
         textAlignVertical: TextAlignVertical.top,
         keyboardType: TextInputType.multiline,
-        decoration: const InputDecoration(
-          hintText: '무엇이든 적어 두세요',
-          border: InputBorder.none,
-        ),
+        style: DropText.reading.copyWith(color: colors.textPrimary),
+        decoration: const InputDecoration(hintText: '무엇이든 적어 두세요'),
       ),
     );
   }
 
-  /// 닫기 / 미리보기 / 사진 / 추가(저장). 키보드 바로 위, 마크다운 툴바 옆 (BRU-132).
+  /// 미리보기 / 사진 / 추가(저장). 키보드 바로 위, 마크다운 툴바 옆 (BRU-132).
+  /// 닫기는 시트 머리(오른쪽 X)로 올라갔다 — 저장과 같은 줄에 두면 손이 헷갈린다.
   Widget _composerActions() {
+    final colors = DropColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(
+        DropTokenSpace.x2,
+        DropTokenSpace.x2,
+        DropLayout.gutter,
+        DropTokenSpace.x2,
+      ),
       child: Row(
         children: [
-          TextButton(
-            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-            child: const Text('닫기'),
-          ),
           // 편집↔미리보기 전환.
           //
           // **미리보기는 읽기만 한다.** 이 버튼은 화면 상태(`_isPreviewing`)만
@@ -215,12 +358,15 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
           // 달라져 있는 일이 다시 생기면 안 된다 (BRU-66).
           IconButton(
             tooltip: '미리보기 전환',
-            icon: Icon(_isPreviewing
-                ? Icons.edit_outlined
-                : Icons.visibility_outlined),
+            isSelected: _isPreviewing,
+            icon: const Icon(Icons.visibility_outlined),
+            selectedIcon: const Icon(Icons.edit_outlined),
             onPressed: _isSaving
                 ? null
-                : () => setState(() => _isPreviewing = !_isPreviewing),
+                : () {
+                    DropHaptics.select();
+                    setState(() => _isPreviewing = !_isPreviewing);
+                  },
           ),
           IconButton(
             tooltip: '사진 첨부',
@@ -230,12 +376,22 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
           if (_pending.isNotEmpty)
             Text(
               '첨부 ${_pending.length}',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: DropText.meta.copyWith(color: colors.textSecondary),
             ),
           const Spacer(),
           FilledButton(
             onPressed: (_isSaving || !_canSubmit) ? null : _submit,
-            child: Text(widget.target.isNew ? '추가' : '저장'),
+            child: _isSaving
+                // 저장 중임을 버튼 자체가 말한다 — 비활성만으로는 "고장났나"가 된다.
+                ? SizedBox(
+                    width: DropTokenSpace.x4,
+                    height: DropTokenSpace.x4,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.textMuted,
+                    ),
+                  )
+                : Text(widget.target.isNew ? '추가' : '저장'),
           ),
         ],
       ),
@@ -306,9 +462,10 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
       case ExistingNoteTarget(:final note):
         await controller.update(id: note.id, content: content);
       case ReplyTarget(:final parent):
-        createdId =
-            (await controller.create(content: content, parentId: parent.id))
-                ?.id;
+        createdId = (await controller.create(
+          content: content,
+          parentId: parent.id,
+        ))?.id;
     }
 
     final noteId = ComposerAttachmentRouting.noteIdToAttach(
@@ -333,165 +490,7 @@ class _ComposerSheetState extends ConsumerState<ComposerSheet> {
       await controller.load();
     }
 
+    DropHaptics.select();
     if (mounted) Navigator.of(context).pop();
-  }
-}
-
-/// 미리보기 렌더 — drop_core 파서의 읽기 전용 표현을 그대로 그린다.
-///
-/// 컴포저 전용으로 이 파일에 둔다. 뷰어(BRU-157)의 렌더와 한 몸이 되는 정리는
-/// 두 트랙이 합류한 뒤의 일이다.
-class _MarkdownPreview extends StatelessWidget {
-  final String source;
-
-  const _MarkdownPreview({required this.source});
-
-  @override
-  Widget build(BuildContext context) {
-    final document = const MarkdownParser().parse(source);
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      children: [
-        for (final block in document.blocks) ...[
-          _block(context, block),
-          const SizedBox(height: 8),
-        ],
-      ],
-    );
-  }
-
-  Widget _block(BuildContext context, MarkdownBlock block) {
-    final theme = Theme.of(context);
-    switch (block) {
-      case MarkdownHeading(:final level, :final content):
-        final style = switch (level) {
-          1 => theme.textTheme.headlineSmall,
-          2 => theme.textTheme.titleLarge,
-          3 => theme.textTheme.titleMedium,
-          _ => theme.textTheme.titleSmall,
-        };
-        return Text.rich(
-          _inlineSpan(context, content),
-          style: style?.copyWith(fontWeight: FontWeight.w700),
-        );
-
-      case MarkdownParagraph(:final content):
-        return Text.rich(
-          _inlineSpan(context, content),
-          style: theme.textTheme.bodyMedium,
-        );
-
-      case MarkdownList(:final items):
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final item in items)
-              Padding(
-                padding: EdgeInsets.only(left: item.indent * 16.0, bottom: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(width: 24, child: _listMarker(context, item)),
-                    Expanded(
-                      child: Text.rich(
-                        _inlineSpan(context, item.content),
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        );
-
-      case MarkdownCodeBlock(:final code):
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            code,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(fontFamily: 'monospace'),
-          ),
-        );
-
-      case MarkdownQuote(:final blocks):
-        return Container(
-          padding: const EdgeInsets.only(left: 12),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: theme.colorScheme.outline, width: 3),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final inner in blocks) _block(context, inner),
-            ],
-          ),
-        );
-
-      case MarkdownThematicBreak():
-        return const Divider();
-    }
-  }
-
-  Widget _listMarker(BuildContext context, MarkdownListItem item) {
-    final checked = item.checked;
-    if (checked != null) {
-      return Icon(
-        checked ? Icons.check_box_outlined : Icons.check_box_outline_blank,
-        size: 18,
-      );
-    }
-    final ordinal = item.ordinal;
-    return Text(
-      ordinal != null ? '$ordinal.' : '•',
-      style: Theme.of(context).textTheme.bodyMedium,
-    );
-  }
-
-  TextSpan _inlineSpan(BuildContext context, List<MarkdownInline> content) =>
-      TextSpan(
-        children: [for (final inline in content) _span(context, inline)],
-      );
-
-  TextSpan _span(BuildContext context, MarkdownInline inline) {
-    final theme = Theme.of(context);
-    switch (inline) {
-      case MarkdownText(:final value):
-        return TextSpan(text: value);
-      case MarkdownStrong(:final content):
-        return TextSpan(
-          children: [for (final inner in content) _span(context, inner)],
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        );
-      case MarkdownEmphasis(:final content):
-        return TextSpan(
-          children: [for (final inner in content) _span(context, inner)],
-          style: const TextStyle(fontStyle: FontStyle.italic),
-        );
-      case MarkdownCode(:final value):
-        return TextSpan(
-          text: value,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-          ),
-        );
-      case MarkdownLink(:final content):
-        // 읽기 전용 미리보기 — 링크는 열지 않고 생김새만 보여 준다.
-        return TextSpan(
-          children: [for (final inner in content) _span(context, inner)],
-          style: TextStyle(
-            color: theme.colorScheme.primary,
-            decoration: TextDecoration.underline,
-          ),
-        );
-    }
   }
 }

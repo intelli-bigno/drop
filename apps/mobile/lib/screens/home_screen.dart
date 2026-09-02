@@ -23,12 +23,18 @@ import '../native/native_shell.dart';
 import '../notes/comments_controller.dart';
 import '../notes/note_tap.dart';
 import '../notes/notes_controller.dart';
+import '../theme/drop_theme.dart';
+import '../widgets/drop_feedback.dart';
+import '../widgets/drop_notice.dart';
+import '../widgets/drop_swipe_row.dart';
 import '../widgets/note_card.dart';
 import '../widgets/note_empty_state.dart';
 import '../widgets/note_filter_bar.dart';
+import '../widgets/note_group.dart';
 import '../widgets/note_section_header.dart';
 import '../widgets/selection_action_bar.dart';
 import 'composer_sheet.dart';
+import 'home_menu_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   /// 목록 상태의 스코프 키. 사용자가 바뀌면 목록도 처음부터 다시 만든다.
@@ -48,6 +54,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   String? get userId => widget.userId;
 
+  /// 목록에서 한 번에 한 줄만 열려 있게 한다 (BRU-207). 화면이 하나 들고
+  /// 행마다 나눠 준다 — 줄끼리 서로를 모르면 두 줄이 동시에 열린다.
+  final DropSwipeCoordinator _swipe = DropSwipeCoordinator();
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _swipe.dispose();
     super.dispose();
   }
 
@@ -267,55 +278,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final comments = ref.watch(commentsControllerProvider(userId));
     final store = notes.store;
 
-    return Scaffold(
-      appBar: AppBar(
-        // 보기 전환이 ⋯ 메뉴로 들어가 화면에 안 보이므로, 지금 어디를 보고
-        // 있는지는 제목이 알려 준다.
-        title: Text(_title(store)),
-        leading: store.isSelecting
-            ? TextButton(
-                onPressed: notes.clearSelection,
-                child: const Text('취소'),
-              )
-            : null,
-        leadingWidth: store.isSelecting ? 72 : null,
-        actions: [
-          if (!store.isSelecting) _menu(ref, notes, container.isPreview),
-        ],
-      ),
-      body: Column(
-        children: [
-          NoteFilterBar(controller: notes),
-          if (store.errorMessage != null)
-            MaterialBanner(
-              content: Text(store.errorMessage!),
-              actions: [
-                TextButton(
-                  onPressed: notes.dismissError,
-                  child: const Text('확인'),
-                ),
-              ],
-            ),
-          Expanded(
-            // 화면 진입과 당겨서 새로고침이 같은 입구(store.load)를 쓴다.
-            child: RefreshIndicator(
-              onRefresh: notes.load,
-              child: _feed(context, notes, comments),
-            ),
+    return PopScope(
+      // 선택 모드에서 뒤로 가기는 앱을 나가는 게 아니라 선택을 푸는 것이다.
+      canPop: !store.isSelecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && store.isSelecting) notes.clearSelection();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          // 보기 전환이 ⋯ 메뉴로 들어가 화면에 안 보이므로, 지금 어디를 보고
+          // 있는지는 제목이 알려 준다.
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            // 앱바에 아이콘은 달지 않는다 — 워드마크 옆에 앱 아이콘을 두면
+            // 같은 말을 두 번 하고 정렬선만 어지럽힌다 (BRU-207 피드백).
+            child: Text(_title(store), key: ValueKey(_title(store))),
           ),
-        ],
-      ),
-      floatingActionButton: store.isSelecting
-          ? null
-          : FloatingActionButton(
-              tooltip: '새 노트',
-              // 편집·답글 타깃은 뷰어(BRU-157)가 같은 입구로 연다.
-              onPressed: () => showComposerSheet(context, notes),
-              child: const Icon(Icons.add),
+          leading: store.isSelecting
+              ? TextButton(
+                  onPressed: notes.clearSelection,
+                  child: const Text('취소'),
+                )
+              : null,
+          leadingWidth: store.isSelecting ? 72 : null,
+          actions: [
+            if (!store.isSelecting) _menu(ref, notes, container.isPreview),
+            const SizedBox(width: DropTokenSpace.x2),
+          ],
+        ),
+        body: Column(
+          children: [
+            NoteFilterBar(controller: notes),
+            if (store.errorMessage != null)
+              DropNotice(
+                message: store.errorMessage!,
+                onDismiss: notes.dismissError,
+              ),
+            Expanded(
+              // 화면 진입과 당겨서 새로고침이 같은 입구(store.load)를 쓴다.
+              child: RefreshIndicator(
+                onRefresh: notes.load,
+                child: _feed(context, notes, comments),
+              ),
             ),
-      bottomNavigationBar: store.isSelecting
-          ? SelectionActionBar(controller: notes)
-          : null,
+          ],
+        ),
+        // 선택 모드에 들어가면 FAB은 줄어들며 사라지고, 액션 바가 아래서 올라온다 —
+        // 둘이 툭 바뀌면 화면이 "깜빡"한다.
+        floatingActionButton: AnimatedScale(
+          scale: store.isSelecting ? 0 : 1,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          child: FloatingActionButton(
+            tooltip: '새 노트',
+            // 편집·답글 타깃은 뷰어(BRU-157)가 같은 입구로 연다.
+            onPressed: store.isSelecting
+                ? null
+                : () => showComposerSheet(context, notes),
+            child: const Icon(Icons.add),
+          ),
+        ),
+        bottomNavigationBar: AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: store.isSelecting
+              ? SelectionActionBar(controller: notes)
+              : const SizedBox(width: double.infinity),
+        ),
+      ),
     );
   }
 
@@ -328,71 +359,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     };
   }
 
+  /// 보기 전환·테마·로그아웃. 팝업 메뉴가 아니라 바닥 시트다 — 엄지가 닿는 곳에
+  /// 구역별 세그먼트로 서고, 지금 상태가 켜진 칸으로 보인다.
   Widget _menu(WidgetRef ref, NotesController notes, bool isPreview) {
     final store = notes.store;
-    return PopupMenuButton<String>(
+    return IconButton(
       icon: const Icon(Icons.more_horiz),
       tooltip: '더보기',
-      onSelected: (value) {
-        switch (value) {
-          case 'active':
-            notes.setViewMode(NoteViewMode.active);
-          case 'archived':
-            notes.setViewMode(NoteViewMode.archived);
-          case 'trash':
-            notes.setViewMode(NoteViewMode.trash);
-          case 'signOut':
+      onPressed: () async {
+        final choice = await showHomeMenuSheet(
+          context,
+          current: store.viewMode,
+          isPreview: isPreview,
+        );
+        switch (choice) {
+          case HomeMenuView(:final mode):
+            DropHaptics.select();
+            notes.setViewMode(mode);
+          case HomeMenuSignOut():
             ref.read(authControllerProvider).signOut();
+          case null:
+            break;
         }
       },
-      itemBuilder: (context) => [
-        _viewModeItem(
-          'active',
-          '노트',
-          Icons.inbox_outlined,
-          isOn: store.viewMode == NoteViewMode.active,
-        ),
-        _viewModeItem(
-          'archived',
-          '보관',
-          Icons.archive_outlined,
-          isOn: store.viewMode == NoteViewMode.archived,
-        ),
-        _viewModeItem(
-          'trash',
-          '휴지통',
-          Icons.delete_outline,
-          isOn: store.viewMode == NoteViewMode.trash,
-        ),
-        if (!isPreview) ...[
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: 'signOut',
-            child: ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('로그아웃'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ],
     );
   }
-
-  PopupMenuItem<String> _viewModeItem(
-    String value,
-    String label,
-    IconData icon, {
-    required bool isOn,
-  }) => PopupMenuItem(
-    value: value,
-    child: ListTile(
-      leading: Icon(icon),
-      title: Text(label),
-      trailing: isOn ? const Icon(Icons.check, size: 18) : null,
-      contentPadding: EdgeInsets.zero,
-    ),
-  );
 
   /// **스크롤 컨테이너는 항상 하나, 항상 여기 있다** (iOS PR #40의 교훈).
   /// 로딩·빈 상태에서 스크롤 컨테이너가 없는 뷰로 갈라지면 RefreshIndicator가
@@ -414,33 +405,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         NoteEmptyState(
           viewMode: store.viewMode,
           isSearching: store.searchText.trim().isNotEmpty,
+          isFiltered:
+              store.category != NoteCategory.all ||
+              store.todoFilter != TodoFilter.off ||
+              store.selectedTagId != null,
         ),
       );
     }
 
     final sections = _grouper.sections(rows);
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        for (final section in sections) ...[
-          NoteSectionHeader(title: section.title),
-          for (final row in section.rows)
-            NoteCard(
-              key: ValueKey('note-${row.id}'),
-              row: row,
-              isSelecting: store.isSelecting,
-              isSelected: store.selectedIds.contains(row.id),
-              commentCount: comments.countFor(row.id),
-              onTap: () => _handleTap(context, notes, row.note, count: 1),
-              onDoubleTap: () => _handleTap(context, notes, row.note, count: 2),
-              // 롱프레스는 선택 모드 하나만 쓴다.
-              onLongPress: () => notes.toggleSelection(row.id),
-              onToggleCompleted: () => notes.setCompleted(row.id,
-                  completed: !row.note.isCompleted),
+    // 목록이 움직이면 열린 줄은 닫는다 — 스크롤하는 동안 열린 채로 따라오면
+    // 손이 가려던 곳이 아닌 데서 동작이 눌린다.
+    return NotificationListener<ScrollStartNotification>(
+      onNotification: (_) {
+        _swipe.closeAll();
+        return false;
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        // 마지막 행이 FAB 밑에 깔리지 않게 — 스크롤 끝에 한 화면 분량의 숨을 둔다.
+        padding: const EdgeInsets.only(
+          bottom: DropTokenSpace.x8 + DropTokenSpace.x5,
+        ),
+        children: [
+          for (final (index, section) in sections.indexed) ...[
+            NoteSectionHeader(
+              title: section.title,
+              count: section.rows.length,
+              isFirst: index == 0,
             ),
+            NoteGroup(
+              // 묶음의 모든 행이 고정 노트면 고정 묶음이다 — 제목 문자열에 기대지 않는다.
+              isPinned: section.rows.every((row) => row.note.isPinned),
+              children: [
+                for (final row in section.rows)
+                  DropSwipeRow(
+                    key: ValueKey('note-${row.id}'),
+                    id: row.id,
+                    coordinator: _swipe,
+                    // 선택 중에는 끈다 — 고르려던 손이 스와이프로 새면 안 된다.
+                    enabled: !store.isSelecting,
+                    actions: _pinAction(context, notes, row.note),
+                    child: NoteCard(
+                      row: row,
+                      isSelecting: store.isSelecting,
+                      isSelected: store.selectedIds.contains(row.id),
+                      commentCount: comments.countFor(row.id),
+                      onTap: () =>
+                          _handleTap(context, notes, row.note, count: 1),
+                      onDoubleTap: () =>
+                          _handleTap(context, notes, row.note, count: 2),
+                      // 롱프레스는 선택 모드 하나만 쓴다. 손끝에 "모드가 바뀌었다"를 알린다.
+                      onLongPress: () {
+                        if (!store.isSelecting) DropHaptics.impact();
+                        notes.toggleSelection(row.id);
+                      },
+                      onToggleCompleted: () {
+                        DropHaptics.select();
+                        notes.setCompleted(
+                          row.id,
+                          completed: !row.note.isCompleted,
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
+  }
+
+  /// 왼쪽으로 밀면 나오는 동작 — 지금은 상단 고정 하나다 (BRU-207).
+  ///
+  /// 색은 iOS와 같은 액센트다(`DropTheme.SwipeAction.pin` → `Colors.accent`).
+  /// 휴지통에서는 내주지 않는다 — 지울 노트를 맨 위에 꽂는 것은 뜻이 없다.
+  List<DropSwipeAction> _pinAction(
+    BuildContext context,
+    NotesController notes,
+    Note note,
+  ) {
+    if (notes.store.viewMode == NoteViewMode.trash) return const [];
+    final colors = DropColors.of(context);
+    final pinned = note.isPinned;
+    return [
+      DropSwipeAction(
+        label: pinned ? '고정 해제' : '고정',
+        icon: pinned ? Icons.push_pin_outlined : Icons.push_pin,
+        background: colors.accent,
+        foreground: colors.textOnAccent,
+        onPressed: () => notes.setPinned(note.id, isPinned: !pinned),
+      ),
+    ];
   }
 
   /// 싱글탭은 뷰어(BRU-77), 더블탭은 본문 복사(BRU-129).
@@ -461,6 +518,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         Clipboard.setData(
           ClipboardData(text: NoteCopying.clipboardString(note)),
         );
+        // 복사는 화면에 아무 흔적도 안 남기는 동작이다 — 되먹임이 없으면
+        // 사용자는 더블탭이 먹었는지 모른다.
+        DropHaptics.impact();
+        showDropToast(context, '본문을 복사했어요');
       case NoteTapResult.openViewer:
         context.push('/note/${note.id}', extra: userId);
     }
@@ -479,5 +540,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ],
     ),
   );
-
 }

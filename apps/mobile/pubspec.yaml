@@ -25,6 +25,10 @@ dependencies:
   # drop_core의 SupabaseRestClient에 넘길 http.Client — drop_core와 같은 제약.
   http: ^1.2.0
   cupertino_icons: ^1.0.8
+  # 테마 선택 저장 (BRU-207). supabase_flutter가 이미 끌고 오는 패키지라 새 의존은 아니다.
+  shared_preferences: ^2.3.0
+  # 본문 링크 열기 (BRU-207). supabase_flutter가 이미 끌고 오던 패키지다.
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -33,3 +37,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
+

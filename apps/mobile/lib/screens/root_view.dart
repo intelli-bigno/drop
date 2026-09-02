@@ -43,13 +43,14 @@ class RootView extends ConsumerWidget {
       isPreview: false,
       authState: auth.state,
     )) {
-      RootDestination.loading =>
-        const Scaffold(body: Center(child: CircularProgressIndicator())),
+      RootDestination.loading => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
       RootDestination.home => HomeScreen(
-          // 로그인한 사용자가 바뀌면 목록 상태를 처음부터 다시 만든다.
-          key: ValueKey(auth.user?.id),
-          userId: auth.user?.id,
-        ),
+        // 로그인한 사용자가 바뀌면 목록 상태를 처음부터 다시 만든다.
+        key: ValueKey(auth.user?.id),
+        userId: auth.user?.id,
+      ),
       RootDestination.auth => const AuthScreen(),
     };
   }

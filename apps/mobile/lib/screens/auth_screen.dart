@@ -1,4 +1,7 @@
 /// 로그인 화면. iOS `Drop/AuthView.swift` 대응.
+///
+/// 화면에 있는 것은 셋뿐이다 — 이름, 한 줄, 버튼. 설명을 더 붙일수록 "던져넣기"의
+/// 가벼움이 사라진다.
 library;
 
 import 'package:drop_core/drop_core.dart';
@@ -14,65 +17,63 @@ class AuthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
+    final colors = DropColors.of(context);
     final isWorking = auth.state is AuthWorking;
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(),
-            const Text('DROP', style: DropText.wordmark),
-            const SizedBox(height: 12),
-            Text(
-              '떠오르면 바로 던져넣기',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const Spacer(),
-            if (auth.state case AuthFailed(:final message))
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: DropText.meta.copyWith(
-                    color: Theme.of(context).colorScheme.error,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: DropLayout.gutter),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Spacer(flex: 3),
+              Text(
+                'DROP',
+                style: DropText.wordmark.copyWith(color: colors.textPrimary),
+              ),
+              const SizedBox(height: DropTokenSpace.x3),
+              Text(
+                '떠오르면 바로 던져넣기',
+                style: DropText.cardTitle.copyWith(color: colors.textSecondary),
+              ),
+              const Spacer(flex: 4),
+              if (auth.state case AuthFailed(:final message))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: DropTokenSpace.x4),
+                  child: Text(
+                    message,
+                    style: DropText.body.copyWith(color: colors.danger),
                   ),
                 ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
+              SizedBox(
                 width: double.infinity,
+                height: DropLayout.controlHeight,
                 child: FilledButton(
                   onPressed: isWorking
                       ? null
                       : () =>
-                          ref.read(authControllerProvider).signInWithGoogle(),
+                            ref.read(authControllerProvider).signInWithGoogle(),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isWorking) ...[
                         const SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: DropTokenSpace.x4,
+                          height: DropTokenSpace.x4,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: DropTokenSpace.x3),
                       ],
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text(
-                          'Google로 계속하기',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
+                      const Text('Google로 계속하기'),
                     ],
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: DropTokenSpace.x5),
+            ],
+          ),
         ),
       ),
     );

@@ -17,7 +17,10 @@ class SupabaseAuthenticationGateway implements AuthenticationGateway {
   DropUser? get currentUser => _toDropUser(_auth.currentUser);
 
   @override
-  Future<DropUser> signIn({required String idToken, String? accessToken}) async {
+  Future<DropUser> signIn({
+    required String idToken,
+    String? accessToken,
+  }) async {
     final response = await _auth.signInWithIdToken(
       provider: supabase.OAuthProvider.google,
       idToken: idToken,

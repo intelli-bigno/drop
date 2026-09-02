@@ -9,6 +9,10 @@ import 'package:drop_core/drop_core.dart';
 import 'package:flutter/material.dart';
 
 import '../notes/comments_controller.dart';
+import '../theme/drop_theme.dart';
+import '../widgets/drop_action_sheet.dart';
+import '../widgets/drop_feedback.dart';
+import '../widgets/drop_notice.dart';
 
 Future<void> showCommentsSheet(
   BuildContext context, {
@@ -34,7 +38,11 @@ class CommentsSheet extends StatefulWidget {
   final Note note;
   final CommentsController controller;
 
-  const CommentsSheet({super.key, required this.note, required this.controller});
+  const CommentsSheet({
+    super.key,
+    required this.note,
+    required this.controller,
+  });
 
   @override
   State<CommentsSheet> createState() => _CommentsSheetState();
@@ -42,6 +50,7 @@ class CommentsSheet extends StatefulWidget {
 
 class _CommentsSheetState extends State<CommentsSheet> {
   final _draft = TextEditingController();
+  final _scroll = ScrollController();
   bool _isSending = false;
 
   @override
@@ -54,57 +63,58 @@ class _CommentsSheetState extends State<CommentsSheet> {
   @override
   void dispose() {
     _draft.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = DropColors.of(context);
     return ListenableBuilder(
       listenable: widget.controller,
-      builder: (context, _) => Column(
-        children: [
-          _header(theme),
-          if (widget.controller.errorMessage != null)
-            MaterialBanner(
-              content: Text(widget.controller.errorMessage!),
-              actions: [
-                TextButton(
-                  onPressed: widget.controller.dismissError,
-                  child: const Text('확인'),
-                ),
-              ],
+      builder: (context, _) {
+        final count = widget.controller.commentsFor(widget.note.id).length;
+        return Column(
+          children: [
+            DropSheetHeader(
+              title: '댓글',
+              subtitle: count > 0 ? '$count' : null,
+              onClose: () => Navigator.of(context).pop(),
             ),
-          Expanded(child: _list(theme)),
-          const Divider(height: 1),
-          _composer(theme),
-        ],
-      ),
+            // 어느 노트에 다는 댓글인지 늘 보이게 둔다 — 시트만 보면 맥락이 사라진다.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DropLayout.gutter,
+                0,
+                DropLayout.gutter,
+                DropTokenSpace.x3,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.note.content.isEmpty
+                      ? '빈 노트'
+                      : MarkdownSummaryCache.summaryFor(widget.note.content),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DropText.meta.copyWith(color: colors.textTertiary),
+                ),
+              ),
+            ),
+            if (widget.controller.errorMessage != null)
+              DropNotice(
+                message: widget.controller.errorMessage!,
+                onDismiss: widget.controller.dismissError,
+              ),
+            Expanded(child: _list(colors)),
+            _composer(colors),
+          ],
+        );
+      },
     );
   }
 
-  /// 어느 노트에 다는 댓글인지 늘 보이게 둔다 — 시트만 보면 맥락이 사라진다.
-  Widget _header(ThemeData theme) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('댓글', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              widget.note.content.isEmpty
-                  ? '빈 노트'
-                  : MarkdownSummaryCache.summaryFor(widget.note.content),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
-      );
-
-  Widget _list(ThemeData theme) {
+  Widget _list(DropTokenColors colors) {
     final comments = widget.controller.commentsFor(widget.note.id);
     if (comments.isEmpty) {
       if (widget.controller.isLoading) {
@@ -114,39 +124,63 @@ class _CommentsSheetState extends State<CommentsSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.mode_comment_outlined, size: 40),
-            const SizedBox(height: 8),
-            Text('댓글이 없습니다', style: theme.textTheme.bodyMedium),
+            Text(
+              '댓글이 없습니다',
+              style: DropText.cardTitle.copyWith(color: colors.textPrimary),
+            ),
+            const SizedBox(height: DropTokenSpace.x2),
+            Text(
+              '이 노트에 덧붙일 말을 아래에 적어 보세요',
+              style: DropText.body.copyWith(color: colors.textTertiary),
+            ),
           ],
         ),
       );
     }
     final now = DateTime.now();
     return ListView(
+      controller: _scroll,
+      padding: const EdgeInsets.only(bottom: DropTokenSpace.x4),
       children: [
         for (final comment in comments)
           // 댓글에는 휴지통이 없다 — 지우면 바로 사라진다 (하드 삭제).
+          // 되돌릴 수 없으니 스와이프 끝에서 한 번 묻는다.
           Dismissible(
             key: ValueKey('comment-${comment.id}'),
             direction: DismissDirection.endToStart,
-            background: Container(
-              color: theme.colorScheme.error,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              child: Icon(Icons.delete, color: theme.colorScheme.onError),
+            confirmDismiss: (_) => showDropConfirmSheet(
+              context,
+              title: '이 댓글을 지울까요?',
+              message: '지운 댓글은 되돌릴 수 없어요.',
+              confirmLabel: '지우기',
+              isDestructive: true,
             ),
-            onDismissed: (_) => widget.controller
-                .delete(id: comment.id, noteId: widget.note.id),
+            background: Container(
+              color: colors.danger,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: DropLayout.gutter),
+              child: Icon(Icons.delete, color: colors.bgCard),
+            ),
+            onDismissed: (_) => widget.controller.delete(
+              id: comment.id,
+              noteId: widget.note.id,
+            ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DropLayout.gutter,
+                vertical: DropLayout.rowPadding,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(comment.body, style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 2),
+                  Text(
+                    comment.body,
+                    style: DropText.reading.copyWith(color: colors.textPrimary),
+                  ),
+                  const SizedBox(height: DropTokenSpace.x1),
                   Text(
                     relativeTimeString(comment.createdAt, now: now),
-                    style: theme.textTheme.bodySmall,
+                    style: DropText.meta.copyWith(color: colors.textTertiary),
                   ),
                 ],
               ),
@@ -156,32 +190,71 @@ class _CommentsSheetState extends State<CommentsSheet> {
     );
   }
 
-  Widget _composer(ThemeData theme) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _draft,
-                minLines: 1,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: '댓글 쓰기',
-                  border: InputBorder.none,
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            IconButton(
-              tooltip: '댓글 보내기',
-              icon: const Icon(Icons.arrow_circle_up),
-              // 보내는 중 중복 탭을 막지 않으면 같은 댓글이 두 번 올라간다.
-              onPressed:
-                  _isSending || _draft.text.trim().isEmpty ? null : _send,
-            ),
-          ],
+  /// 입력 줄 — 눌러 넣은 면 하나에 글자와 보내기가 함께 앉는다.
+  Widget _composer(DropTokenColors colors) {
+    final canSend = !_isSending && _draft.text.trim().isNotEmpty;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          DropLayout.gutter,
+          DropTokenSpace.x2,
+          DropLayout.gutter,
+          DropTokenSpace.x3,
         ),
-      );
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            DropTokenSpace.x4,
+            DropTokenSpace.x1,
+            DropTokenSpace.x1,
+            DropTokenSpace.x1,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surfaceField,
+            borderRadius: BorderRadius.circular(DropRadius.control + 6),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _draft,
+                  minLines: 1,
+                  maxLines: 4,
+                  style: DropText.body.copyWith(color: colors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: '댓글 쓰기',
+                    hintStyle: DropText.body.copyWith(color: colors.textMuted),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: DropTokenSpace.x3,
+                    ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              IconButton(
+                tooltip: '댓글 보내기',
+                icon: const Icon(Icons.arrow_upward),
+                style: IconButton.styleFrom(
+                  backgroundColor: canSend ? colors.accent : colors.borderColor,
+                  foregroundColor: colors.textOnAccent,
+                  disabledBackgroundColor: colors.borderColor,
+                  disabledForegroundColor: colors.textMuted,
+                  minimumSize: const Size(
+                    DropLayout.chipHeight,
+                    DropLayout.chipHeight,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+                // 보내는 중 중복 탭을 막지 않으면 같은 댓글이 두 번 올라간다.
+                onPressed: canSend ? _send : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _send() async {
     final body = _draft.text.trim();
@@ -192,7 +265,19 @@ class _CommentsSheetState extends State<CommentsSheet> {
       // 남아 있으면 방금 무엇을 썼는지 헷갈린다.
       _draft.clear();
     });
+    DropHaptics.select();
     await widget.controller.add(noteId: widget.note.id, body: body);
-    if (mounted) setState(() => _isSending = false);
+    if (!mounted) return;
+    setState(() => _isSending = false);
+    // 새 댓글은 맨 아래에 붙는다 — 보이는 곳까지 내려가 준다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 }

@@ -62,6 +62,30 @@ class PreviewLaunch {
         pinnedAt: now,
         priority: 3,
       ),
+      // 할일 표본 (BRU-207). 노트 단위 할일이 하나도 없으면 뷰어의 완료 토글도
+      // 할일 필터도 눈으로 확인할 자리가 없다 — 화면이 못 보여 주는 상태는 방치된다.
+      Note(
+        id: 'todo-open',
+        displayId: 21,
+        content: '전세 계약서 특약 확인하기',
+        tags: [tag('생활')],
+        createdAt: now.subtract(const Duration(seconds: 1800)),
+        updatedAt: now,
+        source: NoteSource.mobile,
+        type: NoteType.todo,
+        priority: 2,
+      ),
+      Note(
+        id: 'todo-done',
+        displayId: 22,
+        content: '리모델링 견적 세 곳 받기',
+        createdAt: now.subtract(const Duration(seconds: 5400)),
+        updatedAt: now,
+        source: NoteSource.mobile,
+        type: NoteType.todo,
+        completedAt: now.subtract(const Duration(seconds: 600)),
+        priority: 2,
+      ),
       Note(
         id: '2',
         displayId: 11,

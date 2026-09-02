@@ -6,8 +6,6 @@
 /// Riverpod `dropContainerProvider`로 흘려보낸다.
 library;
 
-
-
 import 'package:drop_core/drop_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -77,7 +75,9 @@ class DropEnvironmentContainer {
       commentsRepository: SupabaseCommentsRepository(client: restClient),
       attachmentsRepository: SupabaseAttachmentsRepository(client: restClient),
       authenticationGateway: SupabaseAuthenticationGateway(auth),
-      identityProvider: GoogleSignInIdentityProvider(configuration: configuration),
+      identityProvider: GoogleSignInIdentityProvider(
+        configuration: configuration,
+      ),
     );
   }
 }
@@ -90,14 +90,19 @@ class DropEnvironmentContainer {
 class _PreviewAuthenticationGateway implements AuthenticationGateway {
   const _PreviewAuthenticationGateway();
 
-  static const _user = DropUser(id: 'preview-user', email: 'preview@drop.local');
+  static const _user = DropUser(
+    id: 'preview-user',
+    email: 'preview@drop.local',
+  );
 
   @override
   DropUser? get currentUser => _user;
 
   @override
-  Future<DropUser> signIn({required String idToken, String? accessToken}) async =>
-      _user;
+  Future<DropUser> signIn({
+    required String idToken,
+    String? accessToken,
+  }) async => _user;
 
   @override
   Future<void> signOut() async {}

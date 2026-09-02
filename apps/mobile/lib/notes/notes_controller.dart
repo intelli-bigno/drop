@@ -38,6 +38,11 @@ class NotesController extends ChangeNotifier {
   Future<void> setCompleted(String id, {required bool completed}) =>
       _tracked(store.setCompleted(id, completed: completed));
 
+  /// 상단 고정을 걸고 푼다 (BRU-207). 목록 행을 왼쪽으로 밀면 나오는 동작이
+  /// 유일한 입구다 — 그 전까지 Flutter 앱에는 진입점이 하나도 없었다.
+  Future<void> setPinned(String id, {required bool isPinned}) =>
+      _tracked(store.setPinned(id, isPinned: isPinned));
+
   void setCategory(NoteCategory category) {
     store.category = category;
     notifyListeners();

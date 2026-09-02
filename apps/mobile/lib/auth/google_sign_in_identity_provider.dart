@@ -15,11 +15,11 @@ class GoogleSignInIdentityProvider implements GoogleIdentityProvider {
   /// 웹 클라이언트가 된다. 이걸 빠뜨리면 Supabase가 Unacceptable audience로
   /// 거부한다 (PR #17 실증).
   GoogleSignInIdentityProvider({required DropConfiguration configuration})
-      : _googleSignIn = GoogleSignIn(
-          clientId: configuration.googleIosClientId,
-          serverClientId: configuration.googleWebClientId,
-          scopes: const ['email'],
-        );
+    : _googleSignIn = GoogleSignIn(
+        clientId: configuration.googleIosClientId,
+        serverClientId: configuration.googleWebClientId,
+        scopes: const ['email'],
+      );
 
   @override
   Future<GoogleIdentity?> signIn() async {

@@ -10,7 +10,9 @@ import 'links/deep_link_router.dart';
 import 'screens/note_detail_screen.dart';
 import 'screens/root_view.dart';
 import 'screens/tags_screen.dart';
+import 'theme/drop_scroll_behavior.dart';
 import 'theme/drop_theme.dart';
+import 'theme/theme_mode_controller.dart';
 
 /// 앱 껍데기 — 라우터와 테마의 조립만 (iOS `DropApp.swift` 대응).
 /// 인증 게이트는 루트 라우트의 `RootView`가 상태로 가른다.
@@ -64,8 +66,15 @@ class _DropAppState extends ConsumerState<DropApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'DROP',
+      debugShowCheckedModeBanner: false,
+      scrollBehavior: const DropScrollBehavior(),
       theme: DropTheme.light,
       darkTheme: DropTheme.dark,
+      themeMode: ref.watch(themeModeProvider),
+      // 테마 전환은 **즉시**다. 머티리얼 기본값(200ms)은 그 사이 매 프레임마다
+      // 테마 한 벌 전체(색·하위 테마·텍스트 스타일)를 보간하는데, 그 비용이
+      // 전환을 부드럽게 만들기는커녕 화면을 멈춰 세운다 (BRU-207 실측).
+      themeAnimationDuration: Duration.zero,
       routerConfig: _router,
     );
   }

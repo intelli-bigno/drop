@@ -177,11 +177,17 @@ class MarkdownListItem {
   final bool? checked;
   final List<MarkdownInline> content;
 
+  /// 이 항목이 온 **원본 줄 번호**(0부터). 체크박스를 눌러 끄고 켤 때 화면이
+  /// "몇 번째 체크박스인가"를 직접 세지 않게 하려고 파서가 들려 보낸다 —
+  /// 화면이 세면 인용 안의 체크박스나 코드 펜스 안의 `- [ ]`에서 어긋난다.
+  final int sourceLine;
+
   const MarkdownListItem({
     required this.indent,
     required this.ordinal,
     required this.checked,
     required this.content,
+    this.sourceLine = -1,
   });
 
   @override

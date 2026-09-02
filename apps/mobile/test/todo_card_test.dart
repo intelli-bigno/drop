@@ -119,20 +119,20 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1) 할일 전체 — 끝난 것도 보인다
-    expect(find.text('할일 전체'), findsOneWidget);
+    expect(find.text('할일 · 전체'), findsOneWidget);
     expect(find.text('세금계산서 발행'), findsOneWidget);
     expect(find.text('회의 자료 정리'), findsOneWidget);
     expect(find.text('그냥 생각 하나'), findsNothing);
 
-    await tester.tap(find.text('할일 전체'));
+    await tester.tap(find.text('할일 · 전체'));
     await tester.pumpAndSettle();
 
     // 2) 남은 할일만
-    expect(find.text('남은 할일 1'), findsOneWidget);
+    expect(find.text('할일 · 남은 1'), findsOneWidget);
     expect(find.text('세금계산서 발행'), findsOneWidget);
     expect(find.text('회의 자료 정리'), findsNothing);
 
-    await tester.tap(find.text('남은 할일 1'));
+    await tester.tap(find.text('할일 · 남은 1'));
     await tester.pumpAndSettle();
 
     // 3) 다시 전체

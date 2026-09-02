@@ -28,7 +28,8 @@ class PatternsSection extends StatelessWidget {
       children: [
         const PageHead(
           title: 'Patterns',
-          lede: '행 하나가 아니라 행들이 놓이는 방식이다. 묶기·들여쓰기·흐림은 전부 '
+          lede:
+              '행 하나가 아니라 행들이 놓이는 방식이다. 묶기·들여쓰기·흐림은 전부 '
               'drop_core의 순수 로직이 정하고 화면은 그리기만 한다.',
         ),
         Specimen(

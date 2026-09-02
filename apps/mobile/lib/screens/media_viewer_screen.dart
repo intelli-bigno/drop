@@ -95,55 +95,55 @@ class _MediaViewerScreenState extends State<MediaViewerScreen> {
   }
 
   Widget _pageFor(Attachment attachment) => FutureBuilder<Uri?>(
-        future: _urlFor(attachment),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            );
-          }
-          final url = snapshot.data;
-          if (url == null) return _unavailable();
-          if (attachment.isVideo) {
-            // 재생은 video_player 의존이 필요하다 — 지금은 자리만 지킨다.
-            // 배포 전 실기기 검증(BRU-152 트랙)에서 별도 이슈로 판단한다.
-            return _videoPlaceholder(attachment);
-          }
-          return InteractiveViewer(
-            maxScale: 6,
-            child: Center(
-              child: Image.network(
-                url.toString(),
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => _unavailable(),
-              ),
-            ),
-          );
-        },
+    future: _urlFor(attachment),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
+      final url = snapshot.data;
+      if (url == null) return _unavailable();
+      if (attachment.isVideo) {
+        // 재생은 video_player 의존이 필요하다 — 지금은 자리만 지킨다.
+        // 배포 전 실기기 검증(BRU-152 트랙)에서 별도 이슈로 판단한다.
+        return _videoPlaceholder(attachment);
+      }
+      return InteractiveViewer(
+        maxScale: 6,
+        child: Center(
+          child: Image.network(
+            url.toString(),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => _unavailable(),
+          ),
+        ),
       );
+    },
+  );
 
   Widget _unavailable() => const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.warning_amber_outlined, color: Colors.white54, size: 40),
-            SizedBox(height: 8),
-            Text('불러오지 못했습니다', style: TextStyle(color: Colors.white70)),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.warning_amber_outlined, color: Colors.white54, size: 40),
+        SizedBox(height: 8),
+        Text('불러오지 못했습니다', style: TextStyle(color: Colors.white70)),
+      ],
+    ),
+  );
 
   Widget _videoPlaceholder(Attachment attachment) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.play_circle_outline, color: Colors.white70, size: 56),
-            const SizedBox(height: 8),
-            Text(
-              attachment.filename ?? '동영상',
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.play_circle_outline, color: Colors.white70, size: 56),
+        const SizedBox(height: 8),
+        Text(
+          attachment.filename ?? '동영상',
+          style: const TextStyle(color: Colors.white70),
         ),
-      );
+      ],
+    ),
+  );
 }

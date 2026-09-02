@@ -14,15 +14,19 @@ class MarkdownParser {
   MarkdownDocument parse(String source) {
     // 줄바꿈 표기만 통일한다. 원문은 `source`로 따로 들고 나간다.
     final normalized = source.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final lines = normalized.split('\n');
     return MarkdownDocument(
       source: source,
-      blocks: _blocks(normalized.split('\n')),
+      // 원본 줄 번호를 함께 들려 보낸다 — 아래로 내려가며 인용을 벗겨도
+      // 각 줄이 원본 어디서 왔는지 잃지 않는다.
+      blocks: _blocks(lines, List.generate(lines.length, (index) => index)),
     );
   }
 
   // 블록
 
-  List<MarkdownBlock> _blocks(List<String> lines) {
+  /// [origin]은 [lines]와 길이가 같고, 각 줄이 온 **원본 줄 번호**를 담는다.
+  List<MarkdownBlock> _blocks(List<String> lines, List<int> origin) {
     final result = <MarkdownBlock>[];
     var index = 0;
 
@@ -60,13 +64,17 @@ class MarkdownParser {
 
       if (_quoteContent(line) != null) {
         final inner = <String>[];
+        final innerOrigin = <int>[];
         while (index < lines.length) {
           final stripped = _quoteContent(lines[index]);
           if (stripped == null) break;
           inner.add(stripped);
+          // 벗겨 낸 줄도 원본에서는 그 자리다 — 인용 안의 체크박스를 눌렀을 때
+          // 고쳐야 할 줄이 어디인지 잃지 않는다.
+          innerOrigin.add(origin[index]);
           index += 1;
         }
-        result.add(MarkdownQuote(_blocks(inner)));
+        result.add(MarkdownQuote(_blocks(inner, innerOrigin)));
         continue;
       }
 
@@ -80,6 +88,7 @@ class MarkdownParser {
             ordinal: raw.ordinal,
             checked: raw.checked,
             content: _inlineParser.parse(raw.text),
+            sourceLine: origin[index],
           ));
           index += 1;
         }
