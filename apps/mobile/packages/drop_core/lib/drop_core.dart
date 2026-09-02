@@ -15,6 +15,7 @@ export 'src/drop_link.dart';
 export 'src/in_memory_attachments_repository.dart';
 export 'src/in_memory_comments_repository.dart';
 export 'src/in_memory_notes_repository.dart';
+export 'src/markdown/markdown_checklist.dart';
 export 'src/markdown/markdown_document.dart';
 export 'src/markdown/markdown_editor.dart';
 export 'src/markdown/markdown_inline_parser.dart';
