@@ -32,9 +32,17 @@ Future<void> singleTap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle(const Duration(milliseconds: 400));
 }
 
-/// 목록에서 노트를 눌러 뷰어를 연다.
+/// 목록에서 노트를 눌러 뷰어를 연다. 표본이 늘면 그 행이 화면 밖으로 밀리므로
+/// 먼저 보이는 데까지 굴린다 — 안 보이는 위젯은 눌러도 아무 일도 안 일어난다.
 Future<void> openViewer(WidgetTester tester, String cardText) async {
-  await singleTap(tester, find.textContaining(cardText).first);
+  final card = find.textContaining(cardText).first;
+  await tester.scrollUntilVisible(
+    card,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  await singleTap(tester, card);
   expect(find.byType(NoteDetailScreen), findsOneWidget);
 }
 
@@ -69,15 +77,14 @@ void main() {
     await pumpPreview(tester);
     await openViewer(tester, '장보기: 우유, 커피 원두, 사과');
 
-    await tester.tap(find.byIcon(Icons.more_horiz));
-    await tester.pumpAndSettle();
-    expect(find.text('보관'), findsOneWidget);
-    expect(find.text('휴지통으로'), findsOneWidget);
+    // 동작은 ⋯ 안이 아니라 앱바에 하나씩 서 있다 (BRU-207).
+    expect(find.byTooltip('보관'), findsOneWidget);
+    expect(find.byTooltip('휴지통으로'), findsOneWidget);
     // 활성 노트에 복원·영구 삭제는 없다.
-    expect(find.text('복원'), findsNothing);
-    expect(find.text('영구 삭제'), findsNothing);
+    expect(find.byTooltip('복원'), findsNothing);
+    expect(find.byTooltip('영구 삭제'), findsNothing);
 
-    await tester.tap(find.text('보관'));
+    await tester.tap(find.byTooltip('보관'));
     await tester.pumpAndSettle();
 
     // 상태를 바꿨으면 뷰어를 닫는다 (iOS와 같은 규칙).
@@ -87,7 +94,7 @@ void main() {
 
   testWidgets('휴지통 노트의 뷰어: 편집이 없고, 영구 삭제가 목록에서 지운다', (tester) async {
     await pumpPreview(tester);
-    // 휴지통 뷰로 이동.
+    // 휴지통 뷰로 이동. 홈의 보기 전환은 ⋯ 시트 안의 세그먼트다.
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
     await tester.tap(find.text('휴지통'));
@@ -95,12 +102,14 @@ void main() {
     await openViewer(tester, '버린 초안');
 
     // 휴지통 노트는 본문을 고칠 수 없다 — 편집 진입 자체가 없다.
-    expect(find.text('편집'), findsNothing);
+    expect(find.byTooltip('편집'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.more_horiz));
+    expect(find.byTooltip('복원'), findsOneWidget);
+    await tester.tap(find.byTooltip('영구 삭제'));
     await tester.pumpAndSettle();
-    expect(find.text('복원'), findsOneWidget);
-    await tester.tap(find.text('영구 삭제'));
+    // 되돌릴 수 없는 일이라 확인 시트가 한 번 선다 (BRU-207, MASTER §규칙 4).
+    expect(find.text('이 노트를 영구 삭제할까요?'), findsOneWidget);
+    await tester.tap(find.text('삭제'));
     await tester.pumpAndSettle();
 
     expect(find.byType(NoteDetailScreen), findsNothing);
@@ -111,7 +120,7 @@ void main() {
     await pumpPreview(tester);
     await openViewer(tester, '장보기: 우유, 커피 원두, 사과');
 
-    await tester.tap(find.text('편집'));
+    await tester.tap(find.byTooltip('편집'));
     await tester.pumpAndSettle();
 
     // 컴포저 스텁이 뜬다 — 기존 노트 대상 편집은 BRU-158이 갈아끼운다.
@@ -123,8 +132,9 @@ void main() {
     await pumpPreview(tester);
     await openViewer(tester, 'iOS 네이티브 전환 M3');
 
-    expect(find.text('댓글 3개'), findsOneWidget);
-    await tester.tap(find.text('댓글 3개'));
+    // 부속 묶음의 '댓글' 줄 — 이름표와 값이 갈라져 값만 센다 (BRU-207).
+    expect(find.text('3개'), findsOneWidget);
+    await tester.tap(find.text('3개'));
     await tester.pumpAndSettle();
 
     // 표본 댓글이 오래된 순으로 보인다 — 작성자 표기는 없다 (개인 앱).
@@ -139,21 +149,28 @@ void main() {
 
     expect(find.text('넷째 댓글'), findsOneWidget);
     // 입력창은 비워졌다.
-    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '');
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      '',
+    );
 
     // 시트를 닫으면 뷰어의 댓글 버튼 개수도 새 값이다.
     await tester.tapAt(const Offset(400, 40));
     await tester.pumpAndSettle();
-    expect(find.text('댓글 4개'), findsOneWidget);
+    expect(find.text('4개'), findsOneWidget);
   });
 
   testWidgets('댓글 스와이프 삭제 — 휴지통 없이 바로 지워진다', (tester) async {
     await pumpPreview(tester);
     await openViewer(tester, 'iOS 네이티브 전환 M3');
-    await tester.tap(find.text('댓글 3개'));
+    await tester.tap(find.text('3개'));
     await tester.pumpAndSettle();
 
     await tester.drag(find.text('확인.'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    // 하드 삭제라 스와이프 끝에서 한 번 묻는다 (BRU-207).
+    expect(find.text('이 댓글을 지울까요?'), findsOneWidget);
+    await tester.tap(find.text('지우기'));
     await tester.pumpAndSettle();
 
     expect(find.text('확인.'), findsNothing);

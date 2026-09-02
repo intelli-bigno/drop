@@ -58,13 +58,13 @@ class _AttachmentThumbnailState extends State<AttachmentThumbnail> {
   }
 
   Widget _placeholder(ThemeData theme) => Icon(
-        switch (widget.attachment.type) {
-          AttachmentType.image => Icons.image_outlined,
-          AttachmentType.video => Icons.videocam_outlined,
-          AttachmentType.audio => Icons.audiotrack_outlined,
-          _ => Icons.description_outlined,
-        },
-        size: 28,
-        color: theme.colorScheme.outline,
-      );
+    switch (widget.attachment.type) {
+      AttachmentType.image => Icons.image_outlined,
+      AttachmentType.video => Icons.videocam_outlined,
+      AttachmentType.audio => Icons.audiotrack_outlined,
+      _ => Icons.description_outlined,
+    },
+    size: 28,
+    color: theme.colorScheme.outline,
+  );
 }

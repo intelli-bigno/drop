@@ -69,10 +69,10 @@ enum ShowcaseTheme {
   const ShowcaseTheme(this.label);
 
   ThemeMode get mode => switch (this) {
-        ShowcaseTheme.system => ThemeMode.system,
-        ShowcaseTheme.light => ThemeMode.light,
-        ShowcaseTheme.dark => ThemeMode.dark,
-      };
+    ShowcaseTheme.system => ThemeMode.system,
+    ShowcaseTheme.light => ThemeMode.light,
+    ShowcaseTheme.dark => ThemeMode.dark,
+  };
 }
 
 class ShowcaseApp extends StatefulWidget {
@@ -94,6 +94,7 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
       theme: DropTheme.light,
       darkTheme: DropTheme.dark,
       themeMode: _theme.mode,
+      themeAnimationDuration: Duration.zero,
       home: ShowcaseShell(
         pageIndex: _pageIndex,
         theme: _theme,
@@ -173,7 +174,10 @@ class ShowcaseShell extends StatelessWidget {
             ),
           Expanded(
             // key를 페이지마다 갈아 끼워 스크롤 위치가 페이지 사이에 새지 않게 한다.
-            child: KeyedSubtree(key: ValueKey(page.id), child: page.build(context)),
+            child: KeyedSubtree(
+              key: ValueKey(page.id),
+              child: page.build(context),
+            ),
           ),
         ],
       ),

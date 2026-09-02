@@ -42,16 +42,13 @@ Note _note({
     hasLink: hasLink,
     hasMedia: attachments.any((a) => a.isImage),
     type: type,
-    completedAt:
-        completedAgo == null ? null : showcaseNow.subtract(completedAgo),
+    completedAt: completedAgo == null
+        ? null
+        : showcaseNow.subtract(completedAgo),
   );
 }
 
-final Tag tagRead = Tag(
-  id: 'tag-read',
-  name: '읽을거리',
-  createdAt: showcaseNow,
-);
+final Tag tagRead = Tag(id: 'tag-read', name: '읽을거리', createdAt: showcaseNow);
 final Tag tagWork = Tag(id: 'tag-work', name: '일', createdAt: showcaseNow);
 final Tag tagIdea = Tag(id: 'tag-idea', name: '아이디어', createdAt: showcaseNow);
 
@@ -106,7 +103,8 @@ final Note notePinned = _note(
 final Note noteMarkdown = _note(
   id: 'note-markdown',
   displayId: 4,
-  content: '## 마크다운 제목\n\n**굵게**와 `코드`가 섞인 본문.\n\n- 첫째\n- 둘째\n\n'
+  content:
+      '## 마크다운 제목\n\n**굵게**와 `코드`가 섞인 본문.\n\n- 첫째\n- 둘째\n\n'
       '> 인용문은 왼쪽에 선이 선다.',
   age: const Duration(days: 2),
   tags: [tagIdea],

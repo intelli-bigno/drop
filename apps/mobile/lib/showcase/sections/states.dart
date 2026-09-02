@@ -24,7 +24,8 @@ class StatesSection extends StatelessWidget {
       children: [
         const PageHead(
           title: 'States',
-          lede: '평소엔 안 보이는 자리들. 빈 목록·로딩·오류는 계정 상태나 네트워크를 '
+          lede:
+              '평소엔 안 보이는 자리들. 빈 목록·로딩·오류는 계정 상태나 네트워크를 '
               '망가뜨려야 볼 수 있어서 가장 손이 안 가는 곳이다.',
         ),
         for (final viewMode in NoteViewMode.values)
@@ -64,7 +65,8 @@ class StatesSection extends StatelessWidget {
         ),
         Specimen(
           name: '오류',
-          desc: '앱이 실제로 쓰는 것 — 목록은 남기고 SnackBar로만 알린다. '
+          desc:
+              '앱이 실제로 쓰는 것 — 목록은 남기고 SnackBar로만 알린다. '
               '실패했다고 보던 것을 치우지 않는다',
           file: 'lib/screens/home_screen.dart',
           phone: true,
@@ -77,7 +79,8 @@ class StatesSection extends StatelessWidget {
         ),
         ShowcaseSection(
           title: '아직 없는 것',
-          note: '쇼케이스를 지으면서 드러난 빈자리다. 진열할 물건이 없으므로 '
+          note:
+              '쇼케이스를 지으면서 드러난 빈자리다. 진열할 물건이 없으므로 '
               '그리지 않고 적어만 둔다 — 없는 것을 그리면 있는 줄 안다.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,8 +104,9 @@ class StatesSection extends StatelessWidget {
                       Expanded(
                         child: Text(
                           gap,
-                          style: DropText.body
-                              .copyWith(color: colors.textSecondary),
+                          style: DropText.body.copyWith(
+                            color: colors.textSecondary,
+                          ),
                         ),
                       ),
                     ],
@@ -116,10 +120,10 @@ class StatesSection extends StatelessWidget {
   }
 
   static String _viewModeLabel(NoteViewMode mode) => switch (mode) {
-        NoteViewMode.active => '노트',
-        NoteViewMode.archived => '보관',
-        NoteViewMode.trash => '휴지통',
-      };
+    NoteViewMode.active => '노트',
+    NoteViewMode.archived => '보관',
+    NoteViewMode.trash => '휴지통',
+  };
 }
 
 /// 오류 표본. 앱과 같은 경로(`ScaffoldMessenger.showSnackBar`)로 띄운다 —
@@ -141,9 +145,9 @@ class _ErrorSnackBarSpecimen extends StatelessWidget {
             builder: (context) => OutlinedButton.icon(
               icon: const Icon(Icons.error_outline, size: DropIconSize.control),
               label: const Text('오류 띄우기'),
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('노트를 불러오지 못했습니다')),
-              ),
+              onPressed: () => ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('노트를 불러오지 못했습니다'))),
             ),
           ),
         ),

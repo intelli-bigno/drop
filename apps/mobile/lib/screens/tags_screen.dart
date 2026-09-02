@@ -48,54 +48,59 @@ class TagsScreen extends ConsumerWidget {
           if (store.selectedTagId != null)
             TextButton(
               onPressed: () => notes.selectTag(null),
-              child: Text('필터 해제',
-                  style: TextStyle(color: colors.accent)),
+              child: Text('필터 해제', style: TextStyle(color: colors.accent)),
             ),
+          const SizedBox(width: DropTokenSpace.x2),
         ],
       ),
       body: entries.isEmpty
           ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.tag, size: 48, color: colors.textMuted),
-                  const SizedBox(height: DropSpacing.base),
-                  Text(
-                    '태그가 없습니다',
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: DropTokenTextSize.lg,
-                    ),
-                  ),
-                ],
+              child: Text(
+                '태그가 없습니다',
+                style: DropText.cardTitle.copyWith(color: colors.textSecondary),
               ),
             )
-          : ListView.separated(
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: DropTokenSpace.x2),
               itemCount: entries.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final entry = entries[index];
                 final isSelected = store.selectedTagId == entry.tag.id;
-                return ListTile(
-                  tileColor: isSelected ? colors.surfaceSelected : null,
-                  title: Text(
-                    '#${entry.tag.name}',
-                    style: TextStyle(color: colors.textPrimary),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${entry.count}',
-                        style: TextStyle(color: colors.textSecondary),
-                      ),
-                      if (isSelected) ...[
-                        const SizedBox(width: DropSpacing.base),
-                        Icon(Icons.check, size: 18, color: colors.accent),
-                      ],
-                    ],
-                  ),
+                return InkWell(
                   onTap: () => notes.selectTag(entry.tag.id),
+                  child: Container(
+                    color: isSelected ? colors.surfaceSelected : null,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DropLayout.gutter,
+                      vertical: DropTokenSpace.x4,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '#${entry.tag.name}',
+                            style: DropText.cardTitle.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${entry.count}',
+                          style: DropText.body.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: DropTokenSpace.x2),
+                          Icon(
+                            Icons.check,
+                            size: DropIconSize.control,
+                            color: colors.accent,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 );
               },
             ),

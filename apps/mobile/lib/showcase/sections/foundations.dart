@@ -22,19 +22,22 @@ class FoundationsSection extends StatelessWidget {
       children: [
         const PageHead(
           title: 'Foundations',
-          lede: '색·간격·모서리·글자의 정본은 design-system/drop/tokens.json 하나이고, '
+          lede:
+              '색·간격·모서리·글자의 정본은 design-system/drop/tokens.json 하나이고, '
               '같은 값이 데스크톱·iOS·Android로도 나간다. 아래는 생성물에서 읽어 온 것이라 '
               'make tokens를 돌리면 여기도 따라 바뀐다.',
         ),
         ShowcaseSection(
           title: '색',
-          note: '지금 모드(${Theme.of(context).brightness.name})에 적용된 값이다. '
+          note:
+              '지금 모드(${Theme.of(context).brightness.name})에 적용된 값이다. '
               '좌측 하단에서 모드를 바꾸면 전부 갈아탄다.',
           child: Wrap(
             spacing: DropTokenSpace.x2,
             runSpacing: DropTokenSpace.x2,
             children: [
-              for (final MapEntry(key: name, value: value) in colors.all.entries)
+              for (final MapEntry(key: name, value: value)
+                  in colors.all.entries)
                 _Swatch(name: name, color: value),
             ],
           ),
@@ -65,7 +68,8 @@ class FoundationsSection extends StatelessWidget {
         ),
         ShowcaseSection(
           title: '글자 — 역할',
-          note: '화면은 숫자가 아니라 이 역할 이름을 쓴다 (DropText). '
+          note:
+              '화면은 숫자가 아니라 이 역할 이름을 쓴다 (DropText). '
               '감사 테스트가 fontSize 숫자를 금지한다.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,10 +134,7 @@ class _Swatch extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DropTokenSpace.x1),
-          Text(
-            name,
-            style: DropText.meta.copyWith(color: colors.textPrimary),
-          ),
+          Text(name, style: DropText.meta.copyWith(color: colors.textPrimary)),
           Text(
             _hex(color),
             style: DropText.caption.copyWith(
@@ -218,7 +219,10 @@ class _RadiusChip extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DropTokenSpace.x1),
-        Text(name, style: DropText.caption.copyWith(color: colors.textSecondary)),
+        Text(
+          name,
+          style: DropText.caption.copyWith(color: colors.textSecondary),
+        ),
       ],
     );
   }

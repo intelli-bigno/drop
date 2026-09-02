@@ -44,13 +44,15 @@ void main() {
     });
 
     test('본문보다 큰 역할은 굵고, 메타는 굵지 않다', () {
-      expect(DropText.wordmark.fontWeight, FontWeight.w700);
-      expect(DropText.screenTitle.fontWeight, FontWeight.w600);
-      expect(DropText.sectionTitle.fontWeight, FontWeight.w600);
-      expect(DropText.cardTitle.fontWeight, FontWeight.w600);
+      expect(DropText.wordmark.fontWeight, FontWeight.w800);
+      expect(DropText.screenTitle.fontWeight, FontWeight.w700);
+      expect(DropText.sectionTitle.fontWeight, FontWeight.w700);
+      expect(DropText.cardTitle.fontWeight, FontWeight.w500);
+      expect(DropText.reading.fontWeight, FontWeight.w400);
+      expect(DropText.label.fontWeight, FontWeight.w600);
       expect(DropText.body.fontWeight, FontWeight.w400);
       expect(DropText.meta.fontWeight, FontWeight.w400);
-      expect(DropText.caption.fontWeight, FontWeight.w400);
+      expect(DropText.caption.fontWeight, FontWeight.w500);
     });
 
     test('roles 지도가 실제 역할을 빠짐없이 담는다', () {
@@ -63,7 +65,9 @@ void main() {
           DropText.screenTitle,
           DropText.sectionTitle,
           DropText.cardTitle,
+          DropText.reading,
           DropText.body,
+          DropText.label,
           DropText.meta,
           DropText.caption,
         ]),

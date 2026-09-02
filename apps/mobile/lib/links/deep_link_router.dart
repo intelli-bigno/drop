@@ -60,5 +60,6 @@ class DeepLinkRouter extends ChangeNotifier {
   }
 }
 
-final deepLinkRouterProvider =
-    ChangeNotifierProvider<DeepLinkRouter>((ref) => DeepLinkRouter());
+final deepLinkRouterProvider = ChangeNotifierProvider<DeepLinkRouter>(
+  (ref) => DeepLinkRouter(),
+);

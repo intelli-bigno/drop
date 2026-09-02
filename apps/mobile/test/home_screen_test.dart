@@ -11,6 +11,7 @@ import 'package:mobile/app.dart';
 import 'package:mobile/environment/drop_environment_container.dart';
 import 'package:mobile/environment/providers.dart';
 import 'package:mobile/screens/note_detail_screen.dart';
+import 'package:mobile/widgets/note_filter_bar.dart';
 import 'package:mobile/widgets/selection_action_bar.dart';
 
 Widget previewApp() => ProviderScope(
@@ -21,6 +22,11 @@ Widget previewApp() => ProviderScope(
 );
 
 Future<void> pumpPreview(WidgetTester tester) async {
+  // 목록 행이 폰 규격(BRU-207: 행 높이 ~66)이라 기본 600px 화면에는 표본 세 묶음이
+  // 다 안 선다 — ListView는 안 보이는 행을 만들지 않으므로 화면을 폰 길이로 늘린다.
+  tester.view.physicalSize = const Size(800, 1600);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(previewApp());
   await tester.pumpAndSettle();
 }
@@ -130,7 +136,7 @@ void main() {
     await pumpPreview(tester);
 
     // '#생활' 텍스트는 노트 카드의 태그 라벨에도 있다 — 칩만 집는다.
-    final chip = find.widgetWithText(FilterChip, '#생활');
+    final chip = find.widgetWithText(DropPill, '#생활');
     await tester.tap(chip);
     await tester.pumpAndSettle();
 

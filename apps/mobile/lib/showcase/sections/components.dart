@@ -70,7 +70,8 @@ class _ComponentsSectionState extends State<ComponentsSection> {
       children: [
         const PageHead(
           title: 'Components',
-          lede: '앱이 실제로 쓰는 위젯을 그대로 세워 둔 것이다. 폰 너비(390)로 가둬 '
+          lede:
+              '앱이 실제로 쓰는 위젯을 그대로 세워 둔 것이다. 폰 너비(390)로 가둬 '
               '브라우저 전폭에 늘어나지 않게 했다.',
         ),
         Specimen(
@@ -126,7 +127,7 @@ class _ComponentsSectionState extends State<ComponentsSection> {
         ),
         Specimen(
           name: 'NoteFilterBar',
-          desc: '카테고리·할일·태그가 한 줄. 검색은 접혀 있다 (BRU-49)',
+          desc: '검색 · 카테고리 · 필터 세 줄 (BRU-207, BRU-49의 한 줄 원칙을 접음)',
           file: 'lib/widgets/note_filter_bar.dart',
           phone: true,
           child: ListenableBuilder(
@@ -190,7 +191,8 @@ class _ComponentsSectionState extends State<ComponentsSection> {
   }
 }
 
-const _markdownSample = '## 마크다운 제목\n\n'
+const _markdownSample =
+    '## 마크다운 제목\n\n'
     '**굵게**와 *기울임*, 그리고 `인라인 코드`가 섞인 본문.\n\n'
     '- 목록 첫째\n'
     '- 목록 둘째\n\n'
