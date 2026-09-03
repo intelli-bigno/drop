@@ -121,20 +121,9 @@ function MainApp() {
 
   // Show loading state while checking auth
   if (isAuthLoading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          background: 'var(--bg-primary)',
-          color: 'var(--text-tertiary)',
-        }}
-      >
-        Loading...
-      </div>
-    )
+    // 글자로 기다리게 하지 않는다 (BRU-213) — 'Loading...'은 이 앱에서 유일하게
+    // 영어로 말을 거는 자리였고, 그마저 아무 정보도 주지 않았다.
+    return <div className="app-booting" aria-label="여는 중" />
   }
 
   // Show auth screen if not logged in
@@ -147,19 +136,9 @@ function MainApp() {
       <div className="app-header">
         <div className="app-header-right">
           {import.meta.env.DEV && (
-            <div
-              style={{
-                padding: '4px 8px',
-                borderRadius: 4,
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--text-on-accent)',
-                backgroundColor: isLocal ? 'var(--success)' : 'var(--warning)',
-                opacity: 0.9,
-              }}
-            >
-              {envLabel}
-            </div>
+            /* 어느 DB에 붙어 있는지 (개발 창 전용). 색 알약이 아니라 점 하나 +
+               작은 글자다 — 상용 화면에는 없는 것이 헤더에서 가장 눈에 띄면 안 된다. */
+            <span className={`env-badge ${isLocal ? 'is-local' : ''}`}>{envLabel}</span>
           )}
           <UserMenu onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />
         </div>

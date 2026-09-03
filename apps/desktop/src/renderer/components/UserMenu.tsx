@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
+import { THEME_PREFERENCES } from '../lib/theme'
 import { supabase } from '../lib/supabase'
 import { useToastStore } from '../stores/toast'
 import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
@@ -26,6 +28,8 @@ interface Props {
 
 export function UserMenu({ onOpenCheatSheet }: Props) {
   const { user, signOut } = useAuthStore()
+  const themePreference = useThemeStore((s) => s.preference)
+  const setThemePreference = useThemeStore((s) => s.setPreference)
   const [isOpen, setIsOpen] = useState(false)
   const [tokenCopied, setTokenCopied] = useState(false)
   const [showTagManagement, setShowTagManagement] = useState(false)
@@ -193,6 +197,30 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         <div className="user-menu-divider" />
 
+        {/* 테마 (BRU-213). 개편 전에는 OS 설정이 유일한 입구였다 —
+            토큰에 라이트가 있는데 앱에서 고를 길이 없었다. */}
+        <div className="user-menu-field">
+          <span className="user-menu-field-label">테마</span>
+          <div className="segmented" role="radiogroup" aria-label="테마">
+            {THEME_PREFERENCES.map((preference) => (
+              <button
+                key={preference.value}
+                type="button"
+                role="radio"
+                aria-checked={themePreference === preference.value}
+                className={`segmented-option ${
+                  themePreference === preference.value ? 'is-selected' : ''
+                }`}
+                onClick={() => setThemePreference(preference.value)}
+              >
+                {preference.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="user-menu-divider" />
+
         <button type="button" className="user-menu-item" onClick={handleOpenCheatSheet}>
           <Icon name="help-circle" size={16} />
           {CHEAT_SHEET_MENU_LABEL}
@@ -211,7 +239,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         <button className="user-menu-item" onClick={handleCopyMcpToken}>
           <Icon name="copy" size={16} />
-          {tokenCopied ? 'Copied!' : 'Copy MCP Token'}
+          {tokenCopied ? '복사했습니다' : 'MCP 토큰 복사'}
         </button>
 
         <div className="user-menu-divider" />
@@ -242,7 +270,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         <button className="user-menu-item" onClick={handleSignOut}>
           <Icon name="log-out" size={16} />
-          Sign out
+          로그아웃
         </button>
       </div>,
       document.body
@@ -322,11 +350,12 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         .user-menu-dropdown {
           position: fixed;
-          min-width: 240px;
+          min-width: 260px;
+          padding: var(--space-2) 0;
           background: var(--bg-elevated);
-          border: 1px solid var(--border-color);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-lg);
           overflow: hidden;
           -webkit-app-region: no-drag;
           pointer-events: auto;
@@ -336,8 +365,22 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         .user-menu-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 16px;
+          gap: var(--space-3);
+          padding: var(--space-2) var(--space-4) var(--space-3);
+        }
+
+        /* 이름표 + 조작이 한 줄에 서는 자리 (테마 세그먼트). */
+        .user-menu-field {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
+          padding: var(--space-2) var(--space-4);
+        }
+
+        .user-menu-field-label {
+          font: var(--type-meta);
+          color: var(--text-secondary);
         }
 
         .user-avatar-large {
@@ -368,8 +411,8 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         }
 
         .user-name {
-          font-size: 14px;
-          font-weight: 600;
+          font: var(--type-label);
+          letter-spacing: var(--type-label-tracking);
           color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
@@ -377,8 +420,8 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         }
 
         .user-email {
-          font-size: 12px;
-          color: var(--text-secondary);
+          font: var(--type-meta);
+          color: var(--text-tertiary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -387,39 +430,40 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         .user-menu-about {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          padding: 10px 16px;
+          gap: var(--space-2);
+          padding: var(--space-2) var(--space-4);
         }
 
         .user-menu-version {
           display: flex;
           align-items: baseline;
           justify-content: space-between;
-          font-size: 13px;
+          font: var(--type-meta);
           color: var(--text-secondary);
         }
 
         .user-menu-version-number {
-          font-family: var(--font-mono);
-          font-size: 12px;
+          font: var(--type-mono);
+          font-variant-numeric: tabular-nums;
           color: var(--text-tertiary);
         }
 
         .user-menu-update-btn {
           align-self: flex-start;
-          padding: 5px 10px;
-          border-radius: var(--radius-sm);
-          font-size: 12px;
+          padding: 5px var(--space-3);
+          border-radius: var(--radius-md);
+          font: var(--type-control);
+          letter-spacing: var(--type-control-tracking);
           cursor: pointer;
-          background: transparent;
-          border: 1px solid var(--border-color);
+          background: var(--bg-tertiary);
+          border: none;
           color: var(--text-secondary);
           transition: all var(--transition-fast);
         }
 
         .user-menu-update-btn:hover:not(:disabled) {
-          border-color: var(--accent);
-          color: var(--accent);
+          background: var(--bg-hover);
+          color: var(--text-primary);
         }
 
         .user-menu-update-btn:disabled {
@@ -429,7 +473,7 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         .user-menu-update-status {
           margin: 0;
-          font-size: 12px;
+          font: var(--type-meta);
           color: var(--text-tertiary);
         }
 
@@ -439,29 +483,31 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         .user-menu-divider {
           height: 1px;
-          background: var(--bg-tertiary);
-          margin: 0 8px;
+          background: var(--border-subtle);
+          margin: var(--space-2) var(--space-4);
         }
 
         .user-menu-item {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: var(--space-3);
           width: 100%;
-          padding: 12px 16px;
-          font-size: 14px;
+          padding: var(--space-2) var(--space-4);
+          min-height: 36px;
+          font: var(--type-meta);
+          font-size: var(--text-base);
           color: var(--text-secondary);
           background: transparent;
           border: none;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all var(--transition-fast);
           text-align: left;
           -webkit-app-region: no-drag;
           pointer-events: auto;
         }
 
         .user-menu-item:hover {
-          background: var(--bg-tertiary);
+          background: var(--bg-hover);
           color: var(--text-primary);
         }
 
@@ -472,12 +518,11 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         .user-menu-item-key {
           margin-left: auto;
           padding: 1px 6px;
-          border: 1px solid var(--border-color);
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
+          font: var(--type-caption);
           font-family: var(--font-mono);
-          font-size: 11px;
           color: var(--text-tertiary);
-          background: transparent;
+          background: var(--bg-tertiary);
         }
       `}</style>
     </>

@@ -51,6 +51,9 @@ const FEED_TOP_INSET = 60
 import { extractYouTubeUrls } from '../lib/youtube-url-utils'
 import { useDragAndDrop } from '../hooks'
 
+/** 고정 묶음의 자리표. 날짜가 아니므로 날짜 키와 부딪히지 않는 이름을 쓴다. */
+const PINNED_GROUP = '__pinned__'
+
 // 큰 텍스트 임계값 (둘 다 충족해야 텍스트 첨부파일로 처리)
 const LARGE_TEXT_THRESHOLD_LINES = 20
 const LARGE_TEXT_THRESHOLD_CHARS = 1000
@@ -315,7 +318,7 @@ export function NoteFeed() {
         const bTime = b.note.pinnedAt?.getTime() ?? 0
         return bTime - aTime
       })
-      groups.push({ date: 'Pinned', items: sortedPinned })
+      groups.push({ date: PINNED_GROUP, items: sortedPinned })
     }
 
     // 일반 노트 날짜별 그룹화
@@ -1155,13 +1158,13 @@ export function NoteFeed() {
       </div>
       <div className="feed-content">
         {isLoading && viewMode === 'active' && orderedNotes.length === 0 ? (
-          // 로딩 중 스켈레톤 카드
+          // 곧 올 목록과 **같은 모양**의 자리 (BRU-213) — 행 하나에 상태칸 + 한 줄.
+          // 길이를 번갈아 두어 진짜 목록처럼 보이게 한다.
           <div className="feed-skeleton" aria-hidden="true">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="skeleton-card">
                 <div className="skeleton-line skeleton-line-sm" />
-                <div className="skeleton-line" />
-                <div className="skeleton-line skeleton-line-lg" />
+                <div className={`skeleton-line ${i % 2 ? 'skeleton-line-lg' : ''}`} />
               </div>
             ))}
           </div>
@@ -1205,9 +1208,14 @@ export function NoteFeed() {
             )}
           </div>
         ) : (
-        grouped.map(({ date, items }) => (
+        grouped.map(({ date, items }) => {
+          const isPinnedGroup = date === PINNED_GROUP
+          return (
           <div key={date} className="date-group">
-            <div className="date-label">{date}</div>
+            <div className="date-label">{isPinnedGroup ? '고정' : date}</div>
+            {/* 행들을 담는 둥근 면 (BRU-213). 개편 전에는 노트가 아무 데도
+                담기지 않은 채 떠 있고 날짜만 알약 카드였다 — 담을 것을 담는다. */}
+            <div className={`note-group ${isPinnedGroup ? 'is-pinned' : ''}`}>
             {items.map((item) => {
               const globalIndex = noteIndexMap.get(item.note.id) ?? -1
               return (
@@ -1236,8 +1244,10 @@ export function NoteFeed() {
                 </div>
               )
             })}
+            </div>
           </div>
-        ))
+          )
+        })
         )}
       </div>
       {/* Space 미리보기 (BRU-179). 대상은 언제나 지금 포커스된 노트라
