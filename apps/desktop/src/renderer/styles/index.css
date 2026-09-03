@@ -3532,11 +3532,19 @@ h6.note-viewer-heading {
   color: var(--text-primary);
 }
 
+/* 조합 **사이**는 넓게, 조합 **안**은 좁게. 이 간격 차이가 「⌘K 또는 ⌘O」와
+   「⌘ 다음 K 다음 O」를 가른다 — 글자 하나 더 쓰지 않고. */
 .cheatsheet-keys {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--space-2);
   flex-shrink: 0;
+}
+
+.cheatsheet-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 /* 테두리를 걷고 옅은 면만 남긴다 — 한 화면에 알약이 예순 개 서 있으면

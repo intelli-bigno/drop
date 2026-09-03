@@ -111,15 +111,20 @@ export function ShortcutCheatSheet({ onClose }: Props) {
                 {group.entries.map((entry) => (
                   <li className="cheatsheet-row" key={`${entry.group}-${entry.keyId}-${entry.modifier ?? ''}`}>
                     <span className="cheatsheet-label">{entry.label}</span>
+                    {/* 글쇠가 둘이면 **조합을 통째로** 되풀이한다 (BRU-213).
+                        수식키를 한 번만 적고 뒤에 글쇠를 늘어놓으면 `⌘ K O`가
+                        되는데, 이건 ⌘K와 ⌘O 둘 중 하나라는 뜻으로도, ⌘ 다음에
+                        K를 치고 O를 치라는 뜻으로도 읽힌다. */}
                     <span className="cheatsheet-keys">
-                      {(entry.modifier === 'primary' || entry.modifier === 'primary-shift') && (
-                        <kbd>⌘</kbd>
-                      )}
-                      {(entry.modifier === 'shift' || entry.modifier === 'primary-shift') && (
-                        <kbd>⇧</kbd>
-                      )}
                       {displayKeysForEntry(entry).map((k) => (
-                        <kbd key={k}>{k}</kbd>
+                        <span className="cheatsheet-combo" key={k}>
+                          {(entry.modifier === 'primary' ||
+                            entry.modifier === 'primary-shift') && <kbd>⌘</kbd>}
+                          {(entry.modifier === 'shift' || entry.modifier === 'primary-shift') && (
+                            <kbd>⇧</kbd>
+                          )}
+                          <kbd>{k}</kbd>
+                        </span>
                       ))}
                     </span>
                   </li>

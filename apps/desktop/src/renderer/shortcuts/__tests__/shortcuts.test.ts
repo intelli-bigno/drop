@@ -241,3 +241,24 @@ describe('feed keyboard layers (BRU-213)', () => {
     expect(resolveNoteFeedShortcut(key('/', { ctrlKey: true }))).toBe(null)
   })
 })
+
+// BRU-213 — 검색은 ⌘K와 ⌘O 둘 다로 연다. 한 동작에 글쇠가 둘일 뿐,
+// 항목이 둘이 되는 것은 아니다 (치트시트에 「검색」이 두 줄로 서면 안 된다).
+describe('search shortcut', () => {
+  it('shouldOpenOnPrimaryKAndPrimaryO', () => {
+    for (const k of ['k', 'o']) {
+      expect(isSearchShortcut(key(k, { metaKey: true }))).toBe(true)
+      expect(isSearchShortcut(key(k, { ctrlKey: true }))).toBe(true)
+    }
+  })
+
+  it('shouldOpenWhileHangulInputIsOn', () => {
+    for (const k of ['ㅏ', 'ㅐ']) {
+      expect(isSearchShortcut(key(k, { metaKey: true }))).toBe(true)
+    }
+  })
+
+  it('shouldNotOpenWithoutTheModifier — 맨 o는 글자다', () => {
+    expect(isSearchShortcut(key('o'))).toBe(false)
+  })
+})
