@@ -79,7 +79,9 @@ describe('selection and feed resolvers', () => {
 describe('resolveFeedEscape', () => {
   const state = (over: Partial<Parameters<typeof resolveFeedEscape>[0]> = {}) => ({
     isConfirmDialogOpen: false,
+    isActionBarOpen: false,
     hasSelection: false,
+    isExpanded: false,
     hasFocus: false,
     ...over,
   })
@@ -104,5 +106,31 @@ describe('resolveFeedEscape', () => {
 
   it('shouldDoNothingWhenThereIsNeitherSelectionNorFocus', () => {
     expect(resolveFeedEscape(state())).toBe('none')
+  })
+
+  // BRU-213 — Esc는 한 번에 한 겹씩 벗긴다. 액션 줄 → 선택 → 펼침 → 포커스.
+  // 한 번에 다 풀리면 훑던 자리를 잃고, 층이 뒤바뀌면 안 연 것부터 닫힌다.
+  it('shouldCloseTheActionBarBeforeAnythingElse', () => {
+    expect(
+      resolveFeedEscape(state({ isActionBarOpen: true, isExpanded: true, hasFocus: true }))
+    ).toBe('closeActionBar')
+    expect(
+      resolveFeedEscape(state({ isActionBarOpen: true, hasSelection: true, hasFocus: true }))
+    ).toBe('closeActionBar')
+  })
+
+  it('shouldCollapseBeforeLettingGoOfTheFocus — 접히기도 전에 포커스를 잃으면 훑던 자리가 사라진다', () => {
+    expect(resolveFeedEscape(state({ isExpanded: true, hasFocus: true }))).toBe('collapse')
+  })
+
+  it('shouldStillClearTheFocusOnceNothingIsOpen', () => {
+    expect(resolveFeedEscape(state({ hasFocus: true }))).toBe('clearFocus')
+  })
+
+  // 확인 다이얼로그는 여전히 가장 세다 — 그 위에 아무것도 없다.
+  it('shouldYieldToTheConfirmDialogEvenWithTheActionBarOpen', () => {
+    expect(
+      resolveFeedEscape(state({ isConfirmDialogOpen: true, isActionBarOpen: true }))
+    ).toBe('ignore')
   })
 })

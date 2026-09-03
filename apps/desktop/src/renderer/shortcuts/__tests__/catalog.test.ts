@@ -3,6 +3,7 @@ import {
   SHORTCUT_CATALOG,
   CHEAT_SHEET_MENU_LABEL,
   CHEAT_SHEET_NOTES,
+  displayKeysForEntry,
   formatKeyForDisplay,
   hintForKeyId,
   type ShortcutCatalogEntry,
@@ -105,11 +106,23 @@ describe('SHORTCUT_CATALOG', () => {
     expect(KEYS.focusNext).toContain('j')
     expect(KEYS.focusPrev).toContain('k')
     expect(KEYS.enterVisualSelection).toContain('v')
-    expect(KEYS.openFocused).toEqual(expect.arrayContaining(['/', 'i']))
+    expect(KEYS.openFocused).toEqual(expect.arrayContaining(['i']))
     expect(byId.focusNext?.group).toBe('탐색')
     expect(byId.focusPrev?.group).toBe('탐색')
     expect(byId.openFocused?.group).toBe('탐색')
     expect(byId.enterVisualSelection?.group).toBe('선택')
+  })
+
+  // BRU-213 — 훑는 손의 층이 넷이 됐다. 넷 다 목록에 있어야 발견된다.
+  it('shouldDocumentTheWholeScanningLadder', () => {
+    const byId = Object.fromEntries(SHORTCUT_CATALOG.map((e) => [e.keyId, e]))
+    for (const id of ['focusNext', 'expandFocused', 'openFocused', 'openActions']) {
+      expect(byId[id]?.group).toBe('탐색')
+    }
+    expect(KEYS.expandFocused).toContain('Enter')
+    expect(KEYS.openActions).toContain('/')
+    // 같은 글쇠가 두 층을 맡으면 하나는 영원히 안 눌린다.
+    expect(KEYS.openFocused).not.toContain('/')
   })
 
   // BRU-133 — 편집기는 마크다운 숏컷 + Esc 끝내기 + Enter 줄바꿈. vim 모달은 없다.
@@ -120,7 +133,7 @@ describe('SHORTCUT_CATALOG', () => {
     expect(KEYS.insertNewline).toEqual(['Enter'])
     const notes = CHEAT_SHEET_NOTES.join(' ')
     expect(notes).toMatch(/마크다운/)
-    expect(notes).toMatch(/vim 모드가 없다/)
+    expect(notes).toMatch(/vim 모드는 없다/)
   })
 })
 
@@ -180,5 +193,27 @@ describe('formatKeyForDisplay', () => {
     expect(formatKeyForDisplay('Escape')).toBe('Esc')
     expect(formatKeyForDisplay('Enter')).toBe('Enter')
     expect(formatKeyForDisplay('Backspace')).toBe('Backspace')
+  })
+})
+
+// BRU-213 — 표에 한글 별칭까지 세 개씩 늘어놓으면 눈이 값을 못 고른다.
+// 별칭이 도는 것은 각주 한 줄로 이미 말하고 있다.
+describe('displayKeysForEntry', () => {
+  const byId = Object.fromEntries(SHORTCUT_CATALOG.map((e) => [e.keyId, e]))
+
+  it('한글 별칭은 표에서 뺀다', () => {
+    expect(displayKeysForEntry(byId.focusNext!)).toEqual(['↓', 'J'])
+    expect(displayKeysForEntry(byId.copyFocused!)).toEqual(['C'])
+  })
+
+  it('보여줄 글쇠를 다 빼지는 않는다 — 어떤 항목도 빈칸으로 서면 안 된다', () => {
+    for (const entry of SHORTCUT_CATALOG) {
+      expect(displayKeysForEntry(entry).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('이미 표시용으로 바뀐 이름이다 — 호출부가 다시 포맷하지 않는다', () => {
+    expect(displayKeysForEntry(byId.clearFocus!)).toContain('Esc')
+    expect(displayKeysForEntry(byId.togglePreview!)).toContain('Space')
   })
 })

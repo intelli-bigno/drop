@@ -7,10 +7,17 @@ export const KEYS = {
   clearFocus: ['Escape'],
   focusNext: ['ArrowDown', 'j', 'ㅓ'],
   focusPrev: ['ArrowUp', 'k', 'ㅏ'],
-  // 편집 진입은 `/`·`i`뿐이다 (BRU-53). Enter는 포커스만 옮기던 카드를 열지 않는다.
-  openFocused: ['/', 'i', 'ㅑ'],
+  // 편집 진입은 `i` 하나다. `/`는 BRU-213에서 액션 줄로 넘어갔다 —
+  // 두 글쇠가 같은 일을 하는 것보다, 자주 쓰는 다른 일 하나를 더 얻는 쪽이 낫다.
+  openFocused: ['i', 'ㅑ'],
+  // 맨 Enter로 펼쳐 읽는다 (BRU-213). BRU-53에서 Enter가 **편집을** 열지 않게 한
+  // 것은 그대로다 — 읽기 위해 펼치는 것과 고치려고 들어가는 것은 다른 층이다.
+  expandFocused: ['Enter'],
   replyToFocused: ['Enter'],
   createSibling: ['Enter'],
+  // 포커스된 줄의 액션 줄을 글쇠로 연다 (BRU-213). 마우스를 올렸을 때 뜨는 그
+  // 툴바를 그대로 띄우고, 방향키로 고른다 — 손을 옮기지 않고 같은 것을 쓴다.
+  openActions: ['/'],
   // 미리보기 패널 (BRU-179). Finder의 Quick Look과 같은 자리다.
   // 편집 중에는 글자이고 선택 모드에서는 선택의 자리라 그 층에서 비켜선다.
   togglePreview: [' '],

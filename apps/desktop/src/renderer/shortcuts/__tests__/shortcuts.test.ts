@@ -36,19 +36,22 @@ describe('resolveNoteFeedShortcut', () => {
     }
   })
 
-  // BRU-53 — 편집 진입은 `/`·`i`뿐이다. 맨 Enter로는 열리지 않는다.
-  it('shouldNotOpenFocusedOnPlainEnter', () => {
-    expect(resolveNoteFeedShortcut(key('Enter'))).toBeNull()
+  // BRU-53 — 맨 Enter로는 **편집이** 열리지 않는다. BRU-213에서 맨 Enter가
+  // 펼쳐 읽기를 맡았지만 그 규칙은 그대로다: 읽으려고 펼치는 것과 고치려고
+  // 들어가는 것은 다른 층이고, 훑던 손이 실수로 편집에 빠지면 안 된다.
+  it('shouldNotOpenEditorOnPlainEnter', () => {
+    expect(resolveNoteFeedShortcut(key('Enter'))).not.toBe('openFocused')
   })
 
-  it('shouldOpenFocusedOnSlashAndIAndHangulI', () => {
-    for (const k of ['/', 'i', 'ㅑ']) {
+  // BRU-213 — `/`는 액션 줄로 넘어갔고 편집 진입은 `i` 하나가 됐다.
+  it('shouldOpenFocusedOnIAndHangulI', () => {
+    for (const k of ['i', 'ㅑ']) {
       expect(resolveNoteFeedShortcut(key(k))).toBe('openFocused')
     }
   })
 
-  // ⌘/ 는 치트시트다 — 편집을 열면 안 된다
-  it('shouldNotOpenFocusedOnPrimarySlash', () => {
+  // ⌘/ 는 치트시트다 — 액션 줄도 편집도 열면 안 된다
+  it('shouldNotResolveOnPrimarySlash', () => {
     expect(resolveNoteFeedShortcut(key('/', { metaKey: true }))).toBeNull()
     expect(resolveNoteFeedShortcut(key('/', { ctrlKey: true }))).toBeNull()
   })
@@ -208,5 +211,33 @@ describe('theme toggle shortcut', () => {
   it('shouldNotCollideWithTrashDelete — 맨 d는 휴지통의 삭제다', () => {
     expect(isToggleThemeShortcut(key('d'))).toBe(false)
     expect(isToggleThemeShortcut(key('D', { shiftKey: true }))).toBe(false)
+  })
+})
+
+// BRU-213 — 목록을 훑는 손의 층을 다시 나눈다.
+//   ↑↓/JK 훑기 → Enter 펼치기 → i 편집 → / 액션 고르기 → Esc 한 겹씩 되돌리기
+describe('feed keyboard layers (BRU-213)', () => {
+  it('shouldExpandOnPlainEnter', () => {
+    expect(resolveNoteFeedShortcut(key('Enter'))).toBe('expandFocused')
+  })
+
+  it('shouldKeepEnterModifiersAsNoteCreation — 펼치기가 만들기를 빼앗지 않는다', () => {
+    expect(resolveNoteFeedShortcut(key('Enter', { metaKey: true }))).toBe('createSibling')
+    expect(resolveNoteFeedShortcut(key('Enter', { shiftKey: true }))).toBe('replyToFocused')
+  })
+
+  it('shouldOpenActionsOnSlash', () => {
+    expect(resolveNoteFeedShortcut(key('/'))).toBe('openActions')
+  })
+
+  it('shouldEnterEditOnIOnly — `/`는 이제 액션 줄의 것이다', () => {
+    expect(resolveNoteFeedShortcut(key('i'))).toBe('openFocused')
+    expect(resolveNoteFeedShortcut(key('ㅑ'))).toBe('openFocused')
+    expect(KEYS.openFocused).not.toContain('/')
+  })
+
+  it('shouldNotOpenActionsWithModifiers — ⌘/는 치트시트다', () => {
+    expect(resolveNoteFeedShortcut(key('/', { metaKey: true }))).toBe(null)
+    expect(resolveNoteFeedShortcut(key('/', { ctrlKey: true }))).toBe(null)
   })
 })

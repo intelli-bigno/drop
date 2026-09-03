@@ -21,11 +21,12 @@ export const CHEAT_SHEET_MENU_LABEL = '단축키'
  * ShortcutCheatSheet는 이 배열만 그린다 — 문구를 컴포넌트에 두지 않는다.
  */
 export const CHEAT_SHEET_NOTES: string[] = [
-  '피드: j/k 이동 · v 선택 · / · i 편집. 편집기에는 vim 모드가 없다.',
-  '편집 중: 마크다운 숏컷(# · * · ```) · Enter 줄바꿈 · Esc 끝내기.',
-  '한글 입력 상태에서도 같은 자리의 키가 동작한다 (J = ㅓ).',
+  // 표에 있는 것을 다시 적지 않는다 (BRU-213) — 각주는 표가 담지 못하는 것만 담는다.
+  'Esc는 한 겹씩 벗긴다 — 액션 줄 → 선택 → 펼침 → 포커스.',
+  '액션 줄(/)은 ←→로 고르고 Enter로 실행한다 — 마우스를 올렸을 때 뜨는 그 줄이다.',
+  '한글 입력 상태에서도 같은 자리의 글쇠가 동작한다 (J = ㅓ). 표에는 적지 않는다.',
+  '편집 중에는 마크다운 숏컷이 돈다 (# · * · ```). 편집기에 vim 모드는 없다.',
   '목록이 뜨는 자리(검색·태그·템플릿)는 ↑↓로 고르고 Enter로 넣고 Esc로 닫는다.',
-  '아이콘 버튼은 마우스를 올리거나 Tab으로 닿으면 하는 일과 글쇠가 함께 뜬다.',
 ]
 
 export interface ShortcutCatalogEntry {
@@ -41,8 +42,10 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 탐색
   { keyId: 'focusNext', label: '다음 노트', group: '탐색', scope: 'feed' },
   { keyId: 'focusPrev', label: '이전 노트', group: '탐색', scope: 'feed' },
-  { keyId: 'togglePreview', label: '미리보기 (열어 둔 채 j/k로 넘길 수 있다)', group: '탐색', scope: 'feed' },
-  { keyId: 'openFocused', label: '편집 모드로 들어가기', group: '탐색', scope: 'feed' },
+  { keyId: 'togglePreview', label: '미리보기', group: '탐색', scope: 'feed' },
+  { keyId: 'expandFocused', label: '펼쳐 읽기', group: '탐색', scope: 'feed' },
+  { keyId: 'openFocused', label: '편집', group: '탐색', scope: 'feed' },
+  { keyId: 'openActions', label: '액션 줄', group: '탐색', scope: 'feed' },
   { keyId: 'clearFocus', label: '포커스 해제', group: '탐색', scope: 'feed' },
   { keyId: 'search', label: '검색', group: '탐색', scope: 'global', modifier: 'primary' },
 
@@ -66,7 +69,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 편집 — 인라인 에디터 (BRU-133). 피드 j/k/v와 다른 층. vim 모달은 없다.
   {
     keyId: 'insertNewline',
-    label: '줄바꿈 (입력을 끝내지 않음)',
+    label: '줄바꿈',
     group: '편집',
     scope: 'editor',
   },
@@ -88,11 +91,11 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     scope: 'feed',
     modifier: 'shift',
   },
-  { keyId: 'insertTemplate', label: '템플릿 넣기 (빈 노트에서)', group: '노트 액션', scope: 'note' },
+  { keyId: 'insertTemplate', label: '템플릿 넣기', group: '노트 액션', scope: 'note' },
   { keyId: 'copyFocused', label: '내용 복사', group: '노트 액션', scope: 'feed' },
   {
     keyId: 'copyFocusedReference',
-    label: '참조 링크 복사 (에이전트용)',
+    label: '참조 링크 복사',
     group: '노트 액션',
     scope: 'feed',
     modifier: 'primary-shift',
@@ -111,7 +114,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 정리
   { keyId: 'archive', label: '보관', group: '정리', scope: 'trash' },
   { keyId: 'trashDelete', label: '삭제', group: '정리', scope: 'trash' },
-  { keyId: 'restore', label: '복원 (휴지통·보관함)', group: '정리', scope: 'trash' },
+  { keyId: 'restore', label: '복원', group: '정리', scope: 'trash' },
   { keyId: 'openTagList', label: '태그 추가', group: '정리', scope: 'tag' },
   {
     keyId: 'openTagManagement',
@@ -128,7 +131,7 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   // 보기 (BRU-213)
   {
     keyId: 'toggleTheme',
-    label: '라이트 ↔ 다크 (세 갈래는 사용자 메뉴에서)',
+    label: '라이트 ↔ 다크',
     group: '보기',
     scope: 'global',
     modifier: 'primary-shift',
@@ -181,6 +184,23 @@ export function hintForKeyId(keyId: ShortcutKeyId): string | null {
 
 export function keysForEntry(entry: ShortcutCatalogEntry): string[] {
   return [...KEYS[entry.keyId]]
+}
+
+const HANGUL = /[\u3131-\u318e\uac00-\ud7a3]/
+
+/**
+ * 치트시트 표에 **실제로 그릴** 글쇠 (BRU-213).
+ *
+ * 한글 별칭을 뺀다. 표가 `↓ / J / ㅓ`처럼 셋씩 늘어서면 눈이 값을 못 고르는데,
+ * 셋째 칸은 어차피 「한글 입력 상태에서도 같은 자리가 동작한다」는 각주 한 줄로
+ * 이미 말한 것이다 — 같은 내용을 두 자리에서 말하면서 읽기만 어려워졌다.
+ *
+ * 별칭을 빼서 **남는 것이 없어지는 항목은 없다.** 모든 keyId가 한글 아닌 글쇠를
+ * 적어도 하나 갖고 있고, 그 사실은 테스트가 지킨다.
+ */
+export function displayKeysForEntry(entry: ShortcutCatalogEntry): string[] {
+  const keys = keysForEntry(entry).filter((key) => !HANGUL.test(key))
+  return (keys.length > 0 ? keys : keysForEntry(entry)).map(formatKeyForDisplay)
 }
 
 export function groupedCatalog(): { group: string; entries: ShortcutCatalogEntry[] }[] {

@@ -7,6 +7,8 @@ export type NoteFeedShortcutAction =
   | 'focusNext'
   | 'focusPrev'
   | 'openFocused'
+  | 'openActions'
+  | 'expandFocused'
   | 'deleteFocused'
   | 'replyToFocused'
   | 'createSibling'
@@ -43,11 +45,19 @@ function matchesCopyKey(eventKey: string): boolean {
 }
 
 export function resolveNoteFeedShortcut(event: KeyEventLike): NoteFeedShortcutAction | null {
-  // Enter는 노트를 "만드는" 키다. 맨 Enter로는 편집이 열리지 않는다 (BRU-53).
+  // Enter는 수식키에 따라 셋으로 갈린다. 맨 Enter는 **펼쳐 읽기**다 (BRU-213) —
+  // 편집을 열지 않는다는 BRU-53의 결정은 그대로고, 읽으려고 펼치는 층이 새로 생겼다.
   if (matchesKey('createSibling', event.key)) {
     if (isPrimaryModifier(event)) return 'createSibling'
     if (event.shiftKey) return 'replyToFocused'
-    return null
+    if (event.altKey) return null
+    return 'expandFocused'
+  }
+
+  // `/`는 액션 줄이다 (BRU-213). ⌘/는 치트시트라 수식키가 붙으면 우리 것이 아니다.
+  if (matchesKey('openActions', event.key)) {
+    if (isPrimaryModifier(event) || event.shiftKey || event.altKey) return null
+    return 'openActions'
   }
 
   // 편집 진입은 `/`·`i`뿐이고, 수식키가 붙으면 다른 명령이다 (⌘/ = 치트시트).

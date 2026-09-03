@@ -23,6 +23,7 @@ import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../short
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { shouldYieldToNativeCopy } from '../lib/copy-guard'
 import { copyResultMessage } from '../lib/copy-feedback'
+import { resolveActionBarKey, rovingIndex } from '../lib/action-bar'
 import { useToastStore } from '../stores/toast'
 import { buildNoteReference } from '../../shared/note-reference'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
@@ -123,6 +124,9 @@ export function NoteFeed() {
   // 눌러서 펼친 노트 (BRU-213). 한 번에 하나다 — 여럿이 동시에 열리면
   // 「클릭 안 하면 리스트」라는 약속이 깨진다. 훑기(j/k)와는 무관하다 (BRU-179).
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
+  // `/`로 연 액션 줄이 어느 줄의 것인지 (BRU-213). 화면에 띄우는 일은
+  // `.note-card-actions:focus-within`이 하고, 이 값은 방향키와 Esc가 쓴다.
+  const [actionBarNoteId, setActionBarNoteId] = useState<string | null>(null)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -240,10 +244,20 @@ export function NoteFeed() {
   }, [focusedIndex])
 
   // 키 핸들러가 ref 패턴이라 패널 상태도 같은 방식으로 최신값을 들고 있어야 한다
+  const expandedNoteIdRef = useRef(expandedNoteId)
+  const actionBarNoteIdRef = useRef(actionBarNoteId)
   const isPreviewOpenRef = useRef(isPreviewOpen)
   useEffect(() => {
     isPreviewOpenRef.current = isPreviewOpen
   }, [isPreviewOpen])
+
+  useEffect(() => {
+    expandedNoteIdRef.current = expandedNoteId
+  }, [expandedNoteId])
+
+  useEffect(() => {
+    actionBarNoteIdRef.current = actionBarNoteId
+  }, [actionBarNoteId])
 
   useEffect(() => {
     selectionRef.current = selection
@@ -296,17 +310,19 @@ export function NoteFeed() {
       // ConfirmDialog는 캡처 단계에서 Esc를 받아 가므로 여기서는 비켜 준다.
       const escape = resolveFeedEscape({
         isConfirmDialogOpen: pendingBulkDeleteRef.current !== null,
+        isActionBarOpen: actionBarNoteIdRef.current !== null,
         hasSelection: selectionRef.current !== null,
+        isExpanded: expandedNoteIdRef.current !== null,
         hasFocus: true,
       })
       if (escape === 'ignore') return
       e.preventDefault()
-      // 선택 중이면 Esc는 선택만 푼다 — 포커스까지 잃으면 이어서 j/k를 칠 수 없다 (BRU-80)
-      if (escape === 'clearSelection') {
-        setSelection(null)
-        return
-      }
-      setFocusedIndex(null)
+      // 한 번에 한 겹씩 (BRU-213) — 선택 중이면 포커스까지 잃지 않고 (BRU-80),
+      // 펼친 것이 있으면 접기 전에 포커스를 놓지 않는다.
+      if (escape === 'closeActionBar') closeActionBar()
+      else if (escape === 'clearSelection') setSelection(null)
+      else if (escape === 'collapse') setExpandedNoteId(null)
+      else setFocusedIndex(null)
     }
   }, [])
 
@@ -366,6 +382,45 @@ export function NoteFeed() {
   }, [orderedNotes])
 
   const cardElementRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  // --- 액션 줄을 글쇠로 (BRU-213) ---
+  // 새 UI를 만들지 않는다. 마우스를 올렸을 때 뜨는 그 버튼들에 **초점을 옮길**
+  // 뿐이고, 보이게 하는 일은 `.note-card-actions:focus-within`이 한다.
+  // HintLayer가 focusin을 듣고 있어서 설명·글쇠도 그대로 따라 뜬다.
+  const actionButtonsOf = useCallback((noteId: string): HTMLButtonElement[] => {
+    const card = cardElementRefs.current.get(noteId)
+    if (!card) return []
+    return [...card.querySelectorAll<HTMLButtonElement>('.note-card-actions button')]
+  }, [])
+
+  const openActionBar = useCallback(
+    (noteId: string) => {
+      const buttons = actionButtonsOf(noteId)
+      if (buttons.length === 0) return
+      setActionBarNoteId(noteId)
+      buttons[0].focus()
+    },
+    [actionButtonsOf]
+  )
+
+  const closeActionBar = useCallback(() => {
+    setActionBarNoteId(null)
+    feedRef.current?.focus()
+  }, [])
+
+  // 초점이 액션 줄 밖으로 나가면 열려 있다고 볼 이유가 없다 — 버튼이 다이얼로그를
+  // 열어 초점을 데려가는 경우까지 이 한 줄로 덮인다.
+  useEffect(() => {
+    if (!actionBarNoteId) return
+    const onFocusIn = (e: FocusEvent) => {
+      const card = cardElementRefs.current.get(actionBarNoteId)
+      const bar = card?.querySelector('.note-card-actions')
+      if (bar && e.target instanceof Node && bar.contains(e.target)) return
+      setActionBarNoteId(null)
+    }
+    document.addEventListener('focusin', onFocusIn)
+    return () => document.removeEventListener('focusin', onFocusIn)
+  }, [actionBarNoteId])
 
   const setCardRef = (id: string, handle: NoteCardHandle | null) => {
     if (handle) {
@@ -722,6 +777,28 @@ export function NoteFeed() {
       if (currentOrderedNotes.length === 0) return
       if (isTextInputTarget(e.target)) return
 
+      // 액션 줄이 떠 있으면 그 층이 먼저다 (BRU-213) — 방향키는 줄을 넘기는 것이
+      // 아니라 버튼을 옮기는 것이 된다. 아래 피드 리졸버까지 내려가면 안 된다.
+      const openBarNoteId = actionBarNoteIdRef.current
+      if (openBarNoteId) {
+        const barAction = resolveActionBarKey(e.key)
+        if (barAction?.type === 'close') {
+          e.preventDefault()
+          closeActionBar()
+          return
+        }
+        if (barAction?.type === 'move') {
+          e.preventDefault()
+          const buttons = actionButtonsOf(openBarNoteId)
+          const current = buttons.findIndex((b) => b === document.activeElement)
+          const next = rovingIndex(current < 0 ? 0 : current, buttons.length, barAction.delta)
+          if (next >= 0) buttons[next].focus()
+          return
+        }
+        // Enter·Space는 우리 것이 아니다 — 초점을 든 버튼이 스스로 눌린다.
+        return
+      }
+
       // 선택 키가 먼저다 — Shift+J/K는 피드 리졸버가 보지 않는 자리다 (BRU-80)
       const selectionAction = resolveNoteSelectionShortcut(e as unknown as React.KeyboardEvent)
 
@@ -738,16 +815,17 @@ export function NoteFeed() {
         }
         const escape = resolveFeedEscape({
           isConfirmDialogOpen: pendingBulkDeleteRef.current !== null,
+          isActionBarOpen: actionBarNoteIdRef.current !== null,
           hasSelection: selectionRef.current !== null,
+          isExpanded: expandedNoteIdRef.current !== null,
           hasFocus: currentFocusedIndex !== null,
         })
         if (escape === 'ignore' || escape === 'none') return
         e.preventDefault()
-        if (escape === 'clearSelection') {
-          setSelection(null)
-        } else {
-          setFocusedIndex(null)
-        }
+        if (escape === 'closeActionBar') closeActionBar()
+        else if (escape === 'clearSelection') setSelection(null)
+        else if (escape === 'collapse') setExpandedNoteId(null)
+        else setFocusedIndex(null)
         return
       }
 
@@ -829,11 +907,32 @@ export function NoteFeed() {
         return
       }
 
+      // 맨 Enter는 펼쳐 읽기다 (BRU-213). 한 번 더 누르면 접힌다.
+      if (action === 'expandFocused') {
+        if (currentFocusedIndex === null) return
+        e.preventDefault()
+        const item = currentOrderedNotes[currentFocusedIndex]
+        if (item) setExpandedNoteId((current) => toggleExpandedNote(current, item.note.id))
+        return
+      }
+
+      if (action === 'openActions') {
+        if (currentFocusedIndex === null) return
+        e.preventDefault()
+        const item = currentOrderedNotes[currentFocusedIndex]
+        if (item) openActionBar(item.note.id)
+        return
+      }
+
       if (action === 'openFocused') {
         if (currentFocusedIndex === null) return
         e.preventDefault()
         const item = currentOrderedNotes[currentFocusedIndex]
         if (item) {
+          // 고치러 들어가는 것은 펼치는 것이기도 하다 (BRU-213) — 그래야 Esc로
+          // 편집을 빠져나왔을 때 방금 보던 본문이 그대로 남아 있고, 한 번 더
+          // 누르면 접힌다. 여기서 표시하지 않으면 Esc 한 번에 한 줄로 접혀 버린다.
+          setExpandedNoteId(item.note.id)
           cardRefs.current.get(item.note.id)?.focus()
           // Keep focusedIndex so navigation continues from this position after editing
         }

@@ -475,9 +475,10 @@ body {
 }
 
 
-/* BRU-82 — 노출은 마우스 hover뿐이다. 키보드 포커스만으로는 켜지지 않는다.
-   `:focus-within`은 남겨 둔다: Tab으로 액션 버튼에 도달한 키보드 사용자는
-   자기가 무엇을 고르고 있는지 볼 수 있어야 한다(단축키와 별개의 대체 경로). */
+/* 뜨는 조건은 둘이다 — 마우스가 카드 위에 있거나, 초점이 줄 안에 있거나.
+   BRU-82에서는 초점 쪽이 Tab 사용자를 위한 곁길이었는데, BRU-213에서 `/`가
+   그 길을 정문으로 만들었다: `/`는 첫 버튼에 초점을 옮길 뿐이고, 보이게 하는
+   일은 아래 `:focus-within` 한 줄이 그대로 한다. 새로 그릴 것이 없다. */
 .note-card:hover .note-card-actions,
 .note-card-actions:focus-within {
   opacity: 1;
@@ -3421,13 +3422,13 @@ h6.note-viewer-heading {
 }
 
 .cheatsheet {
-  width: min(760px, 100%);
-  max-height: 80vh;
+  width: min(720px, 100%);
+  max-height: 78vh;
   overflow-y: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: var(--space-5);
+  padding: var(--space-6);
   box-shadow: var(--shadow-lg);
 }
 
@@ -3445,22 +3446,23 @@ h6.note-viewer-heading {
   color: var(--text-primary);
 }
 
-/* 앱 밖에서 도는 단축키 한 줄 (BRU-213). 나머지와 층이 달라 따로 세운다 —
-   이건 앱이 뒤에 있어도 듣고, 사용자가 바꿀 수 있다. */
+/* 앱 밖에서 도는 단축키 한 줄 (BRU-213). 층이 달라 표 위에 따로 서지만,
+   색면 카드는 걷었다 — 이 화면에서 색이 깔린 자리가 하나뿐이면 눈이 거기부터
+   가는데, 여기서 가장 먼저 읽혀야 할 것은 아래 목록이다. 구분은 선 하나로 족하다. */
 .cheatsheet-global {
   margin-bottom: var(--space-5);
-  padding: var(--space-3) var(--space-4);
-  background: var(--accent-subtle);
-  border-radius: var(--radius-lg);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 /* 등록되지 않은 상태 — 있다는 사실은 알리되 켜져 있는 것처럼 보이지 않게. */
-.cheatsheet-global.is-inactive {
-  background: var(--bg-tertiary);
+.cheatsheet-global.is-inactive .cheatsheet-keys kbd {
+  color: var(--text-tertiary);
 }
 
 .cheatsheet-sub {
   display: block;
+  margin-top: 2px;
   font: var(--type-caption);
   color: var(--text-tertiary);
 }
@@ -3482,20 +3484,27 @@ h6.note-viewer-heading {
   color: var(--text-primary);
 }
 
+/* 두 단으로 흘린다 (BRU-213). 격자로 세우면 묶음마다 줄 수가 달라 칸이
+   들쭉날쭉 비는데, 단으로 흘리면 빈자리 없이 채워져 세로 리듬이 산다.
+   `break-inside: avoid`가 한 묶음이 두 단에 걸쳐 쪼개지는 것을 막는다. */
 .cheatsheet-groups {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-5);
+  column-count: 2;
+  column-gap: var(--space-6);
+}
+
+.cheatsheet-group {
+  break-inside: avoid;
+  margin-bottom: var(--space-5);
 }
 
 /* 대문자 변환 + 자간 0.08em을 걷었다 (BRU-213) — 한글에는 대문자가 없어서
    `text-transform: uppercase`는 영어 제목에만 걸린다. 같은 목록의 제목이
    언어에 따라 다른 모양으로 서는 건 규칙이 아니라 사고다. */
 .cheatsheet-group-title {
-  margin: 0 0 var(--space-2) 0;
-  font: var(--type-label);
-  letter-spacing: var(--type-label-tracking);
-  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+  color: var(--text-tertiary);
 }
 
 .cheatsheet-list {
@@ -3507,17 +3516,20 @@ h6.note-viewer-heading {
   gap: 2px;
 }
 
+/* 이름은 왼쪽, 글쇠는 오른쪽 끝. 격자로 잡아야 단 안에서 글쇠가 한 줄로 선다 —
+   flex의 space-between은 이름 길이에 따라 오른쪽 끝이 흔들린다. */
 .cheatsheet-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
   gap: var(--space-3);
-  padding: 5px 0;
+  padding: 4px 0;
 }
 
 .cheatsheet-label {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  font: var(--type-row);
+  letter-spacing: var(--type-row-tracking);
+  color: var(--text-primary);
 }
 
 .cheatsheet-keys {
@@ -3527,32 +3539,25 @@ h6.note-viewer-heading {
   flex-shrink: 0;
 }
 
-.cheatsheet-key-alt {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.cheatsheet-or {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-}
-
+/* 테두리를 걷고 옅은 면만 남긴다 — 한 화면에 알약이 예순 개 서 있으면
+   테두리가 그 자체로 격자무늬가 되어 글자를 덮는다. */
 .cheatsheet-keys kbd {
   display: inline-block;
-  min-width: 20px;
-  padding: 2px 6px;
+  min-width: 18px;
+  padding: 1px 5px;
   text-align: center;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  border: none;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .cheatsheet-footnotes {
-  margin: var(--space-5) 0 0 0;
+  margin: var(--space-4) 0 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
