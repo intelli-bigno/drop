@@ -1,0 +1,74 @@
+/* ============================================
+   글자의 역할 (BRU-213)
+
+   크기의 정본은 design-system/drop/tokens.json (`--text-*`)이고, 이 파일은
+   그 값에 **뜻**을 붙인다 — 모바일 `drop_typography.dart`와 같은 계층이다.
+
+   이 계층이 없으면 화면이 `font-size: 15px` 같은 그냥 숫자로 되돌아간다.
+   실제로 개편 전 데스크톱에는 같은 뜻의 글자가 자리마다 다른 값이었다:
+   뷰어 14px / 편집기 15px — 노트 하나를 읽다가 고치면 글자가 커졌다.
+
+   **색은 여기 없다.** 같은 `body`가 카드 위에서는 text-primary, 메타 줄에서는
+   text-secondary다. 역할이 색까지 쥐면 두 자리를 한 이름으로 못 쓴다.
+
+   쓰는 법 — 짝으로 쓴다. 자간은 `font` 단축 속성에 못 들어간다.
+
+       font: var(--type-body);
+       letter-spacing: var(--type-body-tracking);
+   ============================================ */
+
+/* 한글이 든 가변 폰트 하나로 굵기 전 구간을 낸다. 개편 전에는 Inter(한글 없음)를
+   구글 CDN에서 런타임에 받아 와서, 한글만 시스템 폴백으로 새어 나갔다 —
+   한 문장 안에 글꼴이 두 벌이면 자간도 x-높이도 어긋난다. */
+@font-face {
+  font-family: 'Pretendard Variable';
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url('../assets/fonts/PretendardVariable.woff2') format('woff2-variations');
+}
+
+:root {
+  /* 로그인 화면의 'DROP' **전용**. 읽는 글이 아니라 상표다. */
+  --type-wordmark: 800 var(--text-3xl) / 1.1 var(--font-sans);
+  --type-wordmark-tracking: -1.5px;
+
+  /* 화면 본문 맨 위에 서는 큰 제목. */
+  --type-screen-title: 700 var(--text-2xl) / 1.25 var(--font-sans);
+  --type-screen-title-tracking: -0.6px;
+
+  /* 다이얼로그·시트·묶음의 이름. 한 화면 안에서 구역을 가른다. */
+  --type-section-title: 700 var(--text-xl) / 1.3 var(--font-sans);
+  --type-section-title-tracking: -0.4px;
+
+  /* 목록 한 줄의 글. 목록의 **모든** 행이 여기 앉으므로 굵기를 올리지 않는다 —
+     600으로 두면 화면 전체가 무거워지고 강조가 강조가 아니게 된다. */
+  --type-row: 400 var(--text-base) / 1.5 var(--font-sans);
+  --type-row-tracking: -0.1px;
+
+  /* 문단을 **읽는** 자리 — 뷰어·편집기. 행보다 한 단 크고 성기다.
+     뷰어와 편집기가 같은 값을 쓰는 것이 핵심이다. */
+  --type-reading: 400 var(--text-lg) / 1.7 var(--font-sans);
+  --type-reading-tracking: -0.1px;
+
+  /* 누르는 것의 이름 — 버튼·탭·메뉴 항목. */
+  --type-label: 600 var(--text-base) / 1.2 var(--font-sans);
+  --type-label-tracking: -0.1px;
+
+  /* 작은 조작 — 헤더 필터·칩처럼 촘촘히 늘어서는 것. 데스크톱에만 있는 역할이다
+     (모바일은 손가락 크기 때문에 이 밀도가 성립하지 않는다). */
+  --type-control: 500 var(--text-sm) / 1.2 var(--font-sans);
+  --type-control-tracking: -0.1px;
+
+  /* 메타 — 시각·개수·태그처럼 본문에 딸린 것. */
+  --type-meta: 400 var(--text-sm) / 1.4 var(--font-sans);
+  --type-meta-tracking: 0;
+
+  /* 가장 작은 글자. **읽는 글이 아닌** 자리 전용 — 이름표·글쇠. */
+  --type-caption: 500 var(--text-xs) / 1.3 var(--font-sans);
+  --type-caption-tracking: 0;
+
+  /* 코드·글쇠·숫자. 시스템 모노라 맥에서는 SF Mono다. */
+  --type-mono: 500 var(--text-sm) / 1.5 var(--font-mono);
+  --type-mono-tracking: 0;
+}
