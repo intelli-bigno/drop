@@ -9,7 +9,10 @@ import { UserMenu } from './components/UserMenu'
 import { Toaster } from './components/Toaster'
 import { HintLayer } from './components/HintLayer'
 import { ShortcutCheatSheet } from './components/ShortcutCheatSheet'
-import { isCheatSheetShortcut } from './shortcuts/noteGlobal'
+import { Icon } from './components/Icon'
+import { isCheatSheetShortcut, isToggleThemeShortcut } from './shortcuts/noteGlobal'
+import { hintForKeyId } from './shortcuts/catalog'
+import { useThemeStore } from './stores/theme'
 import { isTextInputTarget } from './lib/dom-utils'
 import { resolveAppRoute } from './lib/app-route'
 
@@ -60,6 +63,8 @@ function MainApp() {
   const { user, isAuthLoading, initializeAuth } = useAuthStore()
   const loadProfile = useProfileStore((s) => s.loadProfile)
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false)
+  const resolvedTheme = useThemeStore((s) => s.resolved)
+  const toggleTheme = useThemeStore((s) => s.toggle)
 
   // ⌘/ 또는 ? 로 단축키 치트시트. 맨 `/`는 편집 진입 키라 여기서 잡지 않는다 (BRU-53).
   // '?'는 수식키가 없으므로 입력 중에는 무시한다.
@@ -74,6 +79,22 @@ function MainApp() {
     window.addEventListener('keydown', handleCheatSheetKey)
     return () => window.removeEventListener('keydown', handleCheatSheetKey)
   }, [handleCheatSheetKey])
+
+  // ⌘⇧D로 라이트↔다크 (BRU-213). 수식키가 둘이라 글자를 치는 중에도 안전하다 —
+  // 그래서 치트시트의 `?`와 달리 입력 중인지 따지지 않는다.
+  const handleToggleThemeKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (!isToggleThemeShortcut(e)) return
+      e.preventDefault()
+      toggleTheme()
+    },
+    [toggleTheme]
+  )
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleToggleThemeKey)
+    return () => window.removeEventListener('keydown', handleToggleThemeKey)
+  }, [handleToggleThemeKey])
 
   // Listen for quick capture note creation from main process
   useEffect(() => {
@@ -141,6 +162,18 @@ function MainApp() {
                작은 글자다 — 상용 화면에는 없는 것이 헤더에서 가장 눈에 띄면 안 된다. */
             <span className={`env-badge ${isLocal ? 'is-local' : ''}`}>{envLabel}</span>
           )}
+          {/* 버튼은 지금 상태가 아니라 **누르면 될 것**을 그린다 (BRU-213) —
+              지금이 다크면 해를 보여 주고, 누르면 밝아진다. 상태를 그리면
+              "이미 그렇다"와 "그렇게 된다"가 같은 그림이 되어 뒤집힌다. */}
+          <button
+            className="icon-btn"
+            onClick={toggleTheme}
+            data-hint={resolvedTheme === 'dark' ? '라이트 모드로' : '다크 모드로'}
+            data-hint-keys={hintForKeyId('toggleTheme') ?? undefined}
+            aria-label={resolvedTheme === 'dark' ? '라이트 모드로' : '다크 모드로'}
+          >
+            <Icon name={resolvedTheme === 'dark' ? 'sun' : 'moon'} />
+          </button>
           <UserMenu onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />
         </div>
       </div>

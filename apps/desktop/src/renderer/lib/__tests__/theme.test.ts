@@ -7,7 +7,9 @@ import {
   THEME_STORAGE_KEY,
   applyThemePreference,
   readThemePreference,
+  resolvedTheme,
   themeAttribute,
+  toggleThemePreference,
 } from '../theme'
 
 /** getItem/setItem만 있는 최소 저장소 — 실제 localStorage 없이도 규칙을 잰다. */
@@ -99,5 +101,42 @@ describe('THEME_PREFERENCES', () => {
     for (const preference of THEME_PREFERENCES) {
       expect(preference.label).toMatch(/^[가-힣]+$/)
     }
+  })
+})
+
+describe('resolvedTheme', () => {
+  it('고른 값이 있으면 그게 그대로 지금 보이는 것이다', () => {
+    expect(resolvedTheme('light', true)).toBe('light')
+    expect(resolvedTheme('dark', false)).toBe('dark')
+  })
+
+  it('시스템일 때만 OS 설정이 답이 된다', () => {
+    expect(resolvedTheme('system', true)).toBe('dark')
+    expect(resolvedTheme('system', false)).toBe('light')
+  })
+})
+
+describe('toggleThemePreference', () => {
+  it('지금 보이는 것의 반대로 간다 — 세 갈래를 순환하지 않는다', () => {
+    expect(toggleThemePreference('light', false)).toBe('dark')
+    expect(toggleThemePreference('dark', false)).toBe('light')
+  })
+
+  it('시스템에서 누르면 눈에 보이던 것의 반대가 된다 — OS가 다크면 라이트로 간다', () => {
+    expect(toggleThemePreference('system', true)).toBe('light')
+    expect(toggleThemePreference('system', false)).toBe('dark')
+  })
+
+  it('한 번 더 누르면 되돌아온다 — 잘못 눌러도 한 번이면 원래대로다', () => {
+    for (const systemDark of [true, false]) {
+      const once = toggleThemePreference('system', systemDark)
+      const twice = toggleThemePreference(once, systemDark)
+      expect(resolvedTheme(twice, systemDark)).toBe(resolvedTheme('system', systemDark))
+    }
+  })
+
+  it('시스템으로 되돌아가지는 않는다 — 그건 값의 부재라 글쇠 한 벌로는 표현되지 않는다', () => {
+    expect(toggleThemePreference('dark', true)).not.toBe('system')
+    expect(toggleThemePreference('light', true)).not.toBe('system')
   })
 })

@@ -34,6 +34,8 @@ export type IconName =
   | 'log-out'
   | 'youtube'
   | 'instagram'
+  | 'sun'
+  | 'moon'
 
 // Lucide-style 24x24 stroke icon paths (https://lucide.dev, ISC license)
 const ICON_PATHS: Record<IconName, React.ReactNode> = {
@@ -228,6 +230,14 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
       <path d="m10 15 5-3-5-3z" />
     </>
   ),
+  // 테마 전환 (BRU-213). 버튼은 지금 상태가 아니라 **누르면 될 것**을 보여준다.
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </>
+  ),
+  moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
   instagram: (
     <>
       <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />

@@ -11,6 +11,11 @@ export const isSearchShortcut = (event: KeyEventLike) =>
 // ⌘/ 또는 ? 로 단축키 치트시트.
 // 맨 `/`는 편집 진입 키라 여기서 잡지 않는다 (BRU-53).
 // '?' 는 수식키 없이 눌리므로 텍스트 입력 중에는 호출부에서 걸러야 한다.
+// ⌘⇧D로 라이트↔다크 (BRU-213). 수식키가 둘 다 필요해서 편집 중에도 안전하다 —
+// 글자를 치는 손이 여기에 닿지 않는다.
+export const isToggleThemeShortcut = (event: KeyEventLike) =>
+  isPrimaryModifier(event) && event.shiftKey && matchesKey('toggleTheme', event.key)
+
 export const isCheatSheetShortcut = (event: KeyEventLike) =>
   (isPrimaryModifier(event) && matchesKey('cheatSheet', event.key)) ||
   (isPlainKey(event) && matchesKey('cheatSheetAlt', event.key))

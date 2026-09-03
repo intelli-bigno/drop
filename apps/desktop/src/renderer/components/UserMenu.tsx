@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import { THEME_PREFERENCES } from '../lib/theme'
+import { hintForKeyId } from '../shortcuts/catalog'
 import { supabase } from '../lib/supabase'
 import { useToastStore } from '../stores/toast'
 import { decideMcpTokenAction, isPlaintextToken } from '../lib/mcp-token'
@@ -199,8 +200,13 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
 
         {/* 테마 (BRU-213). 개편 전에는 OS 설정이 유일한 입구였다 —
             토큰에 라이트가 있는데 앱에서 고를 길이 없었다. */}
+        {/* 세 갈래를 고르는 자리는 여기 하나다. 자주 하는 뒤집기는 머리줄 버튼과
+            ⌘⇧D로 빠지고, 여기서는 그 글쇠가 무엇인지도 함께 알린다. */}
         <div className="user-menu-field">
-          <span className="user-menu-field-label">테마</span>
+          <span className="user-menu-field-label">
+            테마
+            <kbd className="user-menu-field-keys">{hintForKeyId('toggleTheme')}</kbd>
+          </span>
           <div className="segmented" role="radiogroup" aria-label="테마">
             {THEME_PREFERENCES.map((preference) => (
               <button
@@ -380,8 +386,21 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
         }
 
         .user-menu-field-label {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
           font: var(--type-meta);
           color: var(--text-secondary);
+        }
+
+        /* 힌트 알약과 같은 모양 — 글쇠는 앱 어디서나 한 가지로 보여야 한다. */
+        .user-menu-field-keys {
+          padding: 1px 5px;
+          border-radius: var(--radius-sm);
+          background: var(--bg-tertiary);
+          color: var(--text-tertiary);
+          font: var(--type-caption);
+          font-family: var(--font-mono);
         }
 
         .user-avatar-large {

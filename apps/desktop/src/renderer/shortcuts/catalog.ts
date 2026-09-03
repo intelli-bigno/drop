@@ -125,6 +125,15 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
   { keyId: 'confirmYes', label: '승낙', group: '확인', scope: 'confirm' },
   { keyId: 'confirmNo', label: '거절', group: '확인', scope: 'confirm' },
 
+  // 보기 (BRU-213)
+  {
+    keyId: 'toggleTheme',
+    label: '라이트 ↔ 다크 (세 갈래는 사용자 메뉴에서)',
+    group: '보기',
+    scope: 'global',
+    modifier: 'primary-shift',
+  },
+
   // 도움말 — 수식키가 달라 항목을 둘로 나눈다.
   // 맨 `/`는 편집 진입 키이므로 치트시트를 열지 않는다 (BRU-53).
   {

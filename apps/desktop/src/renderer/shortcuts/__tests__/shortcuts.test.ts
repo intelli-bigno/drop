@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { resolveNoteFeedShortcut } from '../noteFeed'
 import { resolveNoteEditorShortcut } from '../noteEditor'
-import { isCreateNoteShortcut, isSearchShortcut, isCheatSheetShortcut } from '../noteGlobal'
+import {
+  isCreateNoteShortcut,
+  isSearchShortcut,
+  isCheatSheetShortcut,
+  isToggleThemeShortcut,
+} from '../noteGlobal'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../noteTrash'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../tagList'
 import { isToggleLockShortcut } from '../noteLock'
@@ -181,5 +186,27 @@ describe('cheat sheet shortcut', () => {
   it('shouldNotClaimBareSlashInTheKeyTable', () => {
     expect(KEYS.cheatSheetAlt).not.toContain('/')
     expect(KEYS.cheatSheet).toEqual(['/'])
+  })
+})
+
+// BRU-213 — 라이트↔다크를 글쇠 한 벌로. 지우는 키와 한 겹 차이로 두지 않는 것이 요점이다.
+describe('theme toggle shortcut', () => {
+  it('shouldToggleOnPrimaryShiftD', () => {
+    expect(isToggleThemeShortcut(key('D', { metaKey: true, shiftKey: true }))).toBe(true)
+    expect(isToggleThemeShortcut(key('D', { ctrlKey: true, shiftKey: true }))).toBe(true)
+  })
+
+  it('shouldToggleWhileHangulInputIsOn', () => {
+    expect(isToggleThemeShortcut(key('ㅇ', { metaKey: true, shiftKey: true }))).toBe(true)
+  })
+
+  it('shouldNotFireWithoutShift — ⌘D는 비어 있지만 여기가 잡지 않는다', () => {
+    expect(isToggleThemeShortcut(key('D', { metaKey: true }))).toBe(false)
+    expect(isToggleThemeShortcut(key('d', { metaKey: true }))).toBe(false)
+  })
+
+  it('shouldNotCollideWithTrashDelete — 맨 d는 휴지통의 삭제다', () => {
+    expect(isToggleThemeShortcut(key('d'))).toBe(false)
+    expect(isToggleThemeShortcut(key('D', { shiftKey: true }))).toBe(false)
   })
 })

@@ -62,3 +62,40 @@ export function applyThemePreference(
     // 저장소가 막혀 있어도 화면은 이미 바뀌었다.
   }
 }
+
+/**
+ * 지금 **눈에 보이는** 모드. 고른 값이 시스템이면 OS 설정이 답이 된다.
+ *
+ * 화면에 그려진 것과 저장된 값이 다를 수 있어서 필요하다 — "시스템"은 라이트도
+ * 다크도 아니라서, 그 상태에서 무엇이 보이는지는 물어봐야 알 수 있다.
+ */
+export function resolvedTheme(
+  preference: ThemePreference,
+  systemPrefersDark: boolean
+): 'light' | 'dark' {
+  if (preference !== 'system') return preference
+  return systemPrefersDark ? 'dark' : 'light'
+}
+
+/**
+ * 글쇠 한 벌로 모드를 뒤집는다 (BRU-213).
+ *
+ * 세 갈래를 **순환하지 않는다.** 순환은 원하는 자리에 가려고 두 번 세 번 눌러야
+ * 하고, 중간에 "시스템"을 지나면서 화면이 엉뚱하게 한 번 바뀐다. 여기서 하는 일은
+ * 하나다 — **지금 보이는 것의 반대로 간다.** 그래서 한 번 더 누르면 되돌아온다.
+ *
+ * 대신 "시스템"으로는 돌아가지 못한다. 그건 값이 아니라 값의 부재라서 뒤집기의
+ * 반대편에 놓을 수 없다 — 세 갈래를 고르는 자리는 사용자 메뉴에 그대로 있다.
+ */
+export function toggleThemePreference(
+  current: ThemePreference,
+  systemPrefersDark: boolean
+): ThemePreference {
+  return resolvedTheme(current, systemPrefersDark) === 'dark' ? 'light' : 'dark'
+}
+
+/** 지금 OS가 다크를 원하는지. `matchMedia`가 없는 환경(테스트·구형)에서는 라이트로 본다. */
+export function systemPrefersDark(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
