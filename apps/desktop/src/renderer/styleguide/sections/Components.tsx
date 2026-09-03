@@ -44,6 +44,7 @@ const PIN_MODES: PinDialogMode[] = ['setup', 'unlock-temp', 'unlock-permanent', 
 type OverlayId =
   | 'confirm'
   | 'confirm-danger'
+  | 'confirm-reversible'
   | 'cheatsheet'
   | 'search'
   | 'tags'
