@@ -130,9 +130,35 @@ const PINNED = makeNote({
   updatedAt: minutesAgo(5),
 })
 
+/**
+ * 마크다운 본문 표본 (BRU-213). 펼친 노트가 제목·목록·인용·강조·코드를 어떻게
+ * 그리는지는 이번 개편에서 가장 많이 바뀐 자리인데, 그걸 보여 줄 표본이 없었다.
+ *
+ * 인용과 코드가 **둘 다** 들어 있는 것이 중요하다 — 인용의 세로선을 걷은 뒤
+ * 둘을 가르는 것은 "면이 있느냐 없느냐" 하나뿐이라, 나란히 놓고 봐야 판단이 선다.
+ */
+const MARKDOWN = makeNote({
+  content: [
+    '## 개편 전에 정할 것',
+    '',
+    '- 인용은 *면 없이*, 코드는 면 위에',
+    '- 강조는 **형광펜** — 링크와 구별되어야 한다',
+    '',
+    '> 세로선은 왼쪽에 축을 하나 더 만든다.',
+    '',
+    '```',
+    'font: var(--type-reading);',
+    '```',
+  ].join('\n'),
+  tags: [TAG_DESIGN],
+  createdAt: minutesAgo(30),
+  updatedAt: minutesAgo(30),
+})
+
 export const STYLEGUIDE_NOTES: Note[] = [
   PINNED,
   PARENT,
+  MARKDOWN,
   makeNote({
     // 화살표 같은 글자를 넣지 않는다 — 계층은 앱이 그리는 것이지 본문에 적는 것이 아니다.
     // 여기 '↳'를 박아 두었더니 쇼케이스가 "앱이 가지를 그린다"고 거짓말을 했다 (BRU-187).

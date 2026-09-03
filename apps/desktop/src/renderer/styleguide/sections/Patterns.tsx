@@ -31,12 +31,14 @@ function Row({
   focused = false,
   depth = 0,
   viewMode = 'active' as const,
+  expandAll = false,
 }: {
   label: string
   note: Note
   focused?: boolean
   depth?: number
   viewMode?: 'active' | 'archived' | 'trash'
+  expandAll?: boolean
 }) {
   return (
     <Specimen name={label} flush>
@@ -45,10 +47,41 @@ function Row({
         isFocused={focused}
         depth={depth}
         viewMode={viewMode}
+        expandAll={expandAll}
         onEscapeFromNormal={noop}
         onReply={noop}
         onPopoverOpenChange={noop}
       />
+    </Specimen>
+  )
+}
+
+/** 실제 피드의 묶음 — 둥근 면 + 행 사이 얇은 선 + 고정 표시 (BRU-213). */
+function Group({
+  label,
+  notes,
+  pinned = false,
+}: {
+  label: string
+  notes: Note[]
+  pinned?: boolean
+}) {
+  return (
+    <Specimen name={label} flush>
+      <div className={`note-group ${pinned ? 'is-pinned' : ''}`}>
+        {notes.map((note) => (
+          <div className="note-row" key={note.id}>
+            <NoteCard
+              note={note}
+              isFocused={false}
+              viewMode="active"
+              onEscapeFromNormal={noop}
+              onReply={noop}
+              onPopoverOpenChange={noop}
+            />
+          </div>
+        ))}
+      </div>
     </Specimen>
   )
 }
@@ -78,6 +111,22 @@ export function Patterns() {
         (BRU-213). 아래는 전부 실물 <code className="sg-mono">NoteCard</code>이고, 실제
         목록에서는 이 행들이 둥근 묶음 면 안에 얇은 선으로 갈려 선다.
       </PageHead>
+
+      <Section
+        title="묶음"
+        note="행은 혼자 서지 않는다 — 날짜(또는 고정)마다 둥근 면 하나에 담기고 사이는 얇은 선이다. 고정 묶음은 왼쪽 모서리에 핀이 얹힌다 (BRU-213)."
+      >
+        <Group label="날짜 묶음" notes={N.slice(0, 3)} />
+        <Group label="고정 묶음 — 모서리에 핀" notes={N.slice(0, 2)} pinned />
+      </Section>
+
+      <Section
+        title="노트 행 — 펼친 자리"
+        note="「모두 펼쳐보기」와 편집 진입에서 나오는 모습. 아이콘이 본문 첫 줄 옆에 서고, 본문은 접힌 줄의 글자와 같은 x에서 시작한다 — 펼칠 때 글자가 움직이면 안 된다 (BRU-213)."
+      >
+        <Row label="펼침 — 마크다운 본문" note={pick(N, (n) => n.content.includes('\n'))} expandAll />
+        <Row label="펼침 — 한 문단" note={N[0]} expandAll />
+      </Section>
 
       <Section title="노트 행 — 상태별">
         <Row label="상단 고정 · 우선순위 지정" note={pick(N, (n) => n.isPinned)} />

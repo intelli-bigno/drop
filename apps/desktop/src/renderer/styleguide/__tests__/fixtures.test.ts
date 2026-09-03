@@ -90,6 +90,9 @@ describe('STYLEGUIDE_NOTES', () => {
     ['빈 본문', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.content.trim() === ''],
     ['할일 (미완료)', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.type === 'todo' && n.completedAt === null],
     ['할일 (완료)', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.type === 'todo' && n.completedAt !== null],
+    // BRU-213 — 펼친 본문이 제목·목록·인용·강조·코드를 어떻게 그리는지가
+    // 이번 개편에서 가장 많이 바뀐 자리다. 표본이 없으면 쇼케이스가 그걸 못 보여준다.
+    ['마크다운 본문', (n: (typeof STYLEGUIDE_NOTES)[number]) => n.content.includes('\n')],
   ])('%s 노트를 하나 이상 담고 있다', (_label, predicate) => {
     expect(STYLEGUIDE_NOTES.some(predicate)).toBe(true)
   })

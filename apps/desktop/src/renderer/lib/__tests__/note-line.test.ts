@@ -22,6 +22,42 @@ describe('toSingleLinePreview', () => {
     expect(toSingleLinePreview('  가운데  \n')).toBe('가운데')
   })
 
+  // BRU-213 — 블록 마커만 떼고 인라인 표시는 그대로 두고 있었다. 그래서 목록에서
+  // `**형광펜**` 같은 글자가 별표째 보였다 — 펼치면 굵은 글씨인데 접으면 별표다.
+  it('굵게 표시를 떼고 글자만 남긴다', () => {
+    expect(toSingleLinePreview('강조는 **형광펜**이다')).toBe('강조는 형광펜이다')
+  })
+
+  it('강조 표시를 떼고 글자만 남긴다', () => {
+    expect(toSingleLinePreview('인용은 *면 없이*')).toBe('인용은 면 없이')
+  })
+
+  it('인라인 코드의 백틱을 뗀다', () => {
+    expect(toSingleLinePreview('`font: var(--type-row)` 를 쓴다')).toBe(
+      'font: var(--type-row) 를 쓴다'
+    )
+  })
+
+  it('링크는 보이는 글자만 남긴다 — 주소는 한 줄에서 자리만 먹는다', () => {
+    expect(toSingleLinePreview('[이슈 보기](https://linear.app/x)를 눌러라')).toBe(
+      '이슈 보기를 눌러라'
+    )
+  })
+
+  it('코드 펜스 줄은 통째로 뺀다 — 글자가 하나도 없는 줄이다', () => {
+    expect(toSingleLinePreview('설명\n```ts\nconst a = 1\n```')).toBe('설명 const a = 1')
+  })
+
+  it('밑줄은 그대로 둔다 — created_at_utc 는 강조가 아니다', () => {
+    expect(toSingleLinePreview('컬럼은 created_at_utc 이다')).toBe('컬럼은 created_at_utc 이다')
+  })
+
+  it('주소만 적힌 줄은 주소를 그대로 보여 준다', () => {
+    expect(toSingleLinePreview('읽을 것 — https://example.com/a')).toBe(
+      '읽을 것 — https://example.com/a'
+    )
+  })
+
   it('should drop markdown heading markers', () => {
     expect(toSingleLinePreview('## 제목\n본문')).toBe('제목 본문')
   })
