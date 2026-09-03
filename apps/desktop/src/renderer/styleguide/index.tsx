@@ -16,6 +16,7 @@ import { Layouts } from './sections/Layouts'
 import { States } from './sections/States'
 import { Audit } from './sections/Audit'
 import { Toaster } from '../components/Toaster'
+import { THEME_PREFERENCES, themeAttribute, type ThemePreference } from '../lib/theme'
 
 const PAGES = [
   { id: 'foundations', label: 'Foundations', hint: '토큰', render: () => <Foundations /> },
@@ -27,13 +28,6 @@ const PAGES = [
 ] as const
 
 type PageId = (typeof PAGES)[number]['id']
-type ThemeChoice = 'system' | 'light' | 'dark'
-
-const THEME_LABELS: Record<ThemeChoice, string> = {
-  system: '시스템',
-  light: '라이트',
-  dark: '다크',
-}
 
 /** `#styleguide/components` 처럼 두 번째 조각으로 페이지를 고른다. */
 function pageFromHash(): PageId {
@@ -44,7 +38,7 @@ function pageFromHash(): PageId {
 
 export function Styleguide() {
   const [page, setPage] = useState<PageId>(pageFromHash)
-  const [theme, setTheme] = useState<ThemeChoice>('system')
+  const [theme, setTheme] = useState<ThemePreference>('system')
 
   // 픽스처는 첫 렌더 전에 부어야 한다 — 컴포넌트가 빈 스토어를 먼저 보면
   // 빈 상태로 한 번 그려졌다가 뒤늦게 채워진다.
@@ -59,11 +53,15 @@ export function Styleguide() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  // 앱과 같은 방식으로 테마를 고정한다 — tokens.css가 data-theme를 읽는다.
+  // 앱과 **같은 규칙**으로 테마를 고정한다 (BRU-213) — 규칙은 lib/theme.ts 하나다.
+  // 다만 여기서는 저장하지 않는다: 쇼케이스에서 다크를 보다 나갔다고 앱이 다크로
+  // 바뀌면 안 된다. 그래서 applyThemePreference가 아니라 themeAttribute만 쓰고,
+  // 나갈 때 속성을 걷는다.
   useEffect(() => {
     const root = document.documentElement
-    if (theme === 'system') root.removeAttribute('data-theme')
-    else root.setAttribute('data-theme', theme)
+    const attribute = themeAttribute(theme)
+    if (attribute === null) root.removeAttribute('data-theme')
+    else root.setAttribute('data-theme', attribute)
     return () => root.removeAttribute('data-theme')
   }, [theme])
 
@@ -99,13 +97,13 @@ export function Styleguide() {
         <div className="sg-nav-foot">
           <div className="sg-brand-sub">테마</div>
           <div className="sg-theme-switch" role="group" aria-label="테마 전환">
-            {(Object.keys(THEME_LABELS) as ThemeChoice[]).map((choice) => (
+            {THEME_PREFERENCES.map((preference) => (
               <button
-                key={choice}
-                aria-pressed={theme === choice}
-                onClick={() => setTheme(choice)}
+                key={preference.value}
+                aria-pressed={theme === preference.value}
+                onClick={() => setTheme(preference.value)}
               >
-                {THEME_LABELS[choice]}
+                {preference.label}
               </button>
             ))}
           </div>

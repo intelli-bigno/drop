@@ -73,8 +73,10 @@ export function Patterns() {
     <>
       <PageHead title="Patterns">
         노트 행은 이 앱에서 가장 자주 보이는 것이고, 밀도를 정하는 것도 이것이다.
-        세로 패딩은 <code className="sg-mono">--space-1</code>(4px) — MASTER.md가 적어 둔
-        밀도 7/10이 여기서 나온다. 아래는 전부 실물 <code className="sg-mono">NoteCard</code>다.
+        안쪽 여백은 <code className="sg-mono">--space-2 --space-4</code>(8/16px) — 접힌 줄과
+        펼친 본문이 <strong>같은 값</strong>을 써야 노트를 펼칠 때 글자가 제자리에 있다
+        (BRU-213). 아래는 전부 실물 <code className="sg-mono">NoteCard</code>이고, 실제
+        목록에서는 이 행들이 둥근 묶음 면 안에 얇은 선으로 갈려 선다.
       </PageHead>
 
       <Section title="노트 행 — 상태별">

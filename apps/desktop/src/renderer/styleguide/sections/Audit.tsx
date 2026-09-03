@@ -2,7 +2,7 @@
 //
 // 쇼케이스가 예쁜 것만 보여주면 관측 도구가 아니다. MASTER.md 규칙 2는
 // "컴포넌트에 raw hex 금지 — 토큰만"인데, 실제로는 지켜지지 않는 자리가 남아 있다.
-// 여기 목록은 2026-08-29 기준 실측이고, 대비 숫자는 지금 화면에서 다시 잰 것이다.
+// 여기 목록은 2026-09-03 기준 실측이고, 대비 숫자는 지금 화면에서 다시 잰 것이다.
 
 import { PageHead, Section, Specimen } from '../parts'
 import { contrastRatio, wcagVerdict } from '../contrast'
@@ -26,26 +26,42 @@ const FINDINGS: Finding[] = [
   },
   {
     severity: 'warning',
-    title: 'index.css에 남은 색 리터럴 3개',
+    title: '스타일이 4,300줄 단일 파일에 전역 클래스로 들어 있다',
     body:
-      '944행은 흐린 배경 위 오버레이 버튼 글자, 3876행은 위험 버튼 위 글자다 — 아래에서 대비를 실측했다. ' +
-      '1272행 #000은 9:16 영상 레터박스라 표면색이 아니고, 이건 예외로 두는 편이 맞다.',
-    where: 'styles/index.css:944, 1272, 3876',
+      '컴포넌트 34개가 모두 index.css 하나를 공유한다. 어떤 규칙이 어떤 컴포넌트의 것인지 ' +
+      '이름으로만 알 수 있고, 지울 수 있는 규칙인지 판단할 근거가 없다. ' +
+      'BRU-213에서 죽은 규칙 셋과 설명만 남은 주석을 걷었지만 구조는 그대로다 — ' +
+      '컴포넌트를 추출할 때 함께 쪼개는 것이 자연스럽다.',
+    where: 'styles/index.css',
   },
+]
+
+/** 해소된 적발. 지운 것이 아니라 **해소로 남긴다** — 무엇이 왜 없어졌는지가 기록이다. */
+const RESOLVED: Finding[] = [
   {
     severity: 'warning',
-    title: '스타일이 3,968줄 단일 파일에 전역 클래스로 들어 있다',
+    title: 'index.css의 색 리터럴 — 40곳 → 0곳 (BRU-213에서 해소)',
     body:
-      '컴포넌트 32개가 모두 index.css 하나를 공유한다. 어떤 규칙이 어떤 컴포넌트의 것인지 ' +
-      '이름으로만 알 수 있고, 지울 수 있는 규칙인지 판단할 근거가 없다. ' +
-      '컴포넌트를 추출할 때 함께 쪼개는 것이 자연스럽다 — 이 이슈의 범위는 아니다.',
-    where: 'styles/index.css',
+      '개편 전에는 토큰을 안 쓴 생값이 40곳이었고, 그중 셋은 팔레트가 앰버로 바뀌기 전 잔재였다 ' +
+      '(파란 드래그 배경 · 붉은 hover 둘 · 핀의 생 앰버). 막(overlay-*) · 위험 면(danger-solid) · ' +
+      '막 위 글자(text-on-overlay) 토큰을 새로 세워 전부 옮겼다. 9:16 레터박스의 #000도 ' +
+      'overlay-strong으로 갔다 — 예외로 둘 필요가 없었다.',
+    where: 'styles/index.css — 실측 0건 (2026-09-03)',
+  },
+  {
+    severity: 'danger',
+    title: '다크에서 danger 면 위 흰 글자가 3.76:1이었다 (BRU-213에서 해소)',
+    body:
+      '아래 표에 그 짝이 없어서 오래 안 보였다. --danger를 어둡게 하면 다크에서 danger를 ' +
+      '글자색으로 쓰는 자리가 함께 무너지므로, 채운 면을 --danger-solid로 갈랐다. ' +
+      '지금은 라이트 4.95:1 · 다크 6.47:1이다 — Foundations의 대비 표에서 확인한다.',
+    where: 'design-system/drop/tokens.json — color.danger-solid',
   },
 ]
 
 /** 문서에서 옮겨 적지 않고 지금 화면 값으로 다시 재는 짝. */
 const MEASURED = [
-  { label: '#fff / --danger', fg: '#ffffff', bg: '--danger', note: 'index.css:3876 위험 버튼' },
+  { label: '#fff / --danger (옛 방식)', fg: '#ffffff', bg: '--danger', note: 'BRU-213 전. 다크에서 3.76:1로 떨어졌다' },
   { label: '#fff / --cta', fg: '#ffffff', bg: '--cta', note: '주요 행동 버튼에 흰 글자를 쓴다면' },
   { label: '--text-on-accent / #ffffff', fg: '--text-on-accent', bg: '#ffffff', note: 'AuthScreen:99 흰 버튼' },
   {
@@ -69,12 +85,25 @@ export function Audit() {
         아래 대비 숫자는 지금 이 화면의 토큰 값으로 다시 잰 것이라, 테마를 바꾸면 함께 바뀐다.
       </PageHead>
 
-      <Section title="적발" note="2026-08-30 기준 실측(UserMenu 항목은 BRU-176으로 해소). 고치는 것은 이 이슈의 범위가 아니다 — 보이게 하는 것까지가 여기 몫이다.">
+      <Section title="적발" note="2026-09-03 기준 실측. 남은 둘은 이번 개편의 범위가 아니었다 — 보이게 하는 것까지가 여기 몫이다.">
         {FINDINGS.map((finding) => (
           <div
             key={finding.title}
             className={finding.severity === 'danger' ? 'sg-finding sg-finding--danger' : 'sg-finding'}
           >
+            <div className="sg-finding-title">{finding.title}</div>
+            <p className="sg-finding-body">{finding.body}</p>
+            <div className="sg-finding-where">{finding.where}</div>
+          </div>
+        ))}
+      </Section>
+
+      <Section
+        title="해소"
+        note="지운 자리가 아니라 해소된 자리로 남긴다 — 무엇이 왜 없어졌는지가 다음 사람에게 필요한 기록이다."
+      >
+        {RESOLVED.map((finding) => (
+          <div key={finding.title} className="sg-finding">
             <div className="sg-finding-title">{finding.title}</div>
             <p className="sg-finding-body">{finding.body}</p>
             <div className="sg-finding-where">{finding.where}</div>
