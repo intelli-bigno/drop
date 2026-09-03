@@ -207,10 +207,6 @@ body {
   transition: background var(--transition-fast);
 }
 
-.note-card:hover {
-  background: var(--bg-hover);
-}
-
 .note-card::before {
   content: '';
   position: absolute;
@@ -224,6 +220,7 @@ body {
 }
 
 .note-card:hover {
+  background: var(--bg-hover);
   border-color: var(--border-focus);
 }
 
@@ -280,24 +277,6 @@ body {
   justify-content: center;
 }
 
-/* 본문 앞 상태 표식 — 핀·잠금. 읽기 전용이라 버튼이 아니다. */
-
-
-/* 우선순위 표식 (BRU-187).
-   점은 5px이지만 버튼은 24px이다 — 클릭 대상이 손가락에 맞아야 한다(WCAG 2.5.8).
-   priority 0에는 아예 그리지 않으므로 대부분의 줄에서 이 자리가 비어 있다. */
-
-
-
-
-/* 긴급도 = 맨 앞의 색 점 (클릭하면 0→1→2→3→0) */
-
-
-
-
-
-
-
 /* 본문은 한 줄 — 넘치면 말줄임.
    flex-basis는 반드시 0이다: auto면 "줄바꿈 없는 본문 전체 폭"이 basis가 되어
    줄 전체의 shrink가 태그 쪽으로 몰리고, 태그 칩이 중간에서 잘린다 (BRU-55). */
@@ -327,18 +306,6 @@ body {
   color: var(--text-muted);
   font-style: italic;
 }
-
-/* 접힌 줄에서 첨부·링크는 개수 표식만 */
-
-
-/* 태그 영역은 줄이지 않는다 — 대신 줄 폭의 40%를 상한으로 두고,
-   넘치는 태그는 TagList가 `+N` 배지로 접는다 (lib/tag-overflow.ts). */
-
-
-/* 프로젝트 칩 (BRU-83) — 태그 칩 왼쪽에 붙는다.
-   태그와 다른 축이므로 모양도 다르게 둔다: 태그는 둥근 알약에 강조색,
-   프로젝트는 각진 모서리에 중립색이다. 한 노트에 하나뿐이라 접기도 없다. */
-
 
 /* 프로젝트가 지정된 노트는 카드 액션의 폴더 아이콘이 켜져 있다 */
 .project-btn.assigned {
@@ -426,24 +393,6 @@ body {
 .note-export-clear:focus-visible {
   opacity: 1;
 }
-
-/* 오른쪽 끝 자리 — 평소엔 시간, 마우스를 올리면 같은 자리가 액션 버튼이 된다(BRU-82).
-   액션은 absolute로 시간 위에 겹쳐 그린다: 버튼 수와 무관하게 줄 폭이 고정된다.
-
-   BRU-57 — 이 상자에 액션 최대 폭(`--actions-reserved`, NoteCard가 보기 모드별로
-   계산해 넘긴다)만큼의 min-width를 준다. 예전에는 상자가 시간 폭밖에 안 돼서
-   오버레이가 왼쪽으로 흘러나가 태그를 덮었다. 자리를 미리 비워 두면 오버레이가
-   상자 안에 갇혀 태그를 침범할 수 없다. 예약 폭이 실제 버튼 수와 무관하므로
-   "줄 폭이 버튼 수에 따라 흔들리지 않는다"(BRU-46)도 그대로다. */
-
-/* 핀·잠금은 상태다 — 켜져 있으면 호버 없이도 보인다 */
-.note-line-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--accent);
-}
-
 
 .note-card-actions {
   position: absolute;
@@ -2550,72 +2499,6 @@ h6.note-viewer-heading {
 .locked-note-btn.secondary:hover {
   background: var(--hover-bg);
   color: var(--text-primary);
-}
-
-/* ============================================
-   Header Action Buttons - Glass Morphism
-   ============================================ */
-
-.search-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.search-btn::before {
-  content: '⌘K';
-  font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 2px 5px;
-  background: var(--bg-secondary);
-  border-radius: 4px;
-  color: var(--text-muted);
-}
-
-.search-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--border-focus);
-  box-shadow: var(--shadow-sm);
-}
-
-.search-btn:active {
-  transform: scale(0.97);
-}
-
-/* Unlock All Button */
-.unlock-all-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.unlock-all-btn:hover {
-  background: var(--accent-subtle);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.unlock-all-btn:active {
-  transform: scale(0.97);
 }
 
 /* PIN Dialog */
