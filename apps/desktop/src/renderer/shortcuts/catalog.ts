@@ -24,6 +24,7 @@ export const CHEAT_SHEET_NOTES: string[] = [
   // 표에 있는 것을 다시 적지 않는다 (BRU-213) — 각주는 표가 담지 못하는 것만 담는다.
   'Esc는 한 겹씩 벗긴다 — 액션 줄 → 선택 → 펼침 → 포커스.',
   '액션 줄(/)은 ←→로 고르고 Enter로 실행한다 — 마우스를 올렸을 때 뜨는 그 줄이다.',
+  '편집 중 ⌘K는 고른 글자에 링크를 건다. 고른 글자가 이미 주소면 바로 걸리고, 아니면 주소를 묻는 줄이 뜬다.',
   '한글 입력 상태에서도 같은 자리의 글쇠가 동작한다 (J = ㅓ). 표에는 적지 않는다.',
   '편집 중에는 마크다운 숏컷이 돈다 (# · * · ```). 편집기에 vim 모드는 없다.',
   '목록이 뜨는 자리(검색·태그·템플릿)는 ↑↓로 고르고 Enter로 넣고 Esc로 닫는다.',
@@ -72,6 +73,13 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     label: '줄바꿈',
     group: '편집',
     scope: 'editor',
+  },
+  {
+    keyId: 'insertLink',
+    label: '링크 걸기',
+    group: '편집',
+    scope: 'editor',
+    modifier: 'primary',
   },
   { keyId: 'clearFocus', label: '편집 끝내기', group: '편집', scope: 'editor' },
 

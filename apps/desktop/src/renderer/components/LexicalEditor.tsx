@@ -1,5 +1,5 @@
 /// <reference path="../../preload/index.d.ts" />
-import { forwardRef, useImperativeHandle, useEffect, useCallback, useRef } from 'react'
+import { forwardRef, useImperativeHandle, useEffect, useCallback, useRef, useState } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -13,7 +13,14 @@ import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListNode, ListItemNode } from '@lexical/list'
 import { $isCodeNode, CodeNode } from '@lexical/code'
-import { LinkNode, AutoLinkNode } from '@lexical/link'
+import {
+  LinkNode,
+  AutoLinkNode,
+  TOGGLE_LINK_COMMAND,
+  $isLinkNode,
+  $createLinkNode,
+  $toggleLink,
+} from '@lexical/link'
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -28,10 +35,18 @@ import {
   HISTORY_MERGE_TAG,
   PASTE_COMMAND,
   KEY_ENTER_COMMAND,
+  KEY_DOWN_COMMAND,
+  $createTextNode,
+  $setSelection,
+  type BaseSelection,
   createCommand,
   LexicalCommand,
 } from 'lexical'
 import { decideEditorEnter } from '../lib/editor-enter'
+import { normalizeLinkInput, resolveLinkAction } from '../lib/link-shortcut'
+import { Icon } from './Icon'
+import { matchesKey } from '../shortcuts/keys'
+import { useToastStore } from '../stores/toast'
 import { applyCaretScroll } from '../lib/editor-caret-scroll'
 
 const URL_MATCHER =
@@ -228,6 +243,142 @@ function UserInputPlugin({ onUserInput }: { onUserInput: () => void }) {
   return null
 }
 
+/**
+ * ⌘K — 링크 걸기 (BRU-213).
+ *
+ * 글을 쓰는 자리에서 ⌘K는 어느 앱에서나 「링크 걸기」다(Word · Docs · Notion ·
+ * Slack 입력창). 그래서 검색을 ⌘O 하나로 모으고 이 자리를 편집기에 돌려줬다.
+ *
+ * 처음에는 **클립보드를 읽어** 창 없이 걸려고 했다. 실제 손버릇이 「주소를
+ * 복사하고 → 글자를 골라 → ⌘K」라서 물어볼 것이 없다고 봤는데, 두 가지가
+ * 걸렸다: `navigator.clipboard.readText()`는 권한을 묻느라 **응답 없이 멈출 수
+ * 있고**(실측으로 브라우저가 얼어붙었다), 아직 주소를 복사하지 않은 사람에게는
+ * 막다른 길이다. 그래서 작은 입력줄을 연다 — 물어보는 편이 정직하다.
+ *
+ * 고른 자리는 입력줄로 초점이 옮겨가는 순간 사라지므로 **미리 복제해 둔다.**
+ */
+function LinkShortcutPlugin({ onUserInput }: { onUserInput: () => void }) {
+  const [editor] = useLexicalComposerContext()
+  const [isOpen, setIsOpen] = useState(false)
+  const [value, setValue] = useState('')
+  const savedSelection = useRef<BaseSelection | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const close = useCallback(() => {
+    setIsOpen(false)
+    setValue('')
+    savedSelection.current = null
+    editor.focus()
+  }, [editor])
+
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event: KeyboardEvent) => {
+        if (!(event.metaKey || event.ctrlKey) || event.altKey) return false
+        if (!matchesKey('insertLink', event.key.toLowerCase())) return false
+        event.preventDefault()
+
+        let selectedText = ''
+        let isLink = false
+        editor.getEditorState().read(() => {
+          const selection = $getSelection()
+          savedSelection.current = selection ? selection.clone() : null
+          if (!$isRangeSelection(selection)) return
+          selectedText = selection.getTextContent()
+          const node = selection.anchor.getNode()
+          isLink = $isLinkNode(node) || $isLinkNode(node.getParent())
+        })
+
+        // 이미 링크인 자리에서는 묻지 않는다 — ⌘K는 켜고 끄는 글쇠다.
+        if (resolveLinkAction({ selectedText, clipboardText: '', isLink }).type === 'unlink') {
+          editor.dispatchCommand(TOGGLE_LINK_COMMAND, null)
+          onUserInput()
+          useToastStore.getState().showToast({ message: '링크를 풀었다', duration: 1800 })
+          return true
+        }
+
+        // 고른 글자가 그 자체로 주소면 물어볼 것이 없다.
+        const direct = resolveLinkAction({ selectedText, clipboardText: '', isLink })
+        if (direct.type === 'link') {
+          editor.dispatchCommand(TOGGLE_LINK_COMMAND, direct.url)
+          onUserInput()
+          useToastStore.getState().showToast({ message: '링크를 걸었다', icon: 'link', duration: 1800 })
+          return true
+        }
+
+        setValue('')
+        setIsOpen(true)
+        requestAnimationFrame(() => inputRef.current?.focus())
+        return true
+      },
+      COMMAND_PRIORITY_HIGH
+    )
+  }, [editor, onUserInput])
+
+  const apply = useCallback(() => {
+    const url = normalizeLinkInput(value)
+    if (!url) {
+      useToastStore.getState().showToast({ message: '주소로 볼 수 없다', variant: 'error' })
+      return
+    }
+
+    const selection = savedSelection.current
+    editor.update(() => {
+      // 입력줄로 초점이 옮겨가면서 사라진 선택을 되돌려 놓고 건다.
+      if (selection) $setSelection(selection.clone())
+      const current = $getSelection()
+      if ($isRangeSelection(current) && current.isCollapsed()) {
+        // 고른 글자가 없다 — 주소를 글자로 지어 넣는다. 빈 선택에 링크를 걸면
+        // 걸 자리가 없어서 아무 일도 일어나지 않는다.
+        const link = $createLinkNode(url)
+        link.append($createTextNode(url))
+        current.insertNodes([link])
+        return
+      }
+      $toggleLink(url)
+    })
+
+    // 링크를 거는 것은 **사람의 입력**이다 (BRU-213). 이 편집기는 저장을
+    // `USER_INPUT_EVENTS`(beforeinput·paste 따위)로만 열어 두는데(BRU-66),
+    // ⌘K는 그중 어느 것도 일으키지 않는다 — 알리지 않으면 방금 건 링크가
+    // 화면에는 보이는데 저장은 되지 않는다. 실측으로 걸렸다.
+    onUserInput()
+    useToastStore.getState().showToast({ message: '링크를 걸었다', icon: 'link', duration: 1800 })
+    close()
+  }, [editor, value, close, onUserInput])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="link-input" role="group" aria-label="링크 주소">
+      <Icon name="link" size={14} className="link-input-icon" />
+      <input
+        ref={inputRef}
+        type="text"
+        className="link-input-field"
+        placeholder="주소를 붙여넣고 Enter"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            apply()
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            close()
+          }
+        }}
+      />
+      <span className="link-input-help">
+        <kbd>Enter</kbd> 걸기 <kbd>Esc</kbd> 취소
+      </span>
+    </div>
+  )
+}
+
 function LinkClickPlugin() {
   const [editor] = useLexicalComposerContext()
 
@@ -391,6 +542,7 @@ export const LexicalEditor = forwardRef<LexicalEditorHandle, Props>(
           <LinkPlugin />
           <AutoLinkPlugin matchers={MATCHERS} />
           <LinkClickPlugin />
+          <LinkShortcutPlugin onUserInput={handleUserInput} />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <OnChangePlugin onChange={handleChange} />
           <FilePastePlugin onAddFile={onAddFile} />

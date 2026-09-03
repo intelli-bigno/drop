@@ -128,7 +128,11 @@ describe('SHORTCUT_CATALOG', () => {
   // BRU-133 — 편집기는 마크다운 숏컷 + Esc 끝내기 + Enter 줄바꿈. vim 모달은 없다.
   it('shouldDocumentTheEditorLayerWithoutAVimModal', () => {
     const editor = SHORTCUT_CATALOG.filter((e) => e.group === '편집')
-    expect(editor.map((e) => e.keyId).sort()).toEqual(['clearFocus', 'insertNewline'])
+    expect(editor.map((e) => e.keyId).sort()).toEqual([
+      'clearFocus',
+      'insertLink',
+      'insertNewline',
+    ])
     expect(editor.every((e) => e.scope === 'editor')).toBe(true)
     expect(KEYS.insertNewline).toEqual(['Enter'])
     const notes = CHEAT_SHEET_NOTES.join(' ')
@@ -155,7 +159,7 @@ describe('SHORTCUT_CATALOG 완전성 (BRU-213)', () => {
 
 describe('hintForKeyId (BRU-213)', () => {
   it('수식키를 기호로 앞에 붙인다', () => {
-    expect(hintForKeyId('search')).toBe('⌘K')
+    expect(hintForKeyId('search')).toBe('⌘O')
     expect(hintForKeyId('openComments')).toBe('⇧C')
     expect(hintForKeyId('copyFocusedReference')).toBe('⌘⇧C')
   })

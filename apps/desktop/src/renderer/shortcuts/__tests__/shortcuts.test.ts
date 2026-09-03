@@ -122,13 +122,13 @@ describe('global shortcuts', () => {
     expect(isCreateNoteShortcut(key('m'))).toBe(false)
   })
 
-  it('shouldSearchOnPrimaryK', () => {
-    expect(isSearchShortcut(key('k', { metaKey: true }))).toBe(true)
-    expect(isSearchShortcut(key('ㅏ', { ctrlKey: true }))).toBe(true)
+  it('shouldSearchOnPrimaryO', () => {
+    expect(isSearchShortcut(key('o', { metaKey: true }))).toBe(true)
+    expect(isSearchShortcut(key('ㅐ', { ctrlKey: true }))).toBe(true)
   })
 
   it('shouldNotSearchWithoutPrimaryModifier', () => {
-    expect(isSearchShortcut(key('k'))).toBe(false)
+    expect(isSearchShortcut(key('o'))).toBe(false)
   })
 })
 
@@ -245,20 +245,25 @@ describe('feed keyboard layers (BRU-213)', () => {
 // BRU-213 — 검색은 ⌘K와 ⌘O 둘 다로 연다. 한 동작에 글쇠가 둘일 뿐,
 // 항목이 둘이 되는 것은 아니다 (치트시트에 「검색」이 두 줄로 서면 안 된다).
 describe('search shortcut', () => {
-  it('shouldOpenOnPrimaryKAndPrimaryO', () => {
-    for (const k of ['k', 'o']) {
-      expect(isSearchShortcut(key(k, { metaKey: true }))).toBe(true)
-      expect(isSearchShortcut(key(k, { ctrlKey: true }))).toBe(true)
-    }
+  it('shouldOpenOnPrimaryO', () => {
+    expect(isSearchShortcut(key('o', { metaKey: true }))).toBe(true)
+    expect(isSearchShortcut(key('o', { ctrlKey: true }))).toBe(true)
   })
 
   it('shouldOpenWhileHangulInputIsOn', () => {
-    for (const k of ['ㅏ', 'ㅐ']) {
-      expect(isSearchShortcut(key(k, { metaKey: true }))).toBe(true)
-    }
+    expect(isSearchShortcut(key('ㅐ', { metaKey: true }))).toBe(true)
   })
 
   it('shouldNotOpenWithoutTheModifier — 맨 o는 글자다', () => {
     expect(isSearchShortcut(key('o'))).toBe(false)
+  })
+
+  // ⌘K는 편집기의 링크 걸기로 넘어갔다 (BRU-213). 한 글쇠가 두 층을 맡으면
+  // 하나는 영원히 안 눌린다 — 검색 핸들러는 창 전역이라 편집 중에도 먼저 먹는다.
+  it('shouldNotClaimPrimaryK — 그 자리는 링크 걸기의 것이다', () => {
+    expect(isSearchShortcut(key('k', { metaKey: true }))).toBe(false)
+    expect(isSearchShortcut(key('ㅏ', { metaKey: true }))).toBe(false)
+    expect(KEYS.search).not.toContain('k')
+    expect(KEYS.insertLink).toContain('k')
   })
 })

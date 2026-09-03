@@ -151,7 +151,16 @@ export function Foundations() {
 
       <Section
         title="타이포"
-        note="크기는 스케일이 정하고 **뜻은 역할이 정한다** (BRU-213). 화면은 `font-size: 15px`가 아니라 `font: var(--type-reading)`을 쓴다 — 그래야 같은 뜻의 글자가 자리마다 달라지지 않는다. 12px 미만은 본문에 쓰지 않는다."
+        note={
+          // `note`는 ReactNode다 — 마크다운을 파싱하지 않는다. 문자열에 `**`와
+          // 백틱을 적어 두었더니 화면에 그 기호가 그대로 찍혀 있었다 (BRU-213).
+          <>
+            크기는 스케일이 정하고 <strong>뜻은 역할이 정한다</strong> (BRU-213). 화면은{' '}
+            <code className="sg-mono">font-size: 15px</code>가 아니라{' '}
+            <code className="sg-mono">font: var(--type-reading)</code>을 쓴다 — 그래야 같은 뜻의
+            글자가 자리마다 달라지지 않는다. 12px 미만은 본문에 쓰지 않는다.
+          </>
+        }
       >
         <Specimen name="스케일">
           {TEXT_TOKENS.map((token) => (

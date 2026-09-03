@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { PageHead, Section, Specimen } from '../parts'
 import { NoteCard } from '../../components/NoteCard'
+import { LexicalEditor } from '../../components/LexicalEditor'
 import { Icon } from '../../components/Icon'
 import { toggleExpandedNote } from '../../lib/note-edit-mode'
 import { STYLEGUIDE_ARCHIVED, STYLEGUIDE_NOTES, STYLEGUIDE_TRASHED } from '../fixtures'
@@ -218,6 +219,47 @@ export function Patterns() {
           ))}
         </Specimen>
       </Section>
+
+      {/* 편집기는 앱에서 글자가 실제로 들어가는 유일한 자리인데 진열장에 없었다
+          (BRU-213). ⌘K 링크 걸기처럼 편집기 안에서만 도는 것을 여기서 눌러 본다. */}
+      <Section
+        title="편집기"
+        note={
+          <>
+            마크다운 숏컷(<code className="sg-mono"># · - · ```</code>)이 그대로 돈다.{' '}
+            <strong>⌘K는 링크 걸기다</strong> — 고른 글자가 그 자체로 주소면 바로 걸리고, 아니면
+            주소를 묻는 줄이 뜬다. 이미 링크인 자리에서 누르면 풀린다.
+          </>
+        }
+      >
+        <Specimen name="LexicalEditor" file="components/LexicalEditor.tsx">
+          <EditorSpecimen />
+        </Specimen>
+      </Section>
     </>
+  )
+}
+
+/**
+ * `initialContent`는 **상수여야 한다.** onChange가 준 값을 도로 넣으면 편집기가
+ * 자기 출력을 입력으로 되받는다 — 처음엔 그렇게 짰다가 방금 건 링크가 다음
+ * 입력에서 사라지는 것을 봤다. 실제 앱도 노트를 열 때의 원문 한 번만 넘긴다.
+ */
+const EDITOR_SPECIMEN_SEED = '여기에 써 본다 — 회의록 링크를 걸어 보자'
+
+function EditorSpecimen() {
+  const [markdown, setMarkdown] = useState(EDITOR_SPECIMEN_SEED)
+
+  return (
+    <div className="sg-editor-specimen">
+      <LexicalEditor
+        initialContent={EDITOR_SPECIMEN_SEED}
+        onChange={setMarkdown}
+        onEscape={noop}
+        onAddFile={noop}
+      />
+      {/* 지금 저장될 마크다운 원문 — 눌러 본 것이 무엇으로 남는지가 요점이다 */}
+      <p className="sg-editor-markdown">{markdown || '(빈 노트)'}</p>
+    </div>
   )
 }
