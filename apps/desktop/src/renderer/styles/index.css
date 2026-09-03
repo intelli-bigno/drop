@@ -3387,11 +3387,14 @@ h6.note-viewer-heading {
   color: var(--text-primary);
 }
 
+/* 문구를 만드는 쪽이 `\n\n`으로 나눠 놓은 두 덩이 — 무엇을 지우는지와 어디로
+   가는지 — 가 한 문장으로 붙어 "첨부 1개 휴지통으로 이동합니다"처럼 읽혔다.
+   줄바꿈을 살린다 (BRU-213). 역할 토큰도 여기만 생 font-size로 덮여 있었다. */
 .confirm-dialog-message {
   margin: 0 0 var(--space-5) 0;
-  font: var(--type-meta);
-  font-size: var(--text-base);
-  line-height: 1.6;
+  white-space: pre-line;
+  font: var(--type-reading);
+  letter-spacing: var(--type-reading-tracking);
   color: var(--text-secondary);
 }
 

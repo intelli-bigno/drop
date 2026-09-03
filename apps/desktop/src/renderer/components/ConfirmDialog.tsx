@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { FOCUSABLE_SELECTOR, nextFocusIndex } from '../lib/focus-trap'
-import { resolveConfirmDialogKey } from '../lib/confirm-dialog-keys'
+import { initialFocus, resolveConfirmDialogKey } from '../lib/confirm-dialog-keys'
 
 interface Props {
   title: string
@@ -8,6 +8,11 @@ interface Props {
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
+  /**
+   * 되돌릴 수 있는 일인가 (BRU-213). 휴지통으로 보내는 삭제처럼 되돌릴 수 있으면
+   * 승낙 버튼이 초점을 들어 **Enter로 끝난다**. 기본값은 안전한 쪽(false)이다.
+   */
+  reversible?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -16,8 +21,11 @@ interface Props {
  * 파괴적 액션(영구 삭제 등) 확인용 인앱 다이얼로그.
  * PinDialog와 같은 backdrop/dialog 패턴을 따른다.
  *
- * 포커스 규칙(BRU-54):
+ * 포커스 규칙(BRU-54, BRU-213에서 조건 추가):
  * - 기본 포커스는 취소다. 파괴적 버튼에 포커스를 두면 Backspace+Enter 두 번에 노트가 사라진다.
+ * - **되돌릴 수 있는 일(`reversible`)만 승낙에 선다.** 휴지통으로 보내는 삭제는
+ *   휴지통에서 `r`로 복원되므로, 두 손 걸음을 요구할 이유가 없다. 판정은
+ *   `lib/confirm-dialog-keys.ts`의 `initialFocus`가 한다.
  * - Tab은 다이얼로그 안에서 순환한다(포커스 트랩).
  * - Escape는 포커스가 어디에 있든 취소한다 — document 캡처 단계에서 받는다.
  * - 닫히면 열기 직전에 포커스가 있던 곳으로 되돌린다.
@@ -36,11 +44,13 @@ export function ConfirmDialog({
   confirmLabel = '확인',
   cancelLabel = '취소',
   danger = false,
+  reversible = false,
   onConfirm,
   onCancel,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
+  const confirmRef = useRef<HTMLButtonElement>(null)
 
   // 최신 핸들러를 리스너 재등록 없이 참조하기 위한 통로
   const onCancelRef = useRef(onCancel)
@@ -52,11 +62,12 @@ export function ConfirmDialog({
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
-    cancelRef.current?.focus()
+    const target = initialFocus({ reversible }) === 'confirm' ? confirmRef : cancelRef
+    target.current?.focus()
     return () => {
       previouslyFocused?.focus?.()
     }
-  }, [])
+  }, [reversible])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,11 +117,14 @@ export function ConfirmDialog({
             {cancelLabel} <kbd className="confirm-dialog-key">n</kbd>
           </button>
           <button
+            ref={confirmRef}
             type="button"
             className={danger ? 'confirm-dialog-danger' : 'confirm-dialog-primary'}
             onClick={onConfirm}
           >
-            {confirmLabel} <kbd className="confirm-dialog-key">y</kbd>
+            {confirmLabel}{' '}
+            {/* 초점을 든 버튼은 Enter로 눌린다 — 그 사실을 글쇠로도 적어 둔다 (BRU-196) */}
+            <kbd className="confirm-dialog-key">{reversible ? 'Enter' : 'y'}</kbd>
           </button>
         </div>
       </div>

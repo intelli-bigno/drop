@@ -34,3 +34,23 @@ export function resolveConfirmDialogKey(event: KeyEventLike): ConfirmDialogActio
 
   return null
 }
+
+export type ConfirmDialogFocus = 'confirm' | 'cancel'
+
+/**
+ * 다이얼로그가 열릴 때 **어느 버튼이 초점을 드는가** (BRU-213).
+ *
+ * BRU-54는 기본 초점을 취소에 뒀다: 파괴적 버튼에 초점을 두면 Backspace와 Enter
+ * 두 번에 노트가 사라진다는 이유였다. 그 판단은 **되돌릴 수 없는 것**에 대해서는
+ * 그대로 옳다.
+ *
+ * 그런데 휴지통으로 보내는 삭제는 되돌릴 수 있다 — 휴지통에서 `r`로 복원한다.
+ * 되돌릴 수 있는 일까지 두 손 걸음을 요구하면, Delete를 누르고 Enter를 치는 손이
+ * 매번 헛돈다. 그래서 규칙을 뒤집지 않고 **조건을 붙인다**.
+ *
+ * 기본값은 안전한 쪽이다 — 앞으로 생길 다이얼로그가 아무 말 없이 파괴적 기본값을
+ * 갖지 않게 한다. 되돌릴 수 있다는 것은 부르는 쪽이 **명시해야** 하는 사실이다.
+ */
+export function initialFocus({ reversible }: { reversible?: boolean }): ConfirmDialogFocus {
+  return reversible ? 'confirm' : 'cancel'
+}

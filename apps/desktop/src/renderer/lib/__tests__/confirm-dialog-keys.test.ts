@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveConfirmDialogKey } from '../confirm-dialog-keys'
+import { initialFocus, resolveConfirmDialogKey } from '../confirm-dialog-keys'
 
 const key = (key: string, modifiers: Partial<KeyboardEvent> = {}) =>
   ({ key, metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, ...modifiers }) as const
@@ -41,5 +41,22 @@ describe('resolveConfirmDialogKey', () => {
     expect(resolveConfirmDialogKey(key('Enter'))).toBeNull()
     expect(resolveConfirmDialogKey(key('Tab'))).toBeNull()
     expect(resolveConfirmDialogKey(key('d'))).toBeNull()
+  })
+})
+
+// BRU-54를 되돌리는 것이 아니라 **조건을 붙이는** 것이다 (BRU-213).
+// 되돌릴 수 있는 삭제(휴지통으로)는 Enter로 끝나야 한다 — Delete 누르고 Enter가
+// 손에 붙은 흐름이다. 되돌릴 수 없는 것은 그대로 취소에 선다.
+describe('initialFocus', () => {
+  it('되돌릴 수 있으면 승낙에 선다 — Delete 다음 Enter로 끝난다', () => {
+    expect(initialFocus({ reversible: true })).toBe('confirm')
+  })
+
+  it('되돌릴 수 없으면 취소에 선다 — 두 번 눌러서 사라지면 안 되는 것들이다', () => {
+    expect(initialFocus({ reversible: false })).toBe('cancel')
+  })
+
+  it('말이 없으면 안전한 쪽이다 — 새 다이얼로그가 실수로 파괴적 기본값을 갖지 않게', () => {
+    expect(initialFocus({})).toBe('cancel')
   })
 })

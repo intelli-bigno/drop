@@ -124,13 +124,20 @@ export function Components() {
           </div>
         </Specimen>
 
-        <Specimen name="ConfirmDialog" file="components/ConfirmDialog.tsx" desc="기본 포커스는 취소">
+        <Specimen
+          name="ConfirmDialog"
+          file="components/ConfirmDialog.tsx"
+          desc="기본 포커스는 취소 — 되돌릴 수 있는 일만 승낙에 선다"
+        >
           <div className="sg-row">
             <button className="sg-btn" onClick={() => setOverlay('confirm')}>
               일반
             </button>
             <button className="sg-btn" onClick={() => setOverlay('confirm-danger')}>
               파괴적 (danger)
+            </button>
+            <button className="sg-btn" onClick={() => setOverlay('confirm-reversible')}>
+              되돌릴 수 있음 (Enter로 끝)
             </button>
           </div>
         </Specimen>
@@ -275,6 +282,18 @@ export function Components() {
           title="보관할까요?"
           message="보관한 노트는 보관함에서 다시 꺼낼 수 있습니다."
           confirmLabel="보관"
+          onConfirm={close}
+          onCancel={close}
+        />
+      )}
+      {/* 되돌릴 수 있는 삭제 — 승낙이 초점을 들어 Enter로 끝난다 (BRU-213) */}
+      {overlay === 'confirm-reversible' && (
+        <ConfirmDialog
+          title="노트를 삭제할까요?"
+          message={'"밀도를 현행 4px로 지킬지" · 첨부 1개\n\n휴지통으로 이동합니다.'}
+          confirmLabel="삭제"
+          danger
+          reversible
           onConfirm={close}
           onCancel={close}
         />

@@ -1158,6 +1158,8 @@ export function NoteFeed() {
           })}
           confirmLabel="삭제"
           danger
+          // 휴지통으로 가는 삭제다 — 되돌릴 수 있으니 Enter로 끝난다 (BRU-213)
+          reversible
           onConfirm={() => {
             void confirmDeleteNote()
           }}
@@ -1174,6 +1176,8 @@ export function NoteFeed() {
           message={buildBulkDeleteConfirmMessage(selectedNotes.length, pendingBulkDelete)}
           confirmLabel={pendingBulkDelete === 'deletePermanently' ? '영구 삭제' : '삭제'}
           danger
+          // 영구 삭제만 예외다 — 되돌릴 수 없는 것은 취소에 선 채로 둔다
+          reversible={pendingBulkDelete !== 'deletePermanently'}
           onConfirm={() => {
             void confirmBulkDelete()
           }}
