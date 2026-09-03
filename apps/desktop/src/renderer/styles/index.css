@@ -2390,12 +2390,15 @@ h6.note-viewer-heading {
   z-index: 1000;
 }
 
+/* 덮는 층의 면은 앱 어디서나 한 가지다 (BRU-213) — 치트시트·확인 다이얼로그와
+   같은 bg-elevated + border-subtle + radius-xl. 여기만 bg-card에 12px 라디우스로
+   서 있어서, 같은 앱의 같은 층이 창마다 다른 물건처럼 보였다. */
 .search-dialog {
-  width: 480px;
-  max-height: 500px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  width: min(520px, 100%);
+  max-height: min(60vh, 520px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
@@ -2405,130 +2408,168 @@ h6.note-viewer-heading {
 .search-dialog-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .search-dialog-icon {
-  font-size: var(--text-lg);
-  opacity: 0.6;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
 }
 
+/* 입력은 이 창에서 가장 큰 글자다 — 치는 자리가 어디인지 묻지 않게. */
 .search-dialog-input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
+  outline: none;
   color: var(--text-primary);
-  font-size: var(--text-base);
+  font: var(--type-reading);
+  letter-spacing: var(--type-reading-tracking);
 }
 
 .search-dialog-input::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
+/* 알약을 걷었다 — 개수는 읽으라고 있는 값이지 강조할 값이 아니다. */
 .search-dialog-count {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  padding: 2px 8px;
-  background: var(--bg-secondary);
-  border-radius: 10px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font: var(--type-meta);
+  font-family: var(--font-mono);
 }
 
 .search-dialog-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: var(--space-2) 0;
+}
+
+.search-dialog-section {
+  margin: 0;
+  padding: var(--space-1) var(--space-5) var(--space-2);
+  color: var(--text-tertiary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
 }
 
 .search-dialog-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-fast);
 }
 
 .search-dialog-item:hover,
 .search-dialog-item.selected {
-  background: var(--bg-secondary);
-}
-
-.search-dialog-item-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  background: var(--accent-subtle);
 }
 
 .search-dialog-preview {
+  min-width: 0;
   color: var(--text-primary);
-  font-size: var(--text-base);
+  font: var(--type-row);
+  letter-spacing: var(--type-row-tracking);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.search-dialog-tags {
-  color: var(--accent);
-  font-size: var(--text-sm);
-  opacity: 0.8;
+/* 맞은 자리는 형광펜이다 (MASTER 규칙 8) — 글자를 액센트 색으로 물들이면
+   링크와 구별되지 않는다. 뷰어의 `*강조*`와 같은 문법을 쓴다. */
+.search-dialog-mark {
+  background: var(--accent-subtle);
+  border-radius: 2px;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
-.search-dialog-item-meta {
+/* 골라 둔 줄은 배경이 이미 accent-subtle이라 형광펜이 묻힌다 — 그 위에서는
+   글자 무게만으로 남긴다. */
+.search-dialog-item.selected .search-dialog-mark,
+.search-dialog-item:hover .search-dialog-mark {
+  background: transparent;
+  color: var(--accent);
+}
+
+.search-dialog-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-shrink: 0;
+  color: var(--text-tertiary);
+  font: var(--type-meta);
 }
 
-.search-dialog-priority {
-  font-weight: 700;
-  font-size: var(--text-sm);
-}
-
-.search-dialog-priority.priority-low {
-  color: var(--priority-low);
-}
-
-.search-dialog-priority.priority-medium {
-  color: var(--priority-medium);
-}
-
-.search-dialog-priority.priority-high {
-  color: var(--priority-high);
-}
-
-.search-dialog-time {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+.search-dialog-tags {
+  color: var(--text-tertiary);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.search-dialog-empty,
-.search-dialog-hint {
-  padding: 32px 16px;
+.search-dialog-time {
+  white-space: nowrap;
+}
+
+/* `!` · `!!` · `!!!`를 걷었다 (BRU-213) — 느낌표 세 개는 값이 아니라 감탄이고,
+   피드는 긴급도를 이미 화면에서 뺐다. 자리만 차지하지 않는 점 하나로 남긴다. */
+.search-dialog-priority {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.search-dialog-priority.priority-1 {
+  background: var(--priority-low);
+}
+
+.search-dialog-priority.priority-2 {
+  background: var(--priority-medium);
+}
+
+.search-dialog-priority.priority-3 {
+  background: var(--priority-high);
+}
+
+.search-dialog-empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-5);
   text-align: center;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font: var(--type-row);
 }
 
-.search-dialog-footer {
+.search-dialog-empty strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* 글쇠 안내는 앱 전체가 같은 모양이다 (.card-popover-help와 같은 판형) —
+   색면 푸터를 걷고 선 하나로 갈랐다. */
+.search-dialog-help {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5) var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font: var(--type-caption);
 }
 
-.search-dialog-shortcut {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
+.search-dialog-help kbd {
+  padding: 1px 4px;
+  margin-right: 2px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
 }
 
 /* Pin Button */
