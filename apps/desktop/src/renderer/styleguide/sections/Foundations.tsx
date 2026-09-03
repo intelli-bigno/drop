@@ -15,6 +15,7 @@ import {
   SPACE_TOKENS,
   TEXT_TOKENS,
   TRANSITION_TOKENS,
+  TYPE_ROLES,
 } from '../tokens-catalog'
 
 /** 지금 문서에 적용된 토큰 값을 읽는다. 토큰이 아니면(직접 적은 색) 그대로 돌려준다. */
@@ -150,7 +151,7 @@ export function Foundations() {
 
       <Section
         title="타이포"
-        note="본문 14px · line-height 1.5. 12px 미만은 본문에 쓰지 않는다 — 메타 라벨만 11px."
+        note="크기는 스케일이 정하고 **뜻은 역할이 정한다** (BRU-213). 화면은 `font-size: 15px`가 아니라 `font: var(--type-reading)`을 쓴다 — 그래야 같은 뜻의 글자가 자리마다 달라지지 않는다. 12px 미만은 본문에 쓰지 않는다."
       >
         <Specimen name="스케일">
           {TEXT_TOKENS.map((token) => (
@@ -160,6 +161,26 @@ export function Foundations() {
                 오늘 붙잡은 생각을 한 줄로 남긴다
               </span>
               <span className="sg-bar-value">{read(token)}</span>
+            </div>
+          ))}
+        </Specimen>
+
+        <Specimen
+          name="역할"
+          file="styles/typography.css"
+        >
+          {TYPE_ROLES.map((role) => (
+            <div className="sg-type-sample" key={role.token}>
+              <span className="sg-bar-label">{role.token.replace('--type-', '')}</span>
+              <span
+                style={{
+                  font: `var(${role.token})`,
+                  letterSpacing: `var(${role.token}-tracking)`,
+                }}
+              >
+                오늘 붙잡은 생각을 한 줄로
+              </span>
+              <span className="sg-bar-value">{role.use}</span>
             </div>
           ))}
         </Specimen>

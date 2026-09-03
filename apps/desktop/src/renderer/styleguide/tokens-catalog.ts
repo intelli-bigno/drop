@@ -33,7 +33,19 @@ export const COLOR_GROUPS: TokenGroup[] = [
   {
     title: '의미색',
     note: '액센트와 다른 축이다 — 상태를 뜻하지 브랜드를 뜻하지 않는다.',
-    tokens: ['--success', '--warning', '--danger', '--danger-hover'],
+    tokens: ['--success', '--warning', '--danger', '--danger-hover', '--danger-subtle', '--text-on-danger'],
+  },
+  {
+    title: '덮는 막',
+    note: 'BRU-213. 다이얼로그 뒤는 모드마다 다르고(라이트는 옅은 막), 사진을 띄우는 자리는 두 모드가 같다.',
+    tokens: [
+      '--overlay',
+      '--overlay-strong',
+      '--overlay-scrim',
+      '--overlay-control',
+      '--overlay-control-hover',
+      '--text-on-overlay',
+    ],
   },
   {
     title: '우선순위',
@@ -76,6 +88,31 @@ export const SHADOW_TOKENS = ['--shadow-sm', '--shadow-md', '--shadow-lg']
 export const TRANSITION_TOKENS = ['--transition-fast', '--transition-normal', '--transition-slow']
 
 export const FONT_TOKENS = ['--font-sans', '--font-mono']
+
+/**
+ * 글자의 **역할** (BRU-213). 크기 토큰(`--text-*`)에 뜻을 붙인 것으로,
+ * 정본은 `styles/typography.css`다 — 모바일 `drop_typography.dart`와 같은 계층.
+ *
+ * 값이 아니라 이름만 적는 것은 위 토큰들과 같은 이유다. 자간은 `font` 단축
+ * 속성에 못 들어가서 `-tracking` 짝으로 따로 있고, 쓸 때는 늘 둘을 함께 쓴다.
+ */
+export interface TypeRole {
+  token: string
+  use: string
+}
+
+export const TYPE_ROLES: TypeRole[] = [
+  { token: '--type-wordmark', use: "로그인 화면의 'DROP' 전용 — 읽는 글이 아니라 상표다" },
+  { token: '--type-screen-title', use: '화면 본문 맨 위의 큰 제목' },
+  { token: '--type-section-title', use: '다이얼로그·시트·묶음의 이름' },
+  { token: '--type-row', use: '목록 한 줄의 글 — 앱에서 가장 많이 쓰이는 역할' },
+  { token: '--type-reading', use: '문단을 읽는 자리 — 뷰어와 편집기가 같은 값을 쓴다' },
+  { token: '--type-label', use: '누르는 것의 이름 — 버튼·메뉴 항목' },
+  { token: '--type-control', use: '머리줄의 작은 조작 — 데스크톱에만 있는 역할' },
+  { token: '--type-meta', use: '시각·개수·태그처럼 본문에 딸린 것' },
+  { token: '--type-caption', use: '읽는 글이 아닌 자리 — 이름표·글쇠' },
+  { token: '--type-mono', use: '코드·글쇠·판번호' },
+]
 
 /**
  * 대비를 재야 하는 짝. MASTER.md가 숫자를 적어 둔 자리와 같다.
