@@ -35,6 +35,8 @@ public enum DropTokens {
         public static let warning = DropTokens.adaptive(light: Color(red: 0.961, green: 0.62, blue: 0.043), dark: Color(red: 0.961, green: 0.62, blue: 0.043))
         public static let danger = DropTokens.adaptive(light: Color(red: 0.855, green: 0.137, blue: 0.137), dark: Color(red: 0.937, green: 0.267, blue: 0.267))
         public static let dangerHover = DropTokens.adaptive(light: Color(red: 0.725, green: 0.11, blue: 0.11), dark: Color(red: 0.973, green: 0.443, blue: 0.443))
+        public static let dangerSolid = DropTokens.adaptive(light: Color(red: 0.855, green: 0.137, blue: 0.137), dark: Color(red: 0.725, green: 0.11, blue: 0.11))
+        public static let dangerSolidHover = DropTokens.adaptive(light: Color(red: 0.725, green: 0.11, blue: 0.11), dark: Color(red: 0.863, green: 0.149, blue: 0.149))
         public static let dangerSubtle = DropTokens.adaptive(light: Color(red: 0.855, green: 0.137, blue: 0.137).opacity(0.1), dark: Color(red: 0.937, green: 0.267, blue: 0.267).opacity(0.14))
         public static let overlay = DropTokens.adaptive(light: Color(red: 0.216, green: 0.208, blue: 0.184).opacity(0.32), dark: Color(red: 0, green: 0, blue: 0).opacity(0.6))
         public static let overlayStrong = DropTokens.adaptive(light: Color(red: 0, green: 0, blue: 0).opacity(0.92), dark: Color(red: 0, green: 0, blue: 0).opacity(0.92))

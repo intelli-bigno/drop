@@ -31,6 +31,8 @@
     <color name="drop_warning">#FFF59E0B</color>
     <color name="drop_danger">#FFEF4444</color>
     <color name="drop_danger_hover">#FFF87171</color>
+    <color name="drop_danger_solid">#FFB91C1C</color>
+    <color name="drop_danger_solid_hover">#FFDC2626</color>
     <color name="drop_danger_subtle">#24EF4444</color>
     <color name="drop_overlay">#99000000</color>
     <color name="drop_overlay_strong">#EB000000</color>

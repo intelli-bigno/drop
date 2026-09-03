@@ -38,6 +38,8 @@ class DropTokenColors {
     required this.warning,
     required this.danger,
     required this.dangerHover,
+    required this.dangerSolid,
+    required this.dangerSolidHover,
     required this.dangerSubtle,
     required this.overlay,
     required this.overlayStrong,
@@ -76,6 +78,8 @@ class DropTokenColors {
   final Color warning;
   final Color danger;
   final Color dangerHover;
+  final Color dangerSolid;
+  final Color dangerSolidHover;
   final Color dangerSubtle;
   final Color overlay;
   final Color overlayStrong;
@@ -114,6 +118,8 @@ class DropTokenColors {
     warning: Color(0xFFF59E0B),
     danger: Color(0xFFDA2323),
     dangerHover: Color(0xFFB91C1C),
+    dangerSolid: Color(0xFFDA2323),
+    dangerSolidHover: Color(0xFFB91C1C),
     dangerSubtle: Color(0x1ADA2323),
     overlay: Color(0x5237352F),
     overlayStrong: Color(0xEB000000),
@@ -153,6 +159,8 @@ class DropTokenColors {
     warning: Color(0xFFF59E0B),
     danger: Color(0xFFEF4444),
     dangerHover: Color(0xFFF87171),
+    dangerSolid: Color(0xFFB91C1C),
+    dangerSolidHover: Color(0xFFDC2626),
     dangerSubtle: Color(0x24EF4444),
     overlay: Color(0x99000000),
     overlayStrong: Color(0xEB000000),
@@ -193,6 +201,8 @@ class DropTokenColors {
     'warning': warning,
     'danger': danger,
     'danger-hover': dangerHover,
+    'danger-solid': dangerSolid,
+    'danger-solid-hover': dangerSolidHover,
     'danger-subtle': dangerSubtle,
     'overlay': overlay,
     'overlay-strong': overlayStrong,

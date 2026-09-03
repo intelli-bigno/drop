@@ -55,9 +55,25 @@ body {
 }
 
 .feed {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* 머리줄 밑에 깔리는 얇은 그러데이션 (BRU-213). 목록이 선 아래로 잘려 사라지는
+   대신 **스며들어 사라진다** — 위로 더 있다는 사실이 스크롤바 말고도 보인다.
+   마우스를 막지 않는다. */
+.feed::after {
+  content: '';
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(var(--bg-primary), transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ============================================
@@ -521,14 +537,28 @@ body {
    끝에서 시작해 조상 레일을 가로질렀다 — 레일이 잘못 그려진 것이 아니라
    본문이 들여쓰기 밖으로 빠져나간 것이었다.
    여기 한 곳에서 받으면 안에 무엇을 더해도 자리가 맞는다. */
+/* 펼친 본문은 **접힌 줄의 글자와 같은 x에서 시작한다** (BRU-213).
+
+   상태칸(20px) + 사이(8px)만큼 더 들여야 그 자리가 맞는다. 개편 전에는 본문이
+   행 왼쪽 끝에서 시작해서, 펼치는 순간 같은 문장이 28px 왼쪽으로 튀었다.
+   이렇게 두면 아이콘 하나가 왼쪽에 남아 글머리 기호처럼 읽힌다. */
 .note-card-body {
-  padding-left: var(--note-indent, 0px);
+  padding-left: calc(
+    var(--space-4) + 20px + var(--space-2) + var(--note-indent, 0px)
+  );
+  padding-right: var(--space-4);
+}
+
+/* 펼쳤을 때 한 줄은 아이콘만 남는다 — 아래 본문과 붙여 한 덩어리로 읽히게 한다. */
+.note-card.open .note-line {
+  padding-bottom: 0;
 }
 
 /* Note Editor Container */
 .note-editor {
-  /* 접힌 줄과 같은 좌우 여백 — 읽다가 고쳐도 글자가 제자리에 있어야 한다. */
-  padding: var(--space-1) var(--space-4) var(--space-3);
+  /* 좌우 여백은 .note-card-body가 든다 — 뷰어와 편집기가 같은 x에서 시작해야
+     읽다가 고칠 때 글자가 움직이지 않는다. */
+  padding: 0 0 var(--space-3);
   /* 편집 중 카드가 뷰포트보다 커지지 않게 본문만 스크롤한다 (BRU-130).
      .note-card 는 overflow:hidden 이라 카드가 커지면 하단이 잘린다. */
   max-height: calc(100vh - 200px);
@@ -550,7 +580,7 @@ body {
    커서 모양까지 text가 아닌 default로 둬서 "여기는 쓰는 곳이 아니다"를 알린다.
    ============================================ */
 .note-viewer {
-  padding: var(--space-1) var(--space-4) var(--space-3);
+  padding: 0 0 var(--space-3);
   font: var(--type-reading);
   letter-spacing: var(--type-reading-tracking);
   color: var(--text-primary);
@@ -920,7 +950,7 @@ h6.note-viewer-heading {
 }
 
 .attachment-remove:hover {
-  background: var(--danger);
+  background: var(--danger-solid);
 }
 
 /* Image Attachment */
@@ -2309,7 +2339,7 @@ h6.note-viewer-heading {
 
 .tag-management-delete-confirm-btn {
   padding: 6px 12px;
-  background: var(--danger);
+  background: var(--danger-solid);
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-on-danger);
@@ -2319,7 +2349,7 @@ h6.note-viewer-heading {
 }
 
 .tag-management-delete-confirm-btn:hover {
-  background: var(--danger-hover);
+  background: var(--danger-solid-hover);
 }
 
 .tag-management-footer {
@@ -2875,7 +2905,7 @@ h6.note-viewer-heading {
 /* ===== Empty Trash Button ===== */
 .empty-trash-btn {
   padding: 6px 12px;
-  background: var(--danger);
+  background: var(--danger-solid);
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-on-danger);
@@ -2886,7 +2916,7 @@ h6.note-viewer-heading {
 }
 
 .empty-trash-btn:hover {
-  background: var(--danger-hover);
+  background: var(--danger-solid-hover);
 }
 
 /* ===== Archive / Restore Buttons ===== */
@@ -3265,7 +3295,7 @@ h6.note-viewer-heading {
 }
 
 .confirm-dialog-actions button.confirm-dialog-danger {
-  background: var(--danger);
+  background: var(--danger-solid);
   border: none;
   color: var(--text-on-danger);
 }
@@ -3922,7 +3952,7 @@ h6.note-viewer-heading {
 }
 
 .selection-action.danger:hover {
-  background: var(--danger);
+  background: var(--danger-solid);
   color: var(--text-on-overlay);
 }
 

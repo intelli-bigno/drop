@@ -33,7 +33,16 @@ export const COLOR_GROUPS: TokenGroup[] = [
   {
     title: '의미색',
     note: '액센트와 다른 축이다 — 상태를 뜻하지 브랜드를 뜻하지 않는다.',
-    tokens: ['--success', '--warning', '--danger', '--danger-hover', '--danger-subtle', '--text-on-danger'],
+    tokens: [
+      '--success',
+      '--warning',
+      '--danger',
+      '--danger-hover',
+      '--danger-subtle',
+      '--danger-solid',
+      '--danger-solid-hover',
+      '--text-on-danger',
+    ],
   },
   {
     title: '덮는 막',
@@ -134,4 +143,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   { label: 'CTA 위 글자', foreground: '--text-on-accent', background: '--cta' },
   { label: '액센트 위 흰 글자 (금지 사례)', foreground: '#ffffff', background: '--accent' },
   { label: '위험 색 / 앱 배경', foreground: '--danger', background: '--bg-primary' },
+  // BRU-213에서 새로 생긴 짝. 토큰을 만들었으면 여기서 재는 것까지가 한 벌이다.
+  { label: '위험 배경 위 글자', foreground: '--text-on-danger', background: '--danger-solid' },
+  { label: '위험 배경 hover 위 글자', foreground: '--text-on-danger', background: '--danger-solid-hover' },
+  { label: '사진 막 위 글자', foreground: '--text-on-overlay', background: '--overlay-strong' },
 ]
