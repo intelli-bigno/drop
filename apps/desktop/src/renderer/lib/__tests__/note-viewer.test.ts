@@ -150,3 +150,31 @@ describe('parseInlineSpans', () => {
     expect(joined).toBe(raw)
   })
 })
+
+describe('parseInlineSpans — 강조 (BRU-213)', () => {
+  it('별표 한 쌍은 강조다 — 화면은 형광펜으로 그린다', () => {
+    expect(parseInlineSpans('여기 *중요한* 말')).toEqual([
+      { type: 'text', text: '여기 ' },
+      { type: 'emphasis', text: '중요한' },
+      { type: 'text', text: ' 말' },
+    ])
+  })
+
+  it('밑줄은 강조가 아니다 — snake_case가 강조로 잘못 그려지면 원문이 거짓말이 된다', () => {
+    expect(parseInlineSpans('컬럼 이름은 created_at_utc 이다')).toEqual([
+      { type: 'text', text: '컬럼 이름은 created_at_utc 이다' },
+    ])
+  })
+
+  it('굵게가 강조보다 먼저다 — **x**를 *로 쪼개면 굵게가 사라진다', () => {
+    expect(parseInlineSpans('**굵게**')).toEqual([{ type: 'strong', text: '굵게' }])
+  })
+
+  it('짝이 없는 별표는 그냥 글자다', () => {
+    expect(parseInlineSpans('3 * 4 = 12')).toEqual([{ type: 'text', text: '3 * 4 = 12' }])
+  })
+
+  it('코드 안의 별표는 건드리지 않는다', () => {
+    expect(parseInlineSpans('`a * b`')).toEqual([{ type: 'code', text: 'a * b' }])
+  })
+})

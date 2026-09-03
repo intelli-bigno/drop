@@ -106,6 +106,11 @@ function renderSpan(span: InlineSpan) {
   switch (span.type) {
     case 'strong':
       return <strong>{span.text}</strong>
+    case 'emphasis':
+      // 형광펜 (BRU-213). 기울임은 한글에서 가짜 기울기라 강조로 안 읽히고,
+      // 액센트 색만 쓰면 링크와 구별되지 않는다 — 글자는 본문색 그대로 두고
+      // 뒤에 색을 깐다. 모바일 markdown_view.dart와 같은 규칙이다.
+      return <mark className="note-viewer-mark">{span.text}</mark>
     case 'code':
       return <code className="note-viewer-inline-code">{span.text}</code>
     case 'link':

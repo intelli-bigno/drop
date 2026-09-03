@@ -137,19 +137,25 @@ export function parseNoteBlocks(content: string): NoteBlock[] {
 export type InlineSpan =
   | { type: 'text'; text: string }
   | { type: 'strong'; text: string }
+  | { type: 'emphasis'; text: string }
   | { type: 'code'; text: string }
   | { type: 'link'; text: string; href: string }
 
 const INLINE_CODE = /^`([^`]+)`/
 const INLINE_STRONG = /^\*\*([^*]+)\*\*/
+const INLINE_EMPHASIS = /^\*([^*\s][^*]*)\*/
 const INLINE_LINK = /^\[([^\]]*)\]\(([^)\s]+)\)/
 
 /**
  * 한 줄 안의 표시를 span으로 나눈다.
  *
- * 굵게 · 인라인 코드 · 링크만 본다. 기울임(`*`·`_`)은 일부러 뺐다 —
- * `snake_case` 같은 평범한 글자를 표시로 오인해 원문을 잘못 그리는 쪽이,
- * 기울임이 안 그려지는 쪽보다 나쁘다.
+ * 굵게 · 강조 · 인라인 코드 · 링크를 본다.
+ *
+ * **밑줄(`_`)은 강조로 보지 않는다** — `created_at_utc` 같은 평범한 글자를 표시로
+ * 오인해 원문을 잘못 그리는 쪽이, 강조가 안 그려지는 쪽보다 나쁘다. 원래는 별표도
+ * 같은 이유로 빼 두었는데(BRU-59), 그래서 데스크톱에서는 `*중요*`가 별표째 보이고
+ * 모바일에서는 형광펜으로 칠해졌다 — 같은 노트가 앱마다 다르게 보였다.
+ * BRU-213에서 **별표만** 되살린다: 위험한 것은 밑줄이지 별표가 아니었다.
  */
 export function parseInlineSpans(text: string): InlineSpan[] {
   const spans: InlineSpan[] = []
@@ -184,11 +190,20 @@ export function parseInlineSpans(text: string): InlineSpan[] {
       continue
     }
 
+    // 굵게가 먼저다 — `**x**`를 강조 규칙이 먼저 물면 `*x*`와 남은 별표로 쪼개진다.
     const strong = rest.match(INLINE_STRONG)
     if (strong) {
       flush()
       spans.push({ type: 'strong', text: strong[1] })
       i += strong[0].length
+      continue
+    }
+
+    const emphasis = rest.match(INLINE_EMPHASIS)
+    if (emphasis) {
+      flush()
+      spans.push({ type: 'emphasis', text: emphasis[1] })
+      i += emphasis[0].length
       continue
     }
 
