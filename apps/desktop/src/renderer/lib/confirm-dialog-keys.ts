@@ -7,12 +7,14 @@
 // 테스트할 수 없지만, "어떤 키가 무엇인가"는 렌더링과 무관하다.
 
 import type { KeyEventLike } from '../shortcuts/types'
+import { KEYS } from '../shortcuts/keys'
 
 export type ConfirmDialogAction = 'confirm' | 'cancel'
 
-/** y/n의 한글 입력 상태 값. 두벌식에서 y=ㅛ, n=ㅜ다. */
-const CONFIRM_KEYS = ['y', 'ㅛ']
-const CANCEL_KEYS = ['n', 'ㅜ']
+// 키의 정본은 shortcuts/keys.ts다 (BRU-213). 여기 따로 적어 두었을 때는
+// ⌘/ 치트시트가 이 둘의 존재를 몰랐다 — 실제로 되는데 목록에 없는 단축키였다.
+const CONFIRM_KEYS: readonly string[] = KEYS.confirmYes
+const CANCEL_KEYS: readonly string[] = KEYS.confirmNo
 
 /**
  * 다이얼로그가 이 키를 무엇으로 볼 것인가. 우리 것이 아니면 null.

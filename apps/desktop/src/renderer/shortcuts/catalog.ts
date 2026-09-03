@@ -3,7 +3,15 @@ import { KEYS, type ShortcutKeyId } from './keys'
 // 치트시트에 보여줄 항목. 키는 여기에 적지 않고 KEYS에서 keyId로 참조한다 —
 // 단축키를 추가하면 keys.ts 한 곳만 고치면 되고, 목록이 실제 동작과 어긋나지 않는다.
 
-export type ShortcutScope = 'feed' | 'global' | 'trash' | 'tag' | 'note' | 'selection' | 'editor'
+export type ShortcutScope =
+  | 'feed'
+  | 'global'
+  | 'trash'
+  | 'tag'
+  | 'note'
+  | 'selection'
+  | 'editor'
+  | 'confirm'
 
 /** BRU-117 — 사용자 메뉴에서 치트시트를 여는 항목. 상시 힌트가 아니라 메뉴 한 줄. */
 export const CHEAT_SHEET_MENU_LABEL = '단축키'
@@ -16,6 +24,8 @@ export const CHEAT_SHEET_NOTES: string[] = [
   '피드: j/k 이동 · v 선택 · / · i 편집. 편집기에는 vim 모드가 없다.',
   '편집 중: 마크다운 숏컷(# · * · ```) · Enter 줄바꿈 · Esc 끝내기.',
   '한글 입력 상태에서도 같은 자리의 키가 동작한다 (J = ㅓ).',
+  '목록이 뜨는 자리(검색·태그·템플릿)는 ↑↓로 고르고 Enter로 넣고 Esc로 닫는다.',
+  '아이콘 버튼은 마우스를 올리거나 Tab으로 닿으면 하는 일과 글쇠가 함께 뜬다.',
 ]
 
 export interface ShortcutCatalogEntry {
@@ -111,6 +121,10 @@ export const SHORTCUT_CATALOG: ShortcutCatalogEntry[] = [
     modifier: 'primary',
   },
 
+  // 확인 다이얼로그 (BRU-196). 실제로 되는데 목록에 없던 단축키다 (BRU-213).
+  { keyId: 'confirmYes', label: '승낙', group: '확인', scope: 'confirm' },
+  { keyId: 'confirmNo', label: '거절', group: '확인', scope: 'confirm' },
+
   // 도움말 — 수식키가 달라 항목을 둘로 나눈다.
   // 맨 `/`는 편집 진입 키이므로 치트시트를 열지 않는다 (BRU-53).
   {
@@ -137,6 +151,23 @@ export function formatKeyForDisplay(eventKey: string): string {
   // 알파벳 한 글자는 대문자로. 한글 별칭은 대문자 개념이 없어 그대로 남는다.
   if (eventKey.length === 1) return eventKey.toUpperCase()
   return eventKey
+}
+
+/**
+ * 버튼 옆에 붙일 **한 벌짜리** 표시 (BRU-213). `⌘K` · `⇧C` · `P` 처럼.
+ *
+ * 치트시트는 별칭을 전부 늘어놓지만(`J / ㅓ`), 호버 힌트에는 그럴 자리가 없다 —
+ * 첫 번째 것만 보여 준다. 없는 키는 null이라 호출부가 힌트를 빼면 된다.
+ */
+export function hintForKeyId(keyId: ShortcutKeyId): string | null {
+  const entry = SHORTCUT_CATALOG.find((candidate) => candidate.keyId === keyId)
+  if (!entry) return null
+  const first = KEYS[keyId]?.[0]
+  if (!first) return null
+
+  const primary = entry.modifier === 'primary' || entry.modifier === 'primary-shift'
+  const shift = entry.modifier === 'shift' || entry.modifier === 'primary-shift'
+  return `${primary ? '⌘' : ''}${shift ? '⇧' : ''}${formatKeyForDisplay(first)}`
 }
 
 export function keysForEntry(entry: ShortcutCatalogEntry): string[] {

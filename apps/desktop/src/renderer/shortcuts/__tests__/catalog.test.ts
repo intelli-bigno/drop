@@ -4,6 +4,7 @@ import {
   CHEAT_SHEET_MENU_LABEL,
   CHEAT_SHEET_NOTES,
   formatKeyForDisplay,
+  hintForKeyId,
   type ShortcutCatalogEntry,
 } from '../catalog'
 import { KEYS } from '../keys'
@@ -120,6 +121,44 @@ describe('SHORTCUT_CATALOG', () => {
     const notes = CHEAT_SHEET_NOTES.join(' ')
     expect(notes).toMatch(/마크다운/)
     expect(notes).toMatch(/vim 모드가 없다/)
+  })
+})
+
+// 「⌘/ 하면 앱의 모든 단축키가 보인다」를 규칙으로 못박는다 (BRU-213).
+// 키를 KEYS에 추가하고 카탈로그에 안 적으면 여기서 터진다 — 치트시트가 조용히
+// 뒤처지는 유일한 경로를 막는 장치다.
+describe('SHORTCUT_CATALOG 완전성 (BRU-213)', () => {
+  it('shouldListEveryKeyInTheKeyTable', () => {
+    const listed = new Set(SHORTCUT_CATALOG.map((e) => e.keyId))
+    const missing = Object.keys(KEYS).filter((id) => !listed.has(id as never))
+    expect(missing).toEqual([])
+  })
+
+  it('shouldDocumentTheConfirmDialogYesNoKeys', () => {
+    const confirm = SHORTCUT_CATALOG.filter((e) => e.scope === 'confirm')
+    expect(confirm.map((e) => e.keyId).sort()).toEqual(['confirmNo', 'confirmYes'])
+  })
+})
+
+describe('hintForKeyId (BRU-213)', () => {
+  it('수식키를 기호로 앞에 붙인다', () => {
+    expect(hintForKeyId('search')).toBe('⌘K')
+    expect(hintForKeyId('openComments')).toBe('⇧C')
+    expect(hintForKeyId('copyFocusedReference')).toBe('⌘⇧C')
+  })
+
+  it('수식키가 없으면 글쇠 하나만', () => {
+    expect(hintForKeyId('togglePin')).toBe('P')
+  })
+
+  it('별칭이 여럿이어도 **첫 번째만** 보여 준다 — 버튼 옆 힌트는 한 벌이어야 한다', () => {
+    expect(hintForKeyId('archive')).toBe('E')
+    expect(hintForKeyId('deleteFocused')).toBe('Delete')
+  })
+
+  it('카탈로그에 없는 키는 null', () => {
+    expect(hintForKeyId('insertTemplate')).toBe('/')
+    expect(hintForKeyId('nope' as never)).toBeNull()
   })
 })
 
