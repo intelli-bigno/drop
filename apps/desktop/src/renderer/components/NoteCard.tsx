@@ -35,6 +35,10 @@ interface Props {
   viewMode?: NoteViewMode
   /** 목록 전체 펼치기 토글이 켜져 있는가 (BRU-79) */
   expandAll?: boolean
+  /** 이 카드를 눌러서 펼쳐 두었는가 (BRU-213) */
+  isExpanded?: boolean
+  /** 행의 맨 윗줄을 눌렀다 — 펼치거나 접는다 (BRU-213) */
+  onToggleExpand?: () => void
   onEscapeFromNormal: () => void
   onReply?: (noteId: string) => void
   /**
@@ -60,6 +64,8 @@ export const NoteCard = memo(
         depth = 0,
         viewMode = 'active',
         expandAll = false,
+        isExpanded = false,
+        onToggleExpand,
         onEscapeFromNormal,
         onReply,
         onPopoverOpenChange,
@@ -113,7 +119,7 @@ export const NoteCard = memo(
       // 상태는 셋이다 — 한 줄 / 읽기 전용 viewer / 편집 에디터.
       // 포커스만 옮겨도 본문은 펼쳐지지만 viewer까지다 (BRU-59): 에디터는
       // `/`·`i`로 들어왔을 때만 열린다 (BRU-53). 일괄 펼치기(BRU-79)도 viewer까지다.
-      const view = resolveNoteCardView({ isFocused, isEditing, expandAll })
+      const view = resolveNoteCardView({ isFocused, isEditing, expandAll, isExpanded })
       const isEditorMounted = view === 'editor'
       const isOpen = view !== 'one-line'
 
@@ -375,7 +381,9 @@ export const NoteCard = memo(
             onDrop={isLocked ? undefined : handleDrop}
           >
             <NoteTreeGuides depth={depth} />
-            <div className="note-line">
+            {/* 맨 윗줄이 펼침 손잡이다 (BRU-213). 펼친 뒤에도 같은 자리를 누르면
+                접힌다 — 열 때와 닫을 때의 자리가 다르면 손이 헤맨다. */}
+            <div className="note-line" onClick={() => onToggleExpand?.()}>
               {/* 상태칸 (BRU-187). 할일이 아니어도 자리를 비워 둔다 —
                   노트와 할일이 섞인 목록에서 본문 x가 한 줄로 맞아야 한다. */}
               <span className="note-line-slot">

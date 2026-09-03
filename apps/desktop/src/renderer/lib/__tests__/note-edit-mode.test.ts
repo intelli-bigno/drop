@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isEditorOpen, resolveNoteCardView } from '../note-edit-mode'
+import { isEditorOpen, resolveNoteCardView, toggleExpandedNote } from '../note-edit-mode'
 
 describe('isEditorOpen', () => {
   it('shouldOpenWhenFocusedCardEntersEditMode', () => {
@@ -71,5 +71,48 @@ describe('resolveNoteCardView', () => {
     expect(resolveNoteCardView({ isFocused: false, isEditing: false, expandAll: false })).toBe(
       'one-line'
     )
+  })
+})
+
+// BRU-213 — 눌러서 펼친다. BRU-179가 막은 것은 **포커스**가 펼치는 것이었다:
+// j/k로 훑을 때마다 카드가 열리면 행 높이가 뛰어 훑기가 망가진다. 클릭은 다르다 —
+// 훑는 동작이 아니라 "이걸 보겠다"는 한 번의 결정이라, 그 자리에서 열려도 된다.
+describe('클릭으로 펼치기 (BRU-213)', () => {
+  it('펼친 것으로 표시된 카드는 viewer다', () => {
+    expect(resolveNoteCardView({ isFocused: false, isEditing: false, isExpanded: true })).toBe(
+      'viewer'
+    )
+  })
+
+  it('포커스만으로는 여전히 안 펼쳐진다 — BRU-179는 그대로다', () => {
+    expect(resolveNoteCardView({ isFocused: true, isEditing: false, isExpanded: false })).toBe(
+      'one-line'
+    )
+  })
+
+  it('펼친 카드에서 편집에 들어가면 editor가 이긴다', () => {
+    expect(resolveNoteCardView({ isFocused: true, isEditing: true, isExpanded: true })).toBe(
+      'editor'
+    )
+  })
+
+  it('일괄 펼치기는 개별 상태와 무관하게 편다', () => {
+    expect(
+      resolveNoteCardView({ isFocused: false, isEditing: false, isExpanded: false, expandAll: true })
+    ).toBe('viewer')
+  })
+})
+
+describe('toggleExpandedNote', () => {
+  it('닫힌 것을 누르면 열린다', () => {
+    expect(toggleExpandedNote(null, 'a')).toBe('a')
+  })
+
+  it('열린 것을 다시 누르면 닫힌다 — 같은 자리를 두 번 누르면 되돌아와야 한다', () => {
+    expect(toggleExpandedNote('a', 'a')).toBeNull()
+  })
+
+  it('다른 것을 누르면 그것만 열린다 — 한 번에 하나여야 목록이 목록으로 남는다', () => {
+    expect(toggleExpandedNote('a', 'b')).toBe('b')
   })
 })

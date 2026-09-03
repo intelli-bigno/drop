@@ -3,8 +3,11 @@
 // 노트 행이 이 앱의 중심 패턴이다. 상태가 많고(포커스·호버·핀·잠김·반출·계층)
 // 그 조합이 곧 화면 밀도를 정한다.
 
+import { useState } from 'react'
 import { PageHead, Section, Specimen } from '../parts'
 import { NoteCard } from '../../components/NoteCard'
+import { Icon } from '../../components/Icon'
+import { toggleExpandedNote } from '../../lib/note-edit-mode'
 import { STYLEGUIDE_ARCHIVED, STYLEGUIDE_NOTES, STYLEGUIDE_TRASHED } from '../fixtures'
 import type { Note } from '@drop/shared'
 
@@ -56,31 +59,46 @@ function Row({
   )
 }
 
-/** 실제 피드의 묶음 — 둥근 면 + 행 사이 얇은 선 + 고정 표시 (BRU-213). */
+/** 실제 피드의 묶음 — 이름표 + 둥근 면 + 행 사이 얇은 선 (BRU-213). */
 function Group({
   label,
+  title,
   notes,
   pinned = false,
 }: {
   label: string
+  title: string
   notes: Note[]
   pinned?: boolean
 }) {
+  // 실물과 같은 규칙으로 펼친다 (BRU-213) — 한 번에 하나, 같은 자리를 다시 누르면 접힘.
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
   return (
     <Specimen name={label} flush>
-      <div className={`note-group ${pinned ? 'is-pinned' : ''}`}>
-        {notes.map((note) => (
-          <div className="note-row" key={note.id}>
-            <NoteCard
-              note={note}
-              isFocused={false}
-              viewMode="active"
-              onEscapeFromNormal={noop}
-              onReply={noop}
-              onPopoverOpenChange={noop}
-            />
-          </div>
-        ))}
+      <div className="date-group">
+        <div className={`date-label ${pinned ? 'is-pinned' : ''}`}>
+          {pinned && <Icon name="pin" size={12} />}
+          {title}
+        </div>
+        <div className="note-group">
+          {notes.map((note) => (
+            <div className="note-row" key={note.id}>
+              <NoteCard
+                note={note}
+                isFocused={false}
+                viewMode="active"
+                isExpanded={expandedId === note.id}
+                onToggleExpand={() =>
+                  setExpandedId((current) => toggleExpandedNote(current, note.id))
+                }
+                onEscapeFromNormal={noop}
+                onReply={noop}
+                onPopoverOpenChange={noop}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </Specimen>
   )
@@ -114,10 +132,10 @@ export function Patterns() {
 
       <Section
         title="묶음"
-        note="행은 혼자 서지 않는다 — 날짜(또는 고정)마다 둥근 면 하나에 담기고 사이는 얇은 선이다. 고정 묶음은 왼쪽 모서리에 핀이 얹힌다 (BRU-213)."
+        note="행은 혼자 서지 않는다 — 날짜(또는 고정)마다 둥근 면 하나에 담기고 사이는 얇은 선이다. 고정 묶음은 이름표에 핀이 붙는다. 줄을 눌러 보라 — 그 자리에서 펼쳐지고, 다시 누르면 접힌다 (BRU-213)."
       >
-        <Group label="날짜 묶음" notes={N.slice(0, 3)} />
-        <Group label="고정 묶음 — 모서리에 핀" notes={N.slice(0, 2)} pinned />
+        <Group label="날짜 묶음" title="2026년 9월 3일" notes={N.slice(0, 3)} />
+        <Group label="고정 묶음" title="고정" notes={N.slice(0, 2)} pinned />
       </Section>
 
       <Section

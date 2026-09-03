@@ -18,6 +18,8 @@ export interface NoteCardViewInput {
   isEditing: boolean
   /** 목록 전체 펼치기 토글이 켜져 있는가 (BRU-79) */
   expandAll?: boolean
+  /** 이 카드를 **눌러서** 펼쳐 두었는가 (BRU-213) */
+  isExpanded?: boolean
 }
 
 export type NoteCardView = 'one-line' | 'viewer' | 'editor'
@@ -26,17 +28,30 @@ export function resolveNoteCardView({
   isFocused,
   isEditing,
   expandAll = false,
+  isExpanded = false,
 }: NoteCardViewInput): NoteCardView {
   // 편집은 포커스가 있는 카드에서만 성립한다 — 포커스를 잃으면 편집도 끝난다.
   if (isFocused && isEditing) return 'editor'
-  // 포커스는 더 이상 펼치지 않는다 (BRU-179). j/k로 훑을 때마다 카드가 열리면
-  // 행 높이가 38px→77px로 뛰고 본문 글자가 55px 왼쪽·한 줄 아래로 이동해
-  // 훑기 자체가 망가진다(실측). 본문을 읽는 길은 Space 미리보기 패널로 옮겼고,
-  // BRU-59가 세운 "읽기는 에디터를 마운트하지 않는 viewer로" 원칙은 그 패널이
-  // 그대로 이어받는다 — 원문 보존의 구조는 건드리지 않았다.
-  // 일괄 펼치기도 viewer까지만이다 — 절대 editor로 가지 않는다 (BRU-79).
-  if (expandAll) return 'viewer'
+  // 포커스는 펼치지 않는다 (BRU-179). j/k로 훑을 때마다 카드가 열리면 행 높이가
+  // 38px→77px로 뛰고 본문 글자가 55px 왼쪽·한 줄 아래로 이동해 훑기 자체가
+  // 망가진다(실측).
+  //
+  // **누르는 것은 다르다** (BRU-213). 훑는 동작이 아니라 "이걸 보겠다"는 한 번의
+  // 결정이라, 그 자리에서 열려도 훑기를 방해하지 않는다. 그래서 포커스가 아니라
+  // 클릭이 펼침을 쥔다.
+  //
+  // 어느 쪽이든 viewer까지다 — 절대 editor로 가지 않는다 (BRU-79 · BRU-66).
+  if (expandAll || isExpanded) return 'viewer'
   return 'one-line'
+}
+
+/**
+ * 어느 노트가 펼쳐져 있는지 (BRU-213). 한 번에 하나다 — 여럿이 동시에 열리면
+ * 목록이 목록이 아니게 되고, 「클릭 안 하면 리스트」라는 약속이 깨진다.
+ * 같은 것을 다시 누르면 닫힌다.
+ */
+export function toggleExpandedNote(current: string | null, id: string): string | null {
+  return current === id ? null : id
 }
 
 /** 카드를 펼쳐 **에디터**를 마운트할지. viewer는 여기에 해당하지 않는다. */

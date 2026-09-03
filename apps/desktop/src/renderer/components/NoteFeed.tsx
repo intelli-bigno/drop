@@ -38,6 +38,7 @@ import {
 } from '../lib/note-selection'
 import { buildBulkDeleteConfirmMessage, type BulkActionId } from '../lib/bulk-actions'
 import { previewTargetNoteId, resolveEscapeAction, shouldTogglePreview } from '../lib/note-preview'
+import { toggleExpandedNote } from '../lib/note-edit-mode'
 import { mapWithConcurrency } from '../lib/concurrency'
 import { NotePreviewPanel } from './NotePreviewPanel'
 import { SelectionActionBar } from './SelectionActionBar'
@@ -117,6 +118,9 @@ export function NoteFeed() {
   // 목록 전체 펼치기 (BRU-79). 훑어보기용 일시 토글이라 **세션 간 유지하지 않는다** —
   // 스토어가 아니라 여기 로컬 state에 두는 것이 그 결정의 구조적 보장이다.
   const [expandAll, setExpandAll] = useState(false)
+  // 눌러서 펼친 노트 (BRU-213). 한 번에 하나다 — 여럿이 동시에 열리면
+  // 「클릭 안 하면 리스트」라는 약속이 깨진다. 훑기(j/k)와는 무관하다 (BRU-179).
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
   const hasPin = useProfileStore((s) => s.hasPin)
   const cardRefs = useRef<Map<string, NoteCardHandle>>(new Map())
   const feedRef = useRef<HTMLDivElement>(null)
@@ -1133,7 +1137,12 @@ export function NoteFeed() {
               )}
               <button
                 className={`icon-btn ${expandAll ? 'active' : ''}`}
-                onClick={() => setExpandAll((on) => !on)}
+                onClick={() => {
+                  // 일괄 펼치기를 켜면 개별 펼침은 뜻이 없어진다 — 끌 때
+                  // 방금 누른 줄만 남아 있으면 무슨 상태인지 알 수 없다.
+                  setExpandedNoteId(null)
+                  setExpandAll((on) => !on)
+                }}
                 data-hint={expandAll ? '모두 접기' : '모두 펼쳐보기'}
                 aria-label={expandAll ? '모두 접기' : '모두 펼쳐보기'}
                 aria-pressed={expandAll}
@@ -1218,10 +1227,16 @@ export function NoteFeed() {
           const isPinnedGroup = date === PINNED_GROUP
           return (
           <div key={date} className="date-group">
-            <div className="date-label">{isPinnedGroup ? '고정' : date}</div>
+            {/* 고정 묶음의 표시는 이름표 안에 든다 (BRU-213 반려 반영).
+                모서리에 얹었을 때는 첫 행의 아이콘과 붙어 서로 무엇을 가리키는지
+                알 수 없었다 — 이름표는 이미 그 묶음의 것이라 애매할 자리가 없다. */}
+            <div className={`date-label ${isPinnedGroup ? 'is-pinned' : ''}`}>
+              {isPinnedGroup && <Icon name="pin" size={12} />}
+              {isPinnedGroup ? '고정' : date}
+            </div>
             {/* 행들을 담는 둥근 면 (BRU-213). 개편 전에는 노트가 아무 데도
                 담기지 않은 채 떠 있고 날짜만 알약 카드였다 — 담을 것을 담는다. */}
-            <div className={`note-group ${isPinnedGroup ? 'is-pinned' : ''}`}>
+            <div className="note-group">
             {items.map((item) => {
               const globalIndex = noteIndexMap.get(item.note.id) ?? -1
               return (
@@ -1242,6 +1257,10 @@ export function NoteFeed() {
                     depth={item.depth}
                     viewMode={viewMode}
                     expandAll={expandAll}
+                    isExpanded={expandedNoteId === item.note.id}
+                    onToggleExpand={() =>
+                      setExpandedNoteId((current) => toggleExpandedNote(current, item.note.id))
+                    }
                     isFocused={focusedIndex === globalIndex}
                     onEscapeFromNormal={() => handleEscapeFromNormal(globalIndex)}
                     onReply={viewMode === 'active' ? handleReply : undefined}

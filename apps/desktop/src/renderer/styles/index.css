@@ -17,9 +17,6 @@
      한 줄이 이보다 길어지면 눈이 다음 줄 머리를 잃는다. */
   --reading-width: 760px;
 
-  /* 마스크로 쓰는 아이콘. 색은 배경으로 주므로 토큰이 그대로 먹는다 —
-     SVG 안에 색을 박으면 라이트/다크에서 따로 관리하게 된다. */
-  --icon-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E");
 }
 
 * {
@@ -227,28 +224,19 @@ body {
   pointer-events: none;
 }
 
-/* 고정 묶음은 이름표 대신 **모서리에 얹힌 핀**으로 말한다 (BRU-213, 모바일과 같은 결).
-   'PINNED'라고 대문자로 적는 대신 사물을 보여 준다 — 한글 화면에서 영어 대문자
+/* 고정 묶음의 이름표 (BRU-213).
+
+   처음에는 묶음 모서리에 핀을 얹었는데, 그 자리가 첫 행의 문서 아이콘 바로 위라
+   둘이 붙어 서로 무엇을 가리키는지 알 수 없었다(회장님 반려: 「위치가 매우 애매」).
+   이름표 안으로 들였다 — 이름표는 이미 그 묶음의 것이라 애매할 자리가 없다.
+
+   'PINNED'라고 대문자로 적지 않는 것은 그대로다 — 한글 화면에서 영어 대문자
    라벨은 그 자체가 남의 앱 흉내다. */
-.note-group.is-pinned::after {
-  content: '';
-  position: absolute;
-  top: -7px;
-  /* 왼쪽 모서리 (BRU-213 반려 반영). 오른쪽에 있을 때는 목록에서 시선이 가장
-     늦게 닿는 자리라, 「이 묶음이 고정이다」를 말해 주는 표시가 제일 나중에
-     보였다. 읽기 시작하는 쪽에 둔다. */
-  left: var(--space-3);
-  width: 20px;
-  height: 20px;
-  background: var(--accent);
-  -webkit-mask-image: var(--icon-pin);
-  mask-image: var(--icon-pin);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  transform: rotate(-31deg);
-  pointer-events: none;
+.date-label.is-pinned {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent);
 }
 
 .feed:focus:not(:focus-visible) {
@@ -559,24 +547,17 @@ body {
    줄이 하나씩 서 있었다.
 
    줄을 카드 맨 위에 겹쳐 놓아 자리를 없앤다. 그러면 아이콘이 본문 첫 줄 **옆에**
-   서서 글머리 기호처럼 읽힌다. 겹친 줄이 첫 줄의 글자를 가로채지 않도록 마우스를
-   통과시키고, 그 안의 액션 툴바만 다시 받는다. */
+   서서 글머리 기호처럼 읽힌다.
+
+   겹친 줄은 **누를 수 있는 채로** 둔다 — 펼칠 때 누른 자리를 다시 눌러 접는 것이
+   가장 자연스럽고, 열 때와 닫을 때의 자리가 다르면 손이 헤맨다. 대신 그 줄에
+   깔린 본문 첫 줄은 마우스로 긁어 복사할 수 없다. 본문 전체 복사는 `c`가 한다. */
 .note-card.open .note-line {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   padding-bottom: var(--space-2);
-  pointer-events: none;
-}
-
-.note-card.open .note-card-actions {
-  pointer-events: none;
-}
-
-.note-card.open:hover .note-card-actions,
-.note-card.open .note-card-actions:focus-within {
-  pointer-events: auto;
 }
 
 .note-card.open .note-card-body {
