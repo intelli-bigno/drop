@@ -22,6 +22,8 @@ import { isOpenCommentsShortcut } from '../shortcuts/noteComments'
 import { isDeleteShortcut, isArchiveShortcut, isRestoreShortcut } from '../shortcuts/noteTrash'
 import { isTextInputTarget, getClosestNoteId } from '../lib/dom-utils'
 import { shouldYieldToNativeCopy } from '../lib/copy-guard'
+import { copyResultMessage } from '../lib/copy-feedback'
+import { useToastStore } from '../stores/toast'
 import { buildNoteReference } from '../../shared/note-reference'
 import { extractInstagramUrls } from '../lib/instagram-url-utils'
 import { buildDeleteConfirmMessage } from '../lib/delete-confirm'
@@ -910,7 +912,13 @@ export function NoteFeed() {
                   content: item.note.content,
                 })
               : item.note.content
-          navigator.clipboard.writeText(text)
+          // 복사했다는 것을 말해 준다 (BRU-213). 클립보드는 눈에 보이지 않아서,
+          // 조용히 성공하면 "눌렀는데 아무 일도 안 일어났다"와 구별되지 않는다.
+          const showToast = useToastStore.getState().showToast
+          void navigator.clipboard
+            .writeText(text)
+            .then(() => showToast(copyResultMessage(action, true)))
+            .catch(() => showToast(copyResultMessage(action, false)))
         }
         return
       }
