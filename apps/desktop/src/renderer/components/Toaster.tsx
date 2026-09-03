@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useToastStore } from '../stores/toast'
 
 export function Toaster() {
@@ -14,6 +15,7 @@ export function Toaster() {
           className={`toast ${toast.variant === 'error' ? 'toast-error' : ''}`}
           onClick={() => dismissToast(toast.id)}
         >
+          {toast.icon && <Icon name={toast.icon} size={14} className="toast-icon" />}
           <span className="toast-message">{toast.message}</span>
           {toast.actionLabel && (
             <button

@@ -17,6 +17,10 @@
      한 줄이 이보다 길어지면 눈이 다음 줄 머리를 잃는다. */
   --reading-width: 760px;
 
+  /* 창 맨 위에 겹쳐 있는 두 줄(제목줄 · 도구줄)의 높이. 알림이 이 아래에
+     떠야 도구줄의 버튼을 가리지 않는다 — 세 곳이 같은 값을 봐야 해서 여기 둔다. */
+  --header-height: 44px;
+  --chrome-height: calc(var(--header-height) * 2);
 }
 
 * {
@@ -85,7 +89,7 @@ body {
 .feed-header {
   position: relative;
   padding: 0 var(--space-5);
-  height: 44px;
+  height: var(--header-height);
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -2991,7 +2995,7 @@ h6.note-viewer-heading {
   align-items: center;
   /* 좌측 88px = 트래픽 라이트 클리어런스 */
   padding: var(--space-2) var(--space-5) var(--space-2) 88px;
-  min-height: 44px;
+  min-height: var(--header-height);
   /* 선 없음 — 아래 도구줄과 같은 바탕이라 둘이 한 겹으로 읽힌다. */
   -webkit-app-region: drag;
   background: var(--bg-primary);
@@ -3232,33 +3236,44 @@ h6.note-viewer-heading {
    Toast Notifications
    ============================================ */
 
+/* 알림은 오른쪽 위에 뜬다 (BRU-213). 화면 한가운데 아래는 읽고 있던 글 위를
+   가리는 자리이고, 손이 가 있는 자리이기도 하다. 오른쪽 위는 결과를 확인만
+   하고 지나가는 자리다 — 도구줄 바로 아래에서 시작해 버튼을 덮지 않는다. */
 .toaster {
   position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(var(--chrome-height) + var(--space-3));
+  right: var(--space-5);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  /* 폭은 글자만큼만 — 짧은 확인이 긴 상자에 담기면 그게 더 눈에 띈다. */
+  align-items: flex-end;
+  gap: var(--space-2);
   z-index: 1100;
+  pointer-events: none;
 }
 
 .toast {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  max-width: 420px;
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-2);
+  max-width: 320px;
+  padding: var(--space-2) var(--space-4);
+  pointer-events: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   color: var(--text-primary);
-  font: var(--type-meta);
-  font-size: var(--text-base);
+  font: var(--type-label);
+  letter-spacing: var(--type-label-tracking);
   cursor: pointer;
-  animation: toast-in var(--transition-slow) both;
+  animation: toast-in var(--transition-normal) both;
+}
+
+/* 됐다는 신호는 글자보다 먼저 읽힌다 — 그래서 글자 앞에 둔다. */
+.toast-icon {
+  flex-shrink: 0;
+  color: var(--success);
 }
 
 .toast-error {
@@ -3287,14 +3302,16 @@ h6.note-viewer-heading {
   color: var(--accent-hover);
 }
 
+/* 오른쪽 가장자리에서 미끄러져 들어온다 — 떠 있는 자리와 같은 방향이라
+   어디서 왔는지가 눈으로 이어진다. */
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 

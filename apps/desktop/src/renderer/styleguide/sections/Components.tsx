@@ -35,6 +35,7 @@ import { CommentPanel } from '../../components/CommentPanel'
 import { NotePreviewPanel } from '../../components/NotePreviewPanel'
 import { UserMenu } from '../../components/UserMenu'
 import { useToastStore } from '../../stores/toast'
+import { copyResultMessage } from '../../lib/copy-feedback'
 
 const ICON_NAMES: IconName[] = [
   'pencil',
@@ -123,7 +124,7 @@ export function Components() {
 
       <Section
         title="피드백"
-        note="소프트 삭제는 낙관적 적용 + 실행취소 토스트, 영구 삭제는 확인 다이얼로그를 거친다."
+        note="알림은 오른쪽 위에 뜬다 (BRU-213) — 읽던 글 위가 아니라 결과만 확인하고 지나가는 자리다. 소프트 삭제는 낙관적 적용 + 실행취소 토스트, 영구 삭제는 확인 다이얼로그를 거친다."
       >
         <Specimen name="Toaster" file="components/Toaster.tsx">
           <div className="sg-row">
@@ -147,6 +148,13 @@ export function Components() {
               }
             >
               실행취소가 붙은 토스트
+            </button>
+            {/* 문구를 여기 다시 적지 않는다 — 앱이 쓰는 그 함수를 그대로 부른다. */}
+            <button
+              className="sg-btn"
+              onClick={() => showToast(copyResultMessage('copyFocused', true))}
+            >
+              복사 확인 (⌘C)
             </button>
           </div>
         </Specimen>
