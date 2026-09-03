@@ -31,6 +31,14 @@
     <color name="drop_warning">#FFF59E0B</color>
     <color name="drop_danger">#FFEF4444</color>
     <color name="drop_danger_hover">#FFF87171</color>
+    <color name="drop_danger_subtle">#24EF4444</color>
+    <color name="drop_overlay">#99000000</color>
+    <color name="drop_overlay_strong">#EB000000</color>
+    <color name="drop_overlay_control">#1FFFFFFF</color>
+    <color name="drop_overlay_control_hover">#38FFFFFF</color>
+    <color name="drop_overlay_scrim">#8C000000</color>
+    <color name="drop_text_on_overlay">#FFFFFFFF</color>
+    <color name="drop_text_on_danger">#FFFFFFFF</color>
     <color name="drop_brand_instagram">#FFE1306C</color>
     <color name="drop_brand_youtube">#FFFF0000</color>
 </resources>

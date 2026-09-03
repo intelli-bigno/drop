@@ -38,6 +38,14 @@ class DropTokenColors {
     required this.warning,
     required this.danger,
     required this.dangerHover,
+    required this.dangerSubtle,
+    required this.overlay,
+    required this.overlayStrong,
+    required this.overlayControl,
+    required this.overlayControlHover,
+    required this.overlayScrim,
+    required this.textOnOverlay,
+    required this.textOnDanger,
     required this.brandInstagram,
     required this.brandYoutube,
   });
@@ -68,6 +76,14 @@ class DropTokenColors {
   final Color warning;
   final Color danger;
   final Color dangerHover;
+  final Color dangerSubtle;
+  final Color overlay;
+  final Color overlayStrong;
+  final Color overlayControl;
+  final Color overlayControlHover;
+  final Color overlayScrim;
+  final Color textOnOverlay;
+  final Color textOnDanger;
   final Color brandInstagram;
   final Color brandYoutube;
 
@@ -98,6 +114,14 @@ class DropTokenColors {
     warning: Color(0xFFF59E0B),
     danger: Color(0xFFDA2323),
     dangerHover: Color(0xFFB91C1C),
+    dangerSubtle: Color(0x1ADA2323),
+    overlay: Color(0x5237352F),
+    overlayStrong: Color(0xEB000000),
+    overlayControl: Color(0x1FFFFFFF),
+    overlayControlHover: Color(0x38FFFFFF),
+    overlayScrim: Color(0x8C000000),
+    textOnOverlay: Color(0xFFFFFFFF),
+    textOnDanger: Color(0xFFFFFFFF),
     brandInstagram: Color(0xFFE1306C),
     brandYoutube: Color(0xFFFF0000),
   );
@@ -129,6 +153,14 @@ class DropTokenColors {
     warning: Color(0xFFF59E0B),
     danger: Color(0xFFEF4444),
     dangerHover: Color(0xFFF87171),
+    dangerSubtle: Color(0x24EF4444),
+    overlay: Color(0x99000000),
+    overlayStrong: Color(0xEB000000),
+    overlayControl: Color(0x1FFFFFFF),
+    overlayControlHover: Color(0x38FFFFFF),
+    overlayScrim: Color(0x8C000000),
+    textOnOverlay: Color(0xFFFFFFFF),
+    textOnDanger: Color(0xFFFFFFFF),
     brandInstagram: Color(0xFFE1306C),
     brandYoutube: Color(0xFFFF0000),
   );
@@ -161,6 +193,14 @@ class DropTokenColors {
     'warning': warning,
     'danger': danger,
     'danger-hover': dangerHover,
+    'danger-subtle': dangerSubtle,
+    'overlay': overlay,
+    'overlay-strong': overlayStrong,
+    'overlay-control': overlayControl,
+    'overlay-control-hover': overlayControlHover,
+    'overlay-scrim': overlayScrim,
+    'text-on-overlay': textOnOverlay,
+    'text-on-danger': textOnDanger,
     'brand-instagram': brandInstagram,
     'brand-youtube': brandYoutube,
   };
