@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+// 저장된 테마를 첫 그림 전에 세운다 (BRU-213) — 이 import의 부수효과가 그 일이다.
+import './stores/theme'
 import './styles/index.css'
 // 개발 전용 (BRU-71) — Electron 밖(브라우저)에서도 화면이 뜨게 window.api 자리를 채운다.
 // 동적 import라 프로덕션 번들에는 이 모듈 자체가 들어가지 않는다.
