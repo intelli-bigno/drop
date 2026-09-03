@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { PageHead, Section, Specimen } from '../parts'
 import { STYLEGUIDE_NOTES, STYLEGUIDE_PROJECTS, STYLEGUIDE_TAGS } from '../fixtures'
 
-import { Icon, type IconName } from '../../components/Icon'
+import { Icon, ICON_NAMES } from '../../components/Icon'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PinDialog, type PinDialogMode } from '../../components/PinDialog'
 import { TagList } from '../../components/TagList'
@@ -37,41 +37,6 @@ import { UserMenu } from '../../components/UserMenu'
 import { useToastStore } from '../../stores/toast'
 import { copyResultMessage } from '../../lib/copy-feedback'
 
-const ICON_NAMES: IconName[] = [
-  'pencil',
-  'folder',
-  'inbox',
-  'archive',
-  'trash',
-  'link',
-  'image',
-  'paperclip',
-  'search',
-  'pin',
-  'lock',
-  'lock-open',
-  'corner-up-left',
-  'x',
-  'history',
-  'check',
-  'plus',
-  'file-text',
-  'camera',
-  'play',
-  'message-square',
-  'chevrons-down',
-  'chevrons-up',
-  'square',
-  'check-square',
-  'list-todo',
-  'help-circle',
-  'tag',
-  'keyboard',
-  'copy',
-  'log-out',
-  'youtube',
-  'instagram',
-]
 
 const PIN_MODES: PinDialogMode[] = ['setup', 'unlock-temp', 'unlock-permanent', 'unlock-all']
 

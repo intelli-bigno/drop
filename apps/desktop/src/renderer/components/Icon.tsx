@@ -247,6 +247,13 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   ),
 }
 
+/**
+ * 그릴 수 있는 아이콘 전부. **손으로 적지 않고 구현에서 뽑는다** — 쇼케이스가
+ * 따로 목록을 들고 있으면 아이콘을 더해도 진열장에는 안 나타나고, 그 침묵이
+ * "없는 아이콘"으로 읽힌다 (tokens-catalog.ts와 같은 이유다).
+ */
+export const ICON_NAMES = Object.keys(ICON_PATHS) as IconName[]
+
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName
   size?: number
