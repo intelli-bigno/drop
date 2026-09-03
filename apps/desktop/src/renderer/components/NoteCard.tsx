@@ -10,6 +10,7 @@ import { NoteViewer } from './NoteViewer'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
+import { hintForKeyId } from '../shortcuts/catalog'
 import { NoteTreeGuides } from './NoteTreeGuides'
 import { noteIndentVars } from '../lib/note-indent'
 import { NoteHistoryDialog } from './NoteHistoryDialog'
@@ -382,7 +383,7 @@ export const NoteCard = memo(
                   <button
                     className={`todo-check ${note.completedAt ? 'completed' : ''}`}
                     onClick={handleCompletedClick}
-                    title={note.completedAt ? '완료 해제' : '완료 표시'}
+                    data-hint={note.completedAt ? '완료 해제' : '완료 표시'}
                     aria-label={note.completedAt ? '완료 해제' : '완료 표시'}
                     role="checkbox"
                     aria-checked={!!note.completedAt}
@@ -416,7 +417,7 @@ export const NoteCard = memo(
                   <button
                     className="note-export-link"
                     onClick={() => window.api.openExternal(note.linearIssueUrl!)}
-                    title={`Linear에서 열기 — ${note.linearIssueUrl}`}
+                    data-hint="Linear에서 열기"
                   >
                     <Icon name="link" size={11} />
                     {note.linearIssueKey ?? 'Linear'}
@@ -424,7 +425,7 @@ export const NoteCard = memo(
                   <button
                     className="note-export-clear"
                     onClick={() => clearNoteExport(note.id)}
-                    title="반출 표시 지우기"
+                    data-hint="반출 표시 지우기"
                     aria-label="반출 표시 지우기"
                   >
                     <Icon name="x" size={11} />
@@ -442,7 +443,7 @@ export const NoteCard = memo(
                         <button
                           className={`todo-btn ${isTodo(note) ? 'active' : ''}`}
                           onClick={handleTypeToggle}
-                          title={isTodo(note) ? '일반 노트로 되돌리기' : '할일로 바꾸기'}
+                          data-hint={isTodo(note) ? '일반 노트로 되돌리기' : '할일로 바꾸기'}
                           aria-label={isTodo(note) ? '일반 노트로 되돌리기' : '할일로 바꾸기'}
                           aria-pressed={isTodo(note)}
                         >
@@ -452,7 +453,8 @@ export const NoteCard = memo(
                       <button
                         className={`pin-btn ${note.isPinned ? 'pinned' : ''}`}
                         onClick={() => togglePinNote(note.id)}
-                        title={note.isPinned ? '고정 해제 (p)' : '상단 고정 (p)'}
+                        data-hint={note.isPinned ? '고정 해제' : '상단 고정'}
+                        data-hint-keys={hintForKeyId('togglePin') ?? undefined}
                         aria-label={note.isPinned ? '고정 해제' : '상단 고정'}
                       >
                         <Icon name="pin" />
@@ -460,7 +462,8 @@ export const NoteCard = memo(
                       <button
                         className={`lock-btn ${note.isLocked ? 'locked' : ''}`}
                         onClick={handleLockToggle}
-                        title={note.isLocked ? '잠금 해제' : '잠금'}
+                        data-hint={note.isLocked ? '잠금 해제' : '잠금'}
+                        data-hint-keys={hintForKeyId('toggleLock') ?? undefined}
                         aria-label={note.isLocked ? '잠금 해제' : '잠금'}
                       >
                         <Icon name={note.isLocked ? 'lock' : 'lock-open'} />
@@ -469,7 +472,8 @@ export const NoteCard = memo(
                         <button
                           className="reply-btn"
                           onClick={() => onReply(note.id)}
-                          title="답글"
+                          data-hint="답글"
+                          data-hint-keys={hintForKeyId('replyToFocused') ?? undefined}
                           aria-label="답글"
                         >
                           <Icon name="corner-up-left" />
@@ -479,7 +483,7 @@ export const NoteCard = memo(
                         <button
                           className={`project-btn ${note.projectId ? 'assigned' : ''}`}
                           onClick={() => setProjectPopoverOpen(true)}
-                          title={note.projectId ? '프로젝트 바꾸기' : '프로젝트 지정'}
+                          data-hint={note.projectId ? '프로젝트 바꾸기' : '프로젝트 지정'}
                           aria-label="프로젝트 지정"
                         >
                           <Icon name="folder" />
@@ -489,7 +493,8 @@ export const NoteCard = memo(
                         <button
                           className="comment-btn"
                           onClick={() => openComments(note.id)}
-                          title="댓글 (⇧C)"
+                          data-hint="댓글"
+                          data-hint-keys={hintForKeyId('openComments') ?? undefined}
                           aria-label="댓글"
                         >
                           <Icon name="message-square" />
@@ -499,7 +504,7 @@ export const NoteCard = memo(
                         <button
                           className="history-btn"
                           onClick={() => openHistory(note.id)}
-                          title="편집 기록"
+                          data-hint="편집 기록"
                           aria-label="편집 기록"
                         >
                           <Icon name="history" />
@@ -509,7 +514,8 @@ export const NoteCard = memo(
                         <button
                           className="archive-btn"
                           onClick={() => archiveNote(note.id)}
-                          title="보관"
+                          data-hint="보관"
+                          data-hint-keys={hintForKeyId('archive') ?? undefined}
                           aria-label="보관"
                         >
                           <Icon name="archive" />
@@ -518,7 +524,8 @@ export const NoteCard = memo(
                       {!isLocked && (
                         <button
                           className="delete-btn"
-                          title="삭제"
+                          data-hint="휴지통으로"
+                          data-hint-keys={hintForKeyId('deleteFocused') ?? undefined}
                           aria-label="삭제"
                           onClick={() => requestDeleteNote(note.id)}
                         >
@@ -532,14 +539,16 @@ export const NoteCard = memo(
                       <button
                         className="unarchive-btn"
                         onClick={() => unarchiveNote(note.id)}
-                        title="보관 해제"
+                        data-hint="보관 해제"
+                        data-hint-keys={hintForKeyId('restore') ?? undefined}
                         aria-label="보관 해제"
                       >
                         <Icon name="corner-up-left" />
                       </button>
                       <button
                         className="delete-btn"
-                        title="삭제"
+                        data-hint="휴지통으로"
+                        data-hint-keys={hintForKeyId('deleteFocused') ?? undefined}
                         aria-label="삭제"
                         onClick={() => requestDeleteNote(note.id)}
                       >
@@ -552,7 +561,8 @@ export const NoteCard = memo(
                       <button
                         className="restore-btn"
                         onClick={() => restoreNote(note.id)}
-                        title="복원"
+                        data-hint="복원"
+                        data-hint-keys={hintForKeyId('restore') ?? undefined}
                         aria-label="복원"
                       >
                         <Icon name="corner-up-left" />
@@ -560,7 +570,7 @@ export const NoteCard = memo(
                       <button
                         className="permanent-delete-btn"
                         onClick={() => setShowPermanentDeleteConfirm(true)}
-                        title="영구 삭제"
+                        data-hint="영구 삭제 — 되돌릴 수 없다"
                         aria-label="영구 삭제"
                       >
                         <Icon name="trash" />

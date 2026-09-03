@@ -16,6 +16,7 @@ import { Layouts } from './sections/Layouts'
 import { States } from './sections/States'
 import { Audit } from './sections/Audit'
 import { Toaster } from '../components/Toaster'
+import { HintLayer } from '../components/HintLayer'
 import { THEME_PREFERENCES, themeAttribute, type ThemePreference } from '../lib/theme'
 
 const PAGES = [
@@ -116,6 +117,9 @@ export function Styleguide() {
       <main className="sg-main" key={active.id}>
         {active.render()}
       </main>
+
+      {/* 실물 버튼을 진열하는 화면이므로 힌트도 실물이어야 한다 (BRU-213). */}
+      <HintLayer />
 
       <Toaster />
     </div>

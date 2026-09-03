@@ -13,6 +13,7 @@ import { SearchDialog } from './SearchDialog'
 import { PinDialog, type PinDialogMode } from './PinDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
+import { hintForKeyId } from '../shortcuts/catalog'
 import { isCreateNoteShortcut, isSearchShortcut } from '../shortcuts/noteGlobal'
 import { resolveNoteFeedShortcut } from '../shortcuts/noteFeed'
 import { isOpenTagListShortcut, isOpenTagManagementShortcut } from '../shortcuts/tagList'
@@ -1108,7 +1109,7 @@ export function NoteFeed() {
                   <span>#{filterTag}</span>
                   <button
                     onClick={() => setFilterTag(null)}
-                    title="태그 필터 해제"
+                    data-hint="태그 필터 해제"
                     aria-label="태그 필터 해제"
                   >
                     <Icon name="x" size={12} />
@@ -1124,7 +1125,7 @@ export function NoteFeed() {
                 <button
                   className="icon-btn"
                   onClick={() => setShowUnlockAllDialog(true)}
-                  title="전체 잠금 해제"
+                  data-hint="전체 잠금 해제"
                   aria-label="전체 잠금 해제"
                 >
                   <Icon name="lock-open" />
@@ -1133,7 +1134,7 @@ export function NoteFeed() {
               <button
                 className={`icon-btn ${expandAll ? 'active' : ''}`}
                 onClick={() => setExpandAll((on) => !on)}
-                title={expandAll ? '모두 접기' : '모두 펼쳐보기'}
+                data-hint={expandAll ? '모두 접기' : '모두 펼쳐보기'}
                 aria-label={expandAll ? '모두 접기' : '모두 펼쳐보기'}
                 aria-pressed={expandAll}
               >
@@ -1142,7 +1143,8 @@ export function NoteFeed() {
               <button
                 className="icon-btn"
                 onClick={() => setShowSearchDialog(true)}
-                title="검색 (⌘K)"
+                data-hint="검색"
+                data-hint-keys={hintForKeyId('search') ?? undefined}
                 aria-label="검색"
               >
                 <Icon name="search" />
@@ -1150,7 +1152,11 @@ export function NoteFeed() {
             </>
           )}
           {viewMode === 'trash' && trashedNotes.length > 0 && (
-            <button className="empty-trash-btn" onClick={() => setShowEmptyTrashConfirm(true)}>
+            <button
+              className="empty-trash-btn"
+              onClick={() => setShowEmptyTrashConfirm(true)}
+              data-hint="휴지통의 노트를 모두 영구 삭제한다"
+            >
               비우기
             </button>
           )}

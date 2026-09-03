@@ -283,7 +283,8 @@ export function UserMenu({ onOpenCheatSheet }: Props) {
           ref={triggerRef}
           className="user-menu-trigger"
           onClick={handleToggle}
-          aria-label="User menu"
+          data-hint="계정과 설정"
+          aria-label="사용자 메뉴"
         >
           {userAvatar ? (
             <img src={userAvatar} alt={userName} className="user-avatar" />

@@ -27,7 +27,7 @@ export function ExportedFilter() {
     <button
       className={`count-filter-btn ${showExported ? 'active' : ''}`}
       onClick={() => setShowExported(!showExported)}
-      title={showExported ? '반출된 노트 숨기기' : 'Linear로 반출된 노트도 보기'}
+      data-hint={showExported ? '반출된 노트 숨기기' : 'Linear로 반출된 노트도 보기'}
       aria-pressed={showExported}
     >
       <span className="count-filter-icon">

@@ -42,7 +42,7 @@ export function ScopeFilter() {
     <button
       className={`scope-filter-btn ${feedScope ? 'active' : ''}`}
       onClick={() => setFeedScope(nextFeedScope(feedScope))}
-      title={TITLES[String(feedScope) as keyof typeof TITLES]}
+      data-hint={TITLES[String(feedScope) as keyof typeof TITLES]}
       aria-pressed={feedScope !== null}
     >
       {/* 꺼짐 상태에는 라벨을 두지 않는다. '전체'라고 적으면 바로 옆 카테고리 필터의
@@ -52,14 +52,14 @@ export function ScopeFilter() {
       <span className="scope-filter-counts">
         <span
           className={`scope-filter-count ${feedScope === 'inbox' ? 'current' : ''}`}
-          title={`분류되지 않은 노트 ${inboxCount}건`}
+          data-hint={`분류되지 않은 노트 ${inboxCount}건`}
         >
           <Icon name="inbox" size={12} />
           {inboxCount}
         </span>
         <span
           className={`scope-filter-count ${feedScope === 'todo' || feedScope === 'open' ? 'current' : ''}`}
-          title={`아직 안 끝난 할일 ${openTodoCount}건`}
+          data-hint={`아직 안 끝난 할일 ${openTodoCount}건`}
         >
           <Icon name="list-todo" size={12} />
           {openTodoCount}

@@ -7,6 +7,7 @@ import { AuthScreen } from './components/AuthScreen'
 import { QuickCapture } from './components/QuickCapture'
 import { UserMenu } from './components/UserMenu'
 import { Toaster } from './components/Toaster'
+import { HintLayer } from './components/HintLayer'
 import { ShortcutCheatSheet } from './components/ShortcutCheatSheet'
 import { isCheatSheetShortcut } from './shortcuts/noteGlobal'
 import { isTextInputTarget } from './lib/dom-utils'
@@ -150,6 +151,8 @@ function MainApp() {
 
       {isCheatSheetOpen && <ShortcutCheatSheet onClose={() => setIsCheatSheetOpen(false)} />}
       <Toaster />
+      {/* 아이콘 버튼에 설명과 글쇠를 함께 띄운다 (BRU-213). 앱에 하나만 선다. */}
+      <HintLayer />
     </div>
   )
 }
