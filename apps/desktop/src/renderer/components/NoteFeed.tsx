@@ -301,6 +301,11 @@ export function NoteFeed() {
     feedRef.current?.focus()
   }, [])
 
+  const closeActionBar = useCallback(() => {
+    setActionBarNoteId(null)
+    feedRef.current?.focus()
+  }, [])
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // 텍스트 입력 영역에서 버블링된 이벤트 무시
     if (isTextInputTarget(e.target)) return
@@ -324,7 +329,7 @@ export function NoteFeed() {
       else if (escape === 'collapse') setExpandedNoteId(null)
       else setFocusedIndex(null)
     }
-  }, [])
+  }, [closeActionBar])
 
   // grouped와 렌더링 순서에 맞는 orderedNotes를 함께 계산
   const { grouped, orderedNotes } = useMemo(() => {
@@ -402,11 +407,6 @@ export function NoteFeed() {
     },
     [actionButtonsOf]
   )
-
-  const closeActionBar = useCallback(() => {
-    setActionBarNoteId(null)
-    feedRef.current?.focus()
-  }, [])
 
   // 초점이 액션 줄 밖으로 나가면 열려 있다고 볼 이유가 없다 — 버튼이 다이얼로그를
   // 열어 초점을 데려가는 경우까지 이 한 줄로 덮인다.
